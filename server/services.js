@@ -374,6 +374,44 @@ export async function createRequest(db, { bar_id, items, by }, { now } = {}) {
   return { ok: true, bottles: wanted.reduce((a, w) => a + w.qty, 0) };
 }
 
+/**
+ * «Hecho»: da por repuesta toda la lista de una vez. Para cada línea se registra
+ * lo indicado (por defecto, todo lo que faltaba). Cada entrega es una sentencia
+ * condicional que solo se aplica si la línea sigue como la vio quien repone
+ * (mismas botellas ya entregadas) y aún faltan al menos esas botellas. Así, si
+ * dos personas pulsan «Hecho» a la vez, solo cuenta una; y lo que se pida
+ * después de abrir la lista sigue pendiente.
+ */
+export async function completeLines(db, { items, by }, { now } = {}) {
+  if (!Array.isArray(items) || !items.length) throw bad('No hay nada que completar.');
+  if (items.length > 40) throw bad('Demasiadas líneas de una vez: completa por barras.');
+  const t = nowIso(now);
+  const who = clean(by);
+  const wanted = items.map((i) => ({
+    line_id: Number(i.line_id),
+    qty: posInt(i.qty, 'Cantidad', { allowZero: true }),
+    delivered: posInt(i.delivered ?? 0, 'Entregadas', { allowZero: true }),
+  })).filter((i) => i.qty > 0);
+  if (!wanted.length) throw bad('No hay nada que completar.');
+  const results = await db.batch(wanted.map((w) => [`INSERT INTO deliveries
+      (session_id, bar_id, product_id, line_id, qty, delivered_at, delivered_by, source)
+    SELECT l.session_id, l.bar_id, l.product_id, l.id, ?, ?, ?, 'lista' FROM request_lines l
+    WHERE l.id = ? AND ${DELIVERED} = ? AND ${PENDING} >= ?`, w.qty, t, who, w.line_id, w.delivered, w.qty]));
+  const done = wanted.filter((_, i) => results[i].changes > 0);
+  if (!done.length) return { lines: 0, bottles: 0 };
+  const marks = done.map(() => '?').join(', ');
+  const names = Object.fromEntries((await db.all(`SELECT l.id, l.bar_id, p.name FROM request_lines l
+    JOIN products p ON p.id = l.product_id WHERE l.id IN (${marks})`, ...done.map((d) => d.line_id))).map((r) => [r.id, r]));
+  await db.batch([
+    [`UPDATE request_lines SET claimed_by = NULL, claimed_at = NULL WHERE id IN (${marks})`, ...done.map((d) => d.line_id)],
+    auditStmt({
+      actor: who, entity: 'reposicion', action: 'hecho',
+      after: done.map((d) => ({ producto: names[d.line_id]?.name, barra: names[d.line_id]?.bar_id, botellas: d.qty })), now,
+    }),
+  ]);
+  return { lines: done.length, bottles: done.reduce((a, d) => a + d.qty, 0) };
+}
+
 export async function deliver(db, lineId, { qty, by }, { now } = {}) {
   const n = posInt(qty, 'Cantidad');
   // Una sola sentencia: solo inserta si quedan al menos n pendientes.

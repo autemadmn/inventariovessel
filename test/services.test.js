@@ -92,6 +92,34 @@ test('dos personas no pueden entregar la misma botella pendiente', async () => {
   assert.equal(r.total, 4);
 });
 
+test('«Hecho» completa la lista de una vez, respeta lo que se lleva y no duplica', async () => {
+  const { db, id } = await setup();
+  await svc.createRequest(db, { bar_id: 1, items: [
+    { product_id: id('Larios Rosé'), qty: 4 }, { product_id: id('SKYY'), qty: 3 }] }, { now: NIGHT });
+  await svc.createRequest(db, { bar_id: 2, items: [{ product_id: id('Roku'), qty: 2 }] }, { now: NIGHT });
+  const lines = (await svc.liveState(db, { now: later(1) })).lines;
+  const bar1 = lines.filter((l) => l.bar_id === 1);
+  // De SKYY solo se llevan 2 de 3; la barra 2 no se toca.
+  const items = bar1.map((l) => ({ line_id: l.id, qty: l.product_name === 'SKYY' ? 2 : l.qty_pending, delivered: l.qty_delivered }));
+  const [a, b] = await Promise.all([
+    svc.completeLines(db, { items, by: 'Luis' }, { now: later(10) }),
+    svc.completeLines(db, { items, by: 'Marta' }, { now: later(10) }),
+  ]);
+  assert.equal(a.bottles + b.bottles, 6, 'dos «Hecho» a la vez no duplican');
+  const after = (await svc.liveState(db, { now: later(11) })).lines.filter((l) => l.qty_pending > 0);
+  assert.deepEqual(after.map((l) => [l.product_name, l.qty_pending]).sort(), [['Roku', 2], ['SKYY', 1]]);
+  const r = await svc.report(db, { period: 'night', date: '2026-09-26' });
+  assert.equal(r.total, 6);
+  assert.ok((await svc.listAudit(db, { entity: 'reposicion' })).some((x) => x.action === 'hecho'));
+
+  // Si se piden más mientras se reponía, lo nuevo sigue pendiente.
+  await svc.createRequest(db, { bar_id: 2, items: [{ product_id: id('Roku'), qty: 1 }] }, { now: later(12) });
+  const roku = lines.find((l) => l.product_name === 'Roku');
+  await svc.completeLines(db, { items: [{ line_id: roku.id, qty: 2, delivered: 0 }] }, { now: later(13) });
+  const left = (await svc.liveState(db, { now: later(14) })).lines.find((l) => l.id === roku.id);
+  assert.equal(left.qty_pending, 1);
+});
+
 test('«Voy yo» no deja que otra persona coja la misma línea', async () => {
   const { db, id } = await setup();
   await svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('SKYY'), qty: 1 }] }, { now: NIGHT });

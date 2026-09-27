@@ -24,15 +24,17 @@ pocos segundos.
    Si ya hay botellas pedidas y sin entregar de ese producto para esa barra, se avisa en la tarjeta.
 
 ### Reponer (quien repone)
-- Cada línea muestra **pedidas, entregadas y faltan**. Solo lo entregado queda registrado como reposición:
-  si se piden 3 y se entregan 2, se registran 2 y queda 1 pendiente.
-- «Voy yo» avisa al resto de que esa línea ya la lleva alguien. Además, el servidor no permite entregar más
-  de lo que falta: si dos personas pulsan a la vez, la segunda recibe un aviso. Así nadie repone lo mismo dos veces.
-- «Deshacer» (durante unos minutos) corrige una pulsación por error.
-- «⋯ → Anular lo pendiente» retira lo que ya no hace falta.
-- **Agotado en almacén** (desde la línea o desde el panel «Agotados en almacén»): indica que no quedan botellas
-  para reponer. Es distinto de «falta en la barra»: las solicitudes siguen visibles, marcadas en rojo. Cuando llega
-  mercancía se vuelve a marcar como disponible.
+- Lista compacta de lo que falta, separada por barra: foto, nombre, «Faltan N» y la cantidad (x4).
+- Se repone todo y al terminar se pulsa **«Hecho»**: queda registrado como repuesto de una vez.
+  En las pestañas Barra 1 / Barra 2, «Hecho» completa solo esa barra.
+- Opcional: tocar una fila para indicar que esta vez se lleva menos (lo que no se lleve sigue
+  pendiente), quitarla de la lista o marcar el producto como **agotado en almacén**. Así se cumple
+  que solo se registra lo realmente repuesto: si se piden 4 y se llevan 3, se registran 3 y queda 1.
+- Si dos personas pulsan «Hecho» a la vez, solo cuenta una vez; lo que se pida mientras tanto sigue
+  pendiente.
+- **Agotado en almacén** (desde la fila o desde «Agotados en almacén»): no quedan botellas para
+  reponer. Es distinto de «falta en la barra»: lo pedido sigue visible. Cuando llega mercancía se
+  vuelve a marcar como disponible.
 
 ### Gestión (encargado, con PIN)
 - **Informes**: totales por producto, por barra y en conjunto, por noche, semana o mes, comparados con el

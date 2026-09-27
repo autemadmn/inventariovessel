@@ -99,6 +99,7 @@ export function createHandler({ getDb, env = {}, log = console }) {
     }],
     ['GET', '/api/live', 'staff', ({ db }) => svc.liveState(db)],
     ['POST', '/api/requests', 'staff', ({ db, body }) => svc.createRequest(db, body)],
+    ['POST', '/api/complete', 'staff', ({ db, body }) => svc.completeLines(db, body)],
     ['POST', '/api/lines/:id/deliver', 'staff', ({ db, id, body }) => svc.deliver(db, id, body)],
     ['POST', '/api/lines/:id/claim', 'staff', ({ db, id, body }) => svc.claimLine(db, id, body)],
     ['POST', '/api/lines/:id/cancel', 'staff', ({ db, id, body }) => svc.cancelPending(db, id, body)],

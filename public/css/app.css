@@ -254,32 +254,34 @@ body[data-view="pedir"] .main { padding-bottom: 96px; }
 .summary { white-space: pre-wrap; background: var(--bg); border-radius: 10px; padding: 10px; font: inherit; margin: 0; }
 
 /* ---------------------------------------------------------------- Reponer */
-.status-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
-.status-line strong { font-size: 1.2rem; }
-.lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-.line { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-.line.out { border-color: var(--danger); }
-.line.complete { opacity: .6; }
-.line-head { display: flex; gap: 10px; align-items: center; }
-.line-title { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
-.line-title b { font-size: 1.1rem; }
-.qty-row { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); }
-.qty-row b { color: var(--text); font-size: 1.1rem; }
-.qty-row .pending { color: var(--danger); margin-left: auto; font-weight: 700; }
-.qty-row .pending b { color: var(--danger); font-size: 1.6rem; }
-.out-note { background: color-mix(in srgb, var(--danger) 18%, transparent); color: #ffd4d6; border-radius: 8px; padding: 8px; font-weight: 700; margin: 0; }
-.claim { margin: 0; color: var(--info); font-weight: 600; }
-.claim.mine { color: var(--ok); }
-.line-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.line-actions .btn { flex: 1 1 auto; }
-.line-actions .more { flex: none; }
-.collapse { background: none; border: 0; color: var(--muted); font-weight: 700; padding: 14px 0 8px; cursor: pointer; }
+.status-line { margin: 12px 0 4px; }
+.status-line strong { font-size: 1.1rem; }
+.group-title { font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 6px; padding-left: 8px; border-left: 3px solid var(--muted); }
+.group-title.bar-1 { border-color: var(--bar1); color: var(--bar1); }
+.group-title.bar-2 { border-color: var(--bar2); color: var(--bar2); }
+.rows { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.rows li + li { border-top: 1px solid var(--line); }
+.row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 6px 12px 6px 8px;
+  background: none; border: 0; text-align: left; cursor: pointer; touch-action: manipulation;
+}
+.row:active { background: var(--surface-2); }
+.thumb.mini { width: 46px; flex: none; border-radius: 8px; }
+.thumb.mini img { object-fit: cover; }
+.thumb.mini.ph b { font-size: .9rem; }
+.thumb.mini.ph small { display: none; }
+.row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.row-text b { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-text small { color: var(--danger); font-weight: 700; font-size: .85rem; }
+.row-qty { font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+.row.out .thumb { filter: grayscale(.8) brightness(.7); }
+.row.adjusted .row-qty { color: var(--warn); }
+.done-btn { margin-top: 16px; min-height: 64px; font-size: 1.2rem; }
+.stock-link { display: block; margin: 18px auto 0; color: var(--muted); text-decoration: underline; }
+.big-step { justify-content: center; gap: 16px; }
+.big-step .step { width: 56px; height: 56px; }
+.big-step output { font-size: 2rem; min-width: 48px; }
 .section-title { font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 22px 0 10px; }
-.recent { list-style: none; margin: 0; padding: 0; }
-.recent li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
-.recent li > span:nth-child(2) { flex: 1; }
-.recent .time { color: var(--muted); font-variant-numeric: tabular-nums; }
-.recent li.undone { opacity: .5; text-decoration: line-through; }
 .stock-list { list-style: none; margin: 10px 0 0; padding: 0; }
 .stock-list li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .stock-list li > span:nth-child(2) { flex: 1; }
@@ -391,7 +393,6 @@ select.mini { width: auto; text-align: left; }
   .card-name { font-size: .68rem; font-weight: 600; letter-spacing: -.01em; padding: 0 1px; }
   .card-main { padding: 3px 3px 5px; }
   .card-main .thumb.ph small { display: none; }
-  .lines { grid-template-columns: 1fr; }
   .night-fields { grid-template-columns: 1fr; }
   .toolbar .seg { width: 100%; }
 }
