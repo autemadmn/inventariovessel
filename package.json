@@ -5,11 +5,11 @@
   "description": "Reposición de botellas en las barras: listas compartidas, historial, previsión y lista de compra.",
   "type": "module",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22.16"
   },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server/index.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch server/index.js",
-    "test": "node --disable-warning=ExperimentalWarning --test test/"
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\""
   }
 }

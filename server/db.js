@@ -11,6 +11,9 @@ export const DEFAULT_SETTINGS = {
   low_data_nights: '4',
   min_nights_per_weekday: '3',
   undo_minutes: '10',
+  // Código que introduce el personal para entrar y PIN del encargado.
+  // Las variables de entorno STAFF_CODE y MANAGER_PIN tienen prioridad.
+  staff_code: '',
   manager_pin: '',
 };
 

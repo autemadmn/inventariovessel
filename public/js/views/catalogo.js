@@ -1,0 +1,212 @@
+// Catálogo provisional: corregir nombres, confirmar capacidades y botellas por
+// caja, añadir fotos e identificar las botellas dudosas sin crear duplicados.
+import {
+  mget, mpost, mput, mdel, post,
+} from '../api.js';
+import { state, loadBootstrap } from '../state.js';
+import {
+  html, mount, thumb, toast, formDialog, resizeImage, norm,
+} from '../ui.js';
+
+const STATUS = {
+  confirmado: 'Confirmado',
+  pendiente: 'Por confirmar',
+  sin_identificar: 'Sin identificar',
+  descartado: 'Descartado',
+};
+
+let q = '';
+
+export async function renderCatalogo(root) {
+  let products = await mget('/api/products');
+
+  const draw = () => {
+    const nq = norm(q);
+    const match = (p) => !nq || norm(p.name).includes(nq);
+    const unidentified = products.filter((p) => p.status === 'sin_identificar');
+    const discarded = products.filter((p) => p.status === 'descartado');
+    const normal = products.filter((p) => !['sin_identificar', 'descartado'].includes(p.status) && match(p));
+    const pendingCount = products.filter((p) => p.status === 'pendiente' && p.active).length;
+    const missingData = products.filter((p) => p.active && (!p.capacity_ml || !p.per_case)).length;
+
+    mount(root, html`
+      <div class="notice">
+        <p>Catálogo provisional. ${pendingCount ? html`<b>${pendingCount}</b> producto(s) por confirmar. ` : ''}
+        ${missingData ? html`<b>${missingData}</b> sin capacidad o botellas por caja confirmadas (necesario para expresar las compras en cajas).` : ''}</p>
+        <p class="muted small">No se inventan nombres, capacidades ni fotos: lo que falte queda «por confirmar». Las botellas ocultas detrás de otras no son automáticamente productos distintos.</p>
+      </div>
+
+      ${unidentified.length ? html`
+        <h3 class="section-title">Pendientes de identificar</h3>
+        <p class="muted small">No aparecen en «Pedir» hasta que se identifiquen. Si resultan ser un producto que ya existe, márcalo así para no duplicarlo.</p>
+        <ul class="cat-list unid">${unidentified.map((p) => html`
+          <li>${thumb(p, 'sm')}<div><b>${p.name}</b><small class="muted block">${p.note || ''}</small></div>
+            <div class="btns">
+              <button type="button" class="btn small" data-new="${p.id}">Es un producto nuevo</button>
+              <button type="button" class="btn small ghost" data-dup="${p.id}">Ya existe</button>
+            </div></li>`)}</ul>` : ''}
+
+      <div class="toolbar">
+        <input type="search" id="cat-q" placeholder="Buscar…" value="${q}" autocomplete="off">
+        <button type="button" class="btn primary" data-add>Añadir producto</button>
+      </div>
+
+      ${state.categories.map((c) => {
+    const items = normal.filter((p) => p.category === c.id);
+    return items.length ? html`
+          <h3 class="section-title">${c.name}</h3>
+          <ul class="cat-list">${items.map((p) => html`
+            <li class="${p.active ? '' : 'inactive'}">
+              ${thumb(p, 'sm')}
+              <div><b>${p.name}</b>
+                <span class="tag ${p.status === 'pendiente' ? 'warn' : 'ok'}">${STATUS[p.status]}</span>
+                ${!p.active ? html`<span class="tag">Oculto</span>` : ''}
+                ${p.out_of_stock ? html`<span class="tag danger">Agotado en almacén</span>` : ''}
+                <small class="muted block">${p.capacity_ml ? `${p.capacity_ml / 10} cl` : 'Capacidad sin confirmar'} ·
+                  ${p.per_case ? `${p.per_case} por caja` : 'Botellas por caja sin confirmar'}</small>
+                ${p.note ? html`<small class="muted block">${p.note}</small>` : ''}
+              </div>
+              <div class="btns"><button type="button" class="btn small ghost" data-edit="${p.id}">Editar</button></div>
+            </li>`)}</ul>` : '';
+  })}
+
+      ${discarded.length ? html`
+        <details class="collapse-box"><summary>Resueltos como duplicados (${discarded.length})</summary>
+          <ul class="cat-list">${discarded.map((p) => html`<li>${thumb(p, 'xs')}<div>${p.name}<small class="muted block">${p.note || ''}</small></div></li>`)}</ul>
+        </details>` : ''}`);
+  };
+
+  const reload = async () => {
+    products = await mget('/api/products');
+    await loadBootstrap();
+    draw();
+  };
+
+  root.addEventListener('input', (e) => {
+    if (e.target.id === 'cat-q') {
+      q = e.target.value;
+      const pos = e.target.selectionStart;
+      draw();
+      const el = root.querySelector('#cat-q');
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    }
+  });
+
+  root.addEventListener('click', async (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    const d = t.dataset;
+    const byId = (id) => products.find((p) => p.id === Number(id));
+    try {
+      if (d.edit) {
+        if (await editProduct(byId(d.edit))) await reload();
+      } else if (d.add !== undefined) {
+        if (await editProduct(null)) await reload();
+      } else if (d.new) {
+        const p = byId(d.new);
+        const data = await formDialog('Identificar como producto nuevo', html`
+          <p class="muted small">${p.note || ''}</p>
+          <label class="field"><span>Nombre del producto</span><input name="name" value="" required maxlength="80" placeholder="Nombre que aparece en la etiqueta"></label>
+          <label class="field"><span>Categoría</span>${categorySelect(p.category)}</label>`, { ok: 'Añadir al catálogo' });
+        if (!data) return;
+        await mpost(`/api/products/${p.id}/resolve`, { action: 'new', ...data, by: state.who });
+        toast('Producto añadido (queda «por confirmar» hasta revisar capacidad y caja)');
+        await reload();
+      } else if (d.dup) {
+        const p = byId(d.dup);
+        const options = products.filter((x) => x.active);
+        const data = await formDialog('Es un producto que ya existe', html`
+          <p class="muted small">«${p.name}» se marcará como resuelto y no se creará ningún duplicado.</p>
+          <label class="field"><span>¿Qué producto es?</span><select name="target_id">${options.map((x) => html`<option value="${x.id}">${x.name}</option>`)}</select></label>`,
+        { ok: 'Confirmar' });
+        if (!data) return;
+        await mpost(`/api/products/${p.id}/resolve`, { action: 'duplicate', target_id: Number(data.target_id), by: state.who });
+        toast('Resuelto sin duplicar');
+        await reload();
+      }
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+
+  draw();
+}
+
+function categorySelect(selected) {
+  return html`<select name="category">${state.categories.map((c) => html`
+    <option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.name}</option>`)}</select>`;
+}
+
+async function editProduct(p) {
+  const isNew = !p;
+  let changed = false;
+  const data = await formDialog(isNew ? 'Añadir producto' : 'Editar producto', html`
+    ${!isNew ? html`<div class="photo-edit">
+      <span id="ph-preview">${thumb(p, 'lg')}</span>
+      <div class="stack">
+        <label class="btn small">Hacer o elegir foto<input type="file" accept="image/*" capture="environment" id="ph-file" hidden></label>
+        ${p.photo ? html`<button type="button" class="btn small ghost" id="ph-remove">Quitar foto</button>` : ''}
+        <small class="muted">Usa una foto real de la botella para reconocerla rápido.</small>
+      </div></div>` : ''}
+    <label class="field"><span>Nombre</span><input name="name" value="${p?.name ?? ''}" required maxlength="80"></label>
+    <label class="field"><span>Categoría</span>${categorySelect(p?.category ?? 'otros')}</label>
+    <label class="field"><span>Estado</span><select name="status">
+      <option value="confirmado" ${p?.status === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+      <option value="pendiente" ${!p || p.status === 'pendiente' ? 'selected' : ''}>Por confirmar</option></select></label>
+    <label class="field"><span>Nota (qué falta confirmar, variedad…)</span><input name="note" value="${p?.note ?? ''}" maxlength="400"></label>
+    <div class="form-grid">
+      <label class="field"><span>Capacidad (ml)</span><input name="capacity_ml" type="number" min="1" max="10000" inputmode="numeric" value="${p?.capacity_ml ?? ''}" placeholder="Sin confirmar"></label>
+      <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="100" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Sin confirmar"></label>
+    </div>
+    <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}> Visible en «Pedir»</label>
+    ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado en almacén</label>` : ''}`,
+  {
+    wide: true,
+    onMount(dlg) {
+      const file = dlg.querySelector('#ph-file');
+      file?.addEventListener('change', async () => {
+        if (!file.files[0]) return;
+        try {
+          const dataUrl = await resizeImage(file.files[0]);
+          const updated = await mpost(`/api/products/${p.id}/photo`, { data: dataUrl, by: state.who });
+          mount(dlg.querySelector('#ph-preview'), thumb(updated, 'lg'));
+          changed = true;
+          toast('Foto guardada');
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      });
+      dlg.querySelector('#ph-remove')?.addEventListener('click', async () => {
+        try {
+          const updated = await mdel(`/api/products/${p.id}/photo?by=${encodeURIComponent(state.who)}`);
+          mount(dlg.querySelector('#ph-preview'), thumb(updated, 'lg'));
+          changed = true;
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      });
+    },
+  });
+  if (!data) return changed;
+  const body = {
+    name: data.name,
+    category: data.category,
+    status: data.status,
+    note: data.note,
+    capacity_ml: data.capacity_ml === '' ? null : Number(data.capacity_ml),
+    per_case: data.per_case === '' ? null : Number(data.per_case),
+    active: data.active === 'on',
+    by: state.who,
+  };
+  if (isNew) {
+    await mpost('/api/products', body);
+    toast('Producto añadido');
+  } else {
+    await mput(`/api/products/${p.id}`, body);
+    const out = data.out_of_stock === 'on';
+    if (out !== Boolean(p.out_of_stock)) await post(`/api/products/${p.id}/stock`, { out_of_stock: out, by: state.who });
+    toast('Guardado');
+  }
+  return true;
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101217">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Reposición de barras</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <strong>Reposición</strong>
+      <span id="night" class="muted"></span>
+    </div>
+    <button type="button" id="who-btn" class="who" aria-label="Cambiar nombre"><span aria-hidden="true">👤</span> <span id="who">Tu nombre</span></button>
+  </header>
+  <div id="offline" class="offline" hidden>Sin conexión con el servidor. Reintentando…</div>
+
+  <main id="main" class="main"><p class="empty">Cargando…</p></main>
+
+  <nav class="nav" aria-label="Secciones">
+    <a href="#/pedir" data-route="pedir"><span aria-hidden="true">＋</span>Pedir</a>
+    <a href="#/reponer" data-route="reponer"><span aria-hidden="true">✓</span>Reponer <b id="pending-badge" class="badge" hidden>0</b></a>
+    <a href="#/gestion" data-route="gestion"><span aria-hidden="true">≡</span>Gestión</a>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
