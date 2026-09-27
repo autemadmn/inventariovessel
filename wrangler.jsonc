@@ -13,7 +13,7 @@
   },
   // Base de datos. Al desplegar por primera vez, Cloudflare la crea sola.
   "d1_databases": [
-    { "binding": "DB", "database_name": "reposicion-barras" }
+    { "binding": "DB", "database_name": "reposicion-barras", "database_id": "c29bf407-c3c3-42c3-b588-16c318921af0" }
   ],
   "observability": { "enabled": true }
   // STAFF_CODE y MANAGER_PIN se añaden como secretos en el panel de Cloudflare
