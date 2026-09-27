@@ -121,6 +121,15 @@ cualquiera que conozca la dirección.
 
 ### Publicarla en internet
 
+**Opción rápida (Render):** crea una cuenta en https://render.com con tu usuario de GitHub, pulsa
+**New → Blueprint**, elige este repositorio y escribe el código del personal (`STAFF_CODE`) y el PIN del
+encargado (`MANAGER_PIN`). En unos minutos Render da una dirección `https://….onrender.com` que se abre
+desde cualquier móvil. El plan gratuito sirve para probarla, pero se duerme sin uso (tarda en despertar)
+y **borra los datos** al reiniciarse; para usarla de verdad hay que pasar a un plan de pago y activar el
+disco indicado en `render.yaml`.
+
+**Otras opciones:**
+
 La app necesita un servidor con **disco persistente** (los datos se guardan en un archivo SQLite dentro de
 `DATA_DIR`). Hay un `Dockerfile` listo para cualquier proveedor que ejecute contenedores con un volumen
 (Railway, Render, Fly.io, un VPS…):

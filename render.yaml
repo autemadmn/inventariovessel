@@ -1,0 +1,22 @@
+# Configuración para publicar la app en Render (https://render.com).
+# En Render: New → Blueprint → elegir este repositorio. Pedirá STAFF_CODE y
+# MANAGER_PIN. El plan gratuito sirve para probar, pero NO guarda los datos de
+# forma permanente: para usarla de verdad, cambia a un plan de pago y añade el
+# disco de abajo (quita los comentarios).
+services:
+  - type: web
+    name: reposicion-barras
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/auth
+    envVars:
+      - key: STAFF_CODE
+        sync: false
+      - key: MANAGER_PIN
+        sync: false
+      - key: DATA_DIR
+        value: /data
+    # disk:
+    #   name: datos
+    #   mountPath: /data
+    #   sizeGB: 1
