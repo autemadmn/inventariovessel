@@ -92,3 +92,39 @@ export const UNIDENTIFIED = [
     note: 'Situada entre Barceló y Flor de Caña. Podría ser otra variedad de Brugal o un producto ya incluido. No crear duplicado hasta confirmarlo.',
   },
 ];
+
+// Fotos de referencia incluidas con la app (fuentes y licencias en
+// public/img/botellas/CREDITOS.md). Solo para productos confirmados: los que
+// están por confirmar o sin identificar no llevan foto hasta saber cuál es la
+// botella exacta. El encargado puede sustituirlas por fotos propias.
+export const PHOTOS = {
+  'Brockmans': '/img/botellas/brockmans.jpg',
+  'Hendrick’s': '/img/botellas/hendricks.jpg',
+  'Roku': '/img/botellas/roku.jpg',
+  'Nordés': '/img/botellas/nordes.jpg',
+  'Tanqueray London Dry': '/img/botellas/tanqueray-london-dry.jpg',
+  'Larios Rosé': '/img/botellas/larios-rose.jpg',
+  'Larios 12': '/img/botellas/larios-12.jpg',
+  'Beluga Noble': '/img/botellas/beluga-noble.jpg',
+  'Tito’s Handmade Vodka': '/img/botellas/titos-handmade-vodka.jpg',
+  'Cîroc Red Berry': '/img/botellas/ciroc-red-berry.jpg',
+  'Cîroc Pineapple': '/img/botellas/ciroc-pineapple.jpg',
+  'SKYY': '/img/botellas/skyy.jpg',
+  'Moskovskaya': '/img/botellas/moskovskaya.jpg',
+  'Jack Daniel’s Old No. 7': '/img/botellas/jack-daniels-old-no-7.jpg',
+  'Johnnie Walker Red Label': '/img/botellas/johnnie-walker-red-label.jpg',
+  'J&B Rare': '/img/botellas/j-b-rare.jpg',
+  'Monkey Shoulder': '/img/botellas/monkey-shoulder.jpg',
+  'Chivas Regal 12': '/img/botellas/chivas-regal-12.jpg',
+  'Cacique Añejo': '/img/botellas/cacique-anejo.jpg',
+  'Barceló Imperial': '/img/botellas/barcelo-imperial.jpg',
+  'Brugal Doble Reserva': '/img/botellas/brugal-doble-reserva.jpg',
+  'Brugal Añejo': '/img/botellas/brugal-anejo.jpg',
+  'Don Julio Reposado': '/img/botellas/don-julio-reposado.jpg',
+  'G’Vine Floraison': '/img/botellas/gvine-floraison.jpg',
+  'Martin Miller’s': '/img/botellas/martin-millers.jpg',
+  'Dewar’s White Label': '/img/botellas/dewars-white-label.jpg',
+  'DYC 8': '/img/botellas/dyc-8.jpg',
+  'Barceló Añejo': '/img/botellas/barcelo-anejo.jpg',
+  'Brugal 1888': '/img/botellas/brugal-1888.jpg',
+};

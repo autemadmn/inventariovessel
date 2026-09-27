@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { CATEGORIES, INITIAL_CATALOG, UNIDENTIFIED } from './catalog.js';
+import { CATEGORIES, INITIAL_CATALOG, PHOTOS, UNIDENTIFIED } from './catalog.js';
 
 export const DEFAULT_SETTINGS = {
   timezone: 'Europe/Madrid',
@@ -126,7 +126,10 @@ function seed(db) {
   insBar.run(2, 'Barra 2');
 
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM products').get();
-  if (n > 0) return;
+  if (n > 0) {
+    addBundledPhotos(db);
+    return;
+  }
 
   const ins = db.prepare(`INSERT INTO products (name, category, status, note, active, sort, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -143,4 +146,11 @@ function seed(db) {
     ins.run(u.name, u.category, 'sin_identificar', u.note, 0, sort, now, now);
   }
   db.exec('COMMIT');
+  addBundledPhotos(db);
+}
+
+/** Pone la foto incluida a los productos que aún no tienen ninguna (nunca sustituye una propia). */
+function addBundledPhotos(db) {
+  const up = db.prepare("UPDATE products SET photo = ? WHERE name = ? AND photo IS NULL AND status = 'confirmado'");
+  for (const [name, photo] of Object.entries(PHOTOS)) up.run(photo, name);
 }

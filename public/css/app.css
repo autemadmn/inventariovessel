@@ -207,6 +207,8 @@ body[data-view="pedir"] .main { padding-bottom: 96px; }
 }
 .card-main:active { transform: scale(.96); }
 .card-main .thumb { aspect-ratio: 1; border-radius: 7px; }
+/* La foto llena el recuadro: en botellas altas se ve sobre todo la etiqueta. */
+.card-main .thumb img { object-fit: cover; object-position: 50% 55%; }
 .card-main .thumb.ph b { font-size: 1.2rem; }
 .card-main .thumb.ph small { font-size: .55rem; }
 .card.in-cart .card-main { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
@@ -214,7 +216,7 @@ body[data-view="pedir"] .main { padding-bottom: 96px; }
   font-weight: 700; font-size: .78rem; line-height: 1.15; padding: 0 2px; overflow-wrap: break-word;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.card-main .tag { font-size: .62rem; padding: 1px 5px; align-self: flex-start; margin-left: 2px; }
+.card-main .tag { font-size: .6rem; padding: 1px 5px; align-self: flex-start; margin-left: 2px; max-width: calc(100% - 4px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .count {
   position: absolute; top: -5px; right: -5px; min-width: 30px; height: 30px; padding: 0 6px;
   border-radius: 15px; background: var(--accent); color: var(--accent-ink);

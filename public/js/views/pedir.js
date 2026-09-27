@@ -113,8 +113,8 @@ function cardHtml(p) {
       <button type="button" class="card-main" data-add="${p.id}" aria-label="Añadir una botella de ${p.name}">
         ${thumb(p)}
         <span class="card-name">${p.name}</span>
-        ${p.status === 'pendiente' ? html`<span class="tag warn" title="${p.note || ''}">Por confirmar</span>` : ''}
-        ${pend ? html`<span class="tag info" title="Ya pedidas y sin entregar para esta barra">${pend} pendiente${pend === 1 ? '' : 's'}</span>` : ''}
+        ${p.status === 'pendiente' ? html`<span class="tag warn" title="Por confirmar. ${p.note || ''}">Dudoso</span>` : ''}
+        ${pend ? html`<span class="tag info" title="Ya pedidas y sin entregar para esta barra">${pend} pend.</span>` : ''}
         ${p.out_of_stock ? html`<span class="out-band">Agotado almacén</span>` : ''}
       </button>
       ${n ? html`<span class="count" aria-label="${n} en la solicitud">${n}</span>

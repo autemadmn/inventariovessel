@@ -86,8 +86,13 @@ Solo botellas de las estanterías de las fotos (la nevera queda fuera). Es provi
 - **Sin identificar** (no aparecen para pedir): la botella pequeña y oscura entre The Macallan y Zacapa, y la
   botella de ron con malla entre Barceló y Flor de Caña. Desde Catálogo se marcan como producto nuevo o como
   uno que ya existe, sin crear duplicados.
-- No se han inventado capacidades, botellas por caja ni fotografías: quedan «sin confirmar» hasta que el
-  encargado las introduzca. Mientras no hay foto se muestra un distintivo con las iniciales y «sin foto».
+- No se han inventado capacidades ni botellas por caja: quedan «sin confirmar» hasta que el encargado
+  las introduzca.
+- **Fotos**: 29 productos confirmados traen una foto de referencia de fuentes con licencia libre
+  (Open Food Facts y Wikimedia Commons), revisada una a una; fuentes y licencias en
+  `public/img/botellas/CREDITOS.md`. Los productos por confirmar no llevan foto hasta saber la variedad
+  exacta. Donde no hay foto se muestra un distintivo con las iniciales. Desde Gestión → Catálogo → «Foto»
+  se puede hacer una foto propia con el móvil, que sustituye a la de referencia.
 
 ## Fuera de esta versión
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../server/db.js';
@@ -22,7 +22,13 @@ test('catálogo inicial: botones por producto, dudosos por confirmar y sin datos
   const { db } = setup();
   const visible = svc.listProducts(db);
   assert.equal(visible.length, 17 + 10 + 9 + 12 + 1);
-  assert.ok(visible.every((p) => p.capacity_ml === null && p.per_case === null && p.photo === null));
+  assert.ok(visible.every((p) => p.capacity_ml === null && p.per_case === null));
+  // Fotos de referencia solo en productos confirmados, y todas existen.
+  assert.ok(visible.filter((p) => p.photo).length >= 25);
+  assert.ok(visible.filter((p) => p.status !== 'confirmado').every((p) => p.photo === null));
+  for (const p of visible.filter((x) => x.photo)) {
+    assert.ok(existsSync(join(import.meta.dirname, '..', 'public', p.photo)), p.photo);
+  }
   const pending = visible.filter((p) => p.status === 'pendiente').map((p) => p.name);
   assert.deepEqual(pending.sort(), ['Flor de Caña Añejo Reserva', 'Glenmorangie The Original', 'Old / Old Sport',
     'Puerto de Indias', 'The Macallan 12', 'Zacapa'].sort());
