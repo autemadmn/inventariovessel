@@ -194,34 +194,43 @@ body[data-view="pedir"] .main { padding-bottom: 96px; }
 .filters { position: sticky; top: var(--top-h); z-index: 10; background: var(--bg); padding: 6px 0 4px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
 .filters input { margin-bottom: 8px; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.grid-title { grid-column: 1 / -1; font-size: 1rem; color: var(--muted); margin: 10px 0 0; text-transform: uppercase; letter-spacing: .06em; }
-.card { position: relative; }
+/* Botones compactos: 3 por fila en el móvil, más en tablet. Foto grande
+   respecto al botón para reconocer la botella de un vistazo. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.grid-title { grid-column: 1 / -1; font-size: .85rem; color: var(--muted); margin: 8px 0 0; text-transform: uppercase; letter-spacing: .06em; }
+.card { position: relative; min-width: 0; }
 .card-main {
-  display: flex; flex-direction: column; gap: 6px; width: 100%; height: 100%;
-  padding: 8px; border-radius: var(--radius); border: 2px solid var(--line);
+  display: flex; flex-direction: column; gap: 4px; width: 100%; height: 100%;
+  padding: 4px 4px 6px; border-radius: 10px; border: 2px solid var(--line);
   background: var(--surface); cursor: pointer; text-align: left; position: relative; overflow: hidden;
   touch-action: manipulation; user-select: none;
 }
-.card-main:active { transform: scale(.97); }
-.card.in-cart .card-main { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
-.card-name { font-weight: 700; font-size: .98rem; line-height: 1.2; }
+.card-main:active { transform: scale(.96); }
+.card-main .thumb { aspect-ratio: 1; border-radius: 7px; }
+.card-main .thumb.ph b { font-size: 1.2rem; }
+.card-main .thumb.ph small { font-size: .55rem; }
+.card.in-cart .card-main { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.card-name {
+  font-weight: 700; font-size: .78rem; line-height: 1.15; padding: 0 2px; overflow-wrap: break-word;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card-main .tag { font-size: .62rem; padding: 1px 5px; align-self: flex-start; margin-left: 2px; }
 .card .count {
-  position: absolute; top: -6px; right: -6px; min-width: 38px; height: 38px; padding: 0 8px;
-  border-radius: 19px; background: var(--accent); color: var(--accent-ink);
-  font-weight: 900; font-size: 1.2rem; line-height: 38px; text-align: center; pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  position: absolute; top: -5px; right: -5px; min-width: 30px; height: 30px; padding: 0 6px;
+  border-radius: 15px; background: var(--accent); color: var(--accent-ink);
+  font-weight: 900; font-size: 1rem; line-height: 30px; text-align: center; pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5);
 }
 .card-minus {
-  position: absolute; top: -6px; left: -6px; width: 42px; height: 42px; border-radius: 21px;
-  border: 2px solid var(--line); background: var(--surface-2); font-size: 1.5rem; font-weight: 800; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  position: absolute; top: -5px; left: -5px; width: 36px; height: 36px; border-radius: 18px;
+  border: 2px solid var(--line); background: var(--surface-2); font-size: 1.3rem; font-weight: 800; line-height: 1; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5);
 }
 .card.out .thumb { filter: grayscale(.8) brightness(.7); }
 .out-band {
-  position: absolute; left: 0; right: 0; top: 38%;
-  background: var(--danger); color: #fff; text-align: center; font-weight: 800; font-size: .8rem;
-  text-transform: uppercase; letter-spacing: .04em; padding: 4px;
+  position: absolute; left: 0; right: 0; top: 34%;
+  background: var(--danger); color: #fff; text-align: center; font-weight: 800; font-size: .62rem; line-height: 1.1;
+  text-transform: uppercase; letter-spacing: .03em; padding: 3px 2px;
 }
 
 .cartbar {
@@ -372,9 +381,14 @@ select.mini { width: auto; text-align: left; }
 .audit .chg s { color: var(--danger); }
 .audit .reason { font-size: .9rem; color: var(--warn); }
 
+@media (max-width: 359px) {
+  .pedir .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @media (max-width: 600px) {
-  .grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .card-name { font-size: .92rem; }
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .card-name { font-size: .68rem; font-weight: 600; letter-spacing: -.01em; padding: 0 1px; }
+  .card-main { padding: 3px 3px 5px; }
+  .card-main .thumb.ph small { display: none; }
   .lines { grid-template-columns: 1fr; }
   .night-fields { grid-template-columns: 1fr; }
   .toolbar .seg { width: 100%; }
@@ -403,7 +417,8 @@ select.mini { width: auto; text-align: left; }
   .table.cards tfoot td[colspan] { grid-column: auto; }
 }
 @media (min-width: 900px) {
-  .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .card-name { font-size: .85rem; }
 }
 
 @media print {

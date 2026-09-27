@@ -114,8 +114,8 @@ function cardHtml(p) {
         ${thumb(p)}
         <span class="card-name">${p.name}</span>
         ${p.status === 'pendiente' ? html`<span class="tag warn" title="${p.note || ''}">Por confirmar</span>` : ''}
-        ${pend ? html`<span class="tag info">Ya pedidas: ${pend} sin entregar</span>` : ''}
-        ${p.out_of_stock ? html`<span class="out-band">Agotado en almacén</span>` : ''}
+        ${pend ? html`<span class="tag info" title="Ya pedidas y sin entregar para esta barra">${pend} pendiente${pend === 1 ? '' : 's'}</span>` : ''}
+        ${p.out_of_stock ? html`<span class="out-band">Agotado almacén</span>` : ''}
       </button>
       ${n ? html`<span class="count" aria-label="${n} en la solicitud">${n}</span>
         <button type="button" class="card-minus" data-minus="${p.id}" aria-label="Quitar una">−</button>` : ''}

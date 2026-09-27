@@ -66,7 +66,11 @@ export async function renderCatalogo(root) {
                   ${p.per_case ? `${p.per_case} por caja` : 'Botellas por caja sin confirmar'}</small>
                 ${p.note ? html`<small class="muted block">${p.note}</small>` : ''}
               </div>
-              <div class="btns"><button type="button" class="btn small ghost" data-edit="${p.id}">Editar</button></div>
+              <div class="btns">
+                <label class="btn small ${p.photo ? 'ghost' : ''}">${p.photo ? 'Cambiar foto' : 'Foto'}
+                  <input type="file" accept="image/*" capture="environment" data-photo="${p.id}" hidden></label>
+                <button type="button" class="btn small ghost" data-edit="${p.id}">Editar</button>
+              </div>
             </li>`)}</ul>` : '';
   })}
 
@@ -81,6 +85,20 @@ export async function renderCatalogo(root) {
     await loadBootstrap();
     draw();
   };
+
+  // Foto directa desde la lista: abre la cámara del móvil y la sube reducida.
+  root.addEventListener('change', async (e) => {
+    const input = e.target.closest('[data-photo]');
+    if (!input?.files[0]) return;
+    try {
+      const dataUrl = await resizeImage(input.files[0]);
+      await mpost(`/api/products/${input.dataset.photo}/photo`, { data: dataUrl, by: state.who });
+      toast('Foto guardada');
+      await reload();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
 
   root.addEventListener('input', (e) => {
     if (e.target.id === 'cat-q') {
