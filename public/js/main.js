@@ -51,14 +51,7 @@ async function askWho() {
 
 // ------------------------------------------------------------ tiempo real
 
-let events;
 let pollTimer;
-let refreshTimer;
-
-function scheduleRefresh() {
-  clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshAll, 250);
-}
 
 async function refreshAll() {
   try {
@@ -69,27 +62,30 @@ async function refreshAll() {
   }
 }
 
-function connect() {
-  events?.close();
-  const url = `/api/stream${auth.code ? `?code=${encodeURIComponent(auth.code)}` : ''}`;
-  events = new EventSource(url);
-  let first = true;
-  events.onmessage = () => {
-    $('#offline').hidden = true;
-    if (first) {
-      first = false;
-      return;
+// La lista se comparte entre dispositivos consultando al servidor cada pocos
+// segundos mientras la app está a la vista (y al volver a ella).
+const LIVE_EVERY = 4000;
+const CATALOG_EVERY = 60000;
+let lastCatalog = 0;
+
+async function poll() {
+  if (document.visibilityState !== 'visible' || reauthing) return;
+  try {
+    await loadLive();
+    if (Date.now() - lastCatalog > CATALOG_EVERY) {
+      lastCatalog = Date.now();
+      await loadBootstrap();
     }
-    scheduleRefresh();
-  };
-  events.onerror = () => {
-    $('#offline').hidden = navigator.onLine;
-  };
-  // Red de seguridad por si el canal en vivo se corta sin avisar.
+    $('#offline').hidden = true;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 0) $('#offline').hidden = false;
+  }
+}
+
+function connect() {
   clearInterval(pollTimer);
-  pollTimer = setInterval(() => {
-    if (document.visibilityState === 'visible') refreshAll();
-  }, 30000);
+  lastCatalog = Date.now();
+  pollTimer = setInterval(poll, LIVE_EVERY);
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -136,7 +132,7 @@ setAuthErrorHandler(async (err, manager) => {
   if (reauthing) return;
   reauthing = true;
   auth.code = '';
-  events?.close();
+  clearInterval(pollTimer);
   await login(err.message);
   reauthing = false;
   await start();

@@ -48,7 +48,7 @@ export async function renderAjustes(root) {
     try {
       const res = await fetch('/api/backup', { headers: { 'X-Access-Code': auth.code, 'X-Manager-Pin': auth.pin } });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo crear la copia.');
-      const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1] || 'reposicion.db';
+      const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1] || 'reposicion.json';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(await res.blob());
       a.download = name;

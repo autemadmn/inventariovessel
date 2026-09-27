@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeForecast, computePurchase, casesFor } from '../server/forecast.js';
+import { computeForecast, computePurchase, casesFor } from '../public/js/shared/forecast.js';
 import { businessDate, periodRange, weekday } from '../server/dates.js';
 
 const nights = (dates) => dates.map((date) => ({ date, weekday: weekday(date) }));

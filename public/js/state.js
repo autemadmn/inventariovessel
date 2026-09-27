@@ -58,9 +58,19 @@ export async function loadBootstrap() {
   notify('bootstrap');
 }
 
+let lastLive = '';
+
 export async function loadLive() {
-  state.live = await get('/api/live');
+  const live = await get('/api/live');
+  // Si nada ha cambiado no se redibuja (evita parpadeos y toques perdidos).
+  const text = JSON.stringify(live);
+  if (text === lastLive) return;
+  lastLive = text;
+  state.live = live;
   state.date = state.live.date;
+  // «Agotado en almacén» cambia desde otros dispositivos: se refleja al momento.
+  const out = new Set(state.live.outOfStock || []);
+  for (const p of state.products) p.out_of_stock = out.has(p.id) ? 1 : 0;
   notify('live');
 }
 

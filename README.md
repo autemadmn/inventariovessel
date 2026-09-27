@@ -5,8 +5,9 @@ preparar listas de reposición en segundos, registrar lo que se entrega cada noc
 para prever compras.
 
 Es una aplicación **independiente**: no se conecta con Ágora ni con ningún otro sistema del local.
-Se publica en internet y el personal la usa desde el navegador del móvil o la tablet (no hace falta red
-local ni instalar nada). Todos los dispositivos ven la misma lista en tiempo real.
+Se publica en internet (Cloudflare) y el personal la usa desde el navegador del móvil o la tablet (no hace
+falta red local ni instalar nada). Todos los dispositivos ven la misma lista, que se actualiza sola cada
+pocos segundos.
 
 ## Cómo se usa
 
@@ -98,62 +99,66 @@ Solo botellas de las estanterías de las fotos (la nevera queda fuera). Es provi
 
 Productos de la nevera, registro de copas individuales, operativa de la VIP e integración con Ágora.
 
-## Puesta en marcha
+## Publicarla en Cloudflare (recomendado)
 
-Requisitos: **Node.js 22.16 o superior**. No tiene dependencias externas (usa `node:sqlite`).
+La app funciona como un **Worker de Cloudflare** con su base de datos **D1**. El plan gratuito de
+Cloudflare es suficiente para dos barras y los datos se guardan de forma permanente.
+
+1. Crea una cuenta gratuita en https://dash.cloudflare.com/sign-up (o entra en la tuya).
+2. En el menú de la izquierda: **Compute (Workers) → Workers & Pages → Create → Import a repository**
+   (o «Continue with GitHub»). Conecta tu cuenta de GitHub y elige el repositorio **inventariovessel**.
+3. En la configuración que aparece:
+   - **Project name**: `reposicion-barras` (debe coincidir con el nombre de `wrangler.jsonc`).
+   - **Build command**: déjalo vacío. **Deploy command**: `npx wrangler deploy` (el que propone).
+   - Rama: `main`.
+4. Pulsa **Create and deploy**. En uno o dos minutos Cloudflare crea el Worker y la base de datos
+   (se crea sola la primera vez) y da una dirección `https://reposicion-barras.<tu-usuario>.workers.dev`.
+5. **Pon los códigos de acceso**: entra en el Worker → **Settings → Variables and Secrets → Add** y crea
+   dos del tipo **Secret**:
+   - `STAFF_CODE`: el código que usará el personal para entrar.
+   - `MANAGER_PIN`: el PIN del encargado (distinto).
+   Guarda (**Deploy**). Sin ellos, cualquiera que conozca la dirección podría entrar.
+6. Abre la dirección en el móvil y usa **«Añadir a pantalla de inicio»** para tenerla como una app.
+
+Cada vez que se sube un cambio a `main`, Cloudflare vuelve a publicar la app sola; los datos no se tocan.
+
+**Copias de seguridad**: Gestión → Ajustes → «Descargar copia de seguridad» descarga todos los datos
+(JSON). Cloudflare D1 además guarda un historial de los últimos días (*Time Travel*).
+
+**Límites del plan gratuito** (holgados para este uso): 100 000 peticiones al día al Worker y
+5 millones de lecturas / 100 000 escrituras diarias en D1. Cada móvil con la app abierta consulta la
+lista cada 4 segundos (unas 900 peticiones por hora).
+
+## Probarla en local
+
+Requisitos: **Node.js 22.16 o superior**.
 
 ```bash
-npm start          # http://localhost:3000
+npm install        # solo hace falta para las herramientas de Cloudflare
+npm start          # versión Node: http://localhost:3000 (datos en ./data)
+npm run cf:dev     # versión Cloudflare en local: http://localhost:8787
 npm test           # pruebas automáticas
 ```
 
-Variables de entorno:
-
-| Variable      | Uso                                                                   |
-|---------------|-----------------------------------------------------------------------|
-| `STAFF_CODE`  | Código de acceso para todo el personal (**obligatorio en internet**). |
-| `MANAGER_PIN` | PIN de la zona de gestión (**obligatorio en internet**).              |
-| `DATA_DIR`    | Carpeta de datos (base de datos y fotos). Por defecto `./data`.       |
-| `PORT`        | Puerto HTTP. Por defecto `3000`.                                      |
-
-Si no se definen, también se pueden fijar desde Gestión → Ajustes. Sin ellos la app queda abierta a
-cualquiera que conozca la dirección.
-
-### Publicarla en internet
-
-**Opción rápida (Render):** crea una cuenta en https://render.com con tu usuario de GitHub, pulsa
-**New → Blueprint**, elige este repositorio y escribe el código del personal (`STAFF_CODE`) y el PIN del
-encargado (`MANAGER_PIN`). En unos minutos Render da una dirección `https://….onrender.com` que se abre
-desde cualquier móvil. El plan gratuito sirve para probarla, pero se duerme sin uso (tarda en despertar)
-y **borra los datos** al reiniciarse; para usarla de verdad hay que pasar a un plan de pago y activar el
-disco indicado en `render.yaml`.
-
-**Otras opciones:**
-
-La app necesita un servidor con **disco persistente** (los datos se guardan en un archivo SQLite dentro de
-`DATA_DIR`). Hay un `Dockerfile` listo para cualquier proveedor que ejecute contenedores con un volumen
-(Railway, Render, Fly.io, un VPS…):
-
-1. Crear el servicio a partir de este repositorio (usa el `Dockerfile`).
-2. Montar un volumen persistente en `/data`.
-3. Definir `STAFF_CODE` y `MANAGER_PIN`.
-4. Usar la dirección HTTPS que da el proveedor. En el móvil, «Añadir a pantalla de inicio» la deja como una app.
-
-Sin volumen persistente los datos se perderían en cada reinicio o despliegue.
-
-**Copias de seguridad**: Gestión → Ajustes → «Descargar copia de seguridad» descarga la base de datos completa.
+En la versión Node, las variables de entorno son `STAFF_CODE`, `MANAGER_PIN`, `DATA_DIR` y `PORT`.
+También hay un `Dockerfile` por si se prefiere un servidor propio con un volumen persistente en `/data`.
 
 ## Estructura
 
 ```
 server/
-  index.js      arranque del servidor
-  app.js        HTTP: rutas, acceso, archivos estáticos y avisos en tiempo real (SSE)
+  worker.js     entrada para Cloudflare Workers (API; los archivos de public/ los sirve Cloudflare)
+  index.js      entrada para Node (API + archivos de public/)
+  handler.js    rutas de la API y control de acceso (Request/Response estándar)
   services.js   lógica: solicitudes, entregas, correcciones, informes, previsión, compras
-  forecast.js   cálculo de previsión y de compra (funciones puras, también se usan en el navegador)
+  schema.js     tablas y datos iniciales
+  db-d1.js      acceso a Cloudflare D1
+  db-node.js    acceso a SQLite en Node
   dates.js      noches de trabajo, semanas y meses
-  catalog.js    catálogo inicial
-  db.js         esquema SQLite
+  catalog.js    catálogo inicial y fotos de referencia
 public/         interfaz (HTML, CSS y JavaScript sin compilación)
+  js/shared/forecast.js  cálculo de previsión y compra (lo usan el servidor y el navegador)
+  img/botellas/          fotos de referencia y sus créditos
 test/           pruebas (node --test)
+wrangler.jsonc  configuración de Cloudflare
 ```

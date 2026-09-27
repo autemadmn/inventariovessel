@@ -1,26 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { openDb } from '../server/db.js';
-import { createApp } from '../server/app.js';
+import { openNodeDb } from '../server/db-node.js';
+import { ensureSchema } from '../server/schema.js';
+import { createHandler } from '../server/handler.js';
 import * as svc from '../server/services.js';
 
 // Sábado 26 sep 2026, 23:00 en Madrid.
 const NIGHT = new Date('2026-09-26T21:00:00Z');
 const later = (min, base = NIGHT) => new Date(base.getTime() + min * 60000);
 
-function setup() {
-  const db = openDb(':memory:');
-  const id = (name) => db.prepare('SELECT id FROM products WHERE name = ?').get(name).id;
+async function setup() {
+  const db = openNodeDb(':memory:');
+  await ensureSchema(db);
+  const id = (name) => db.raw.prepare('SELECT id FROM products WHERE name = ?').get(name).id;
   return { db, id };
 }
 
-test('catálogo inicial: botones por producto, dudosos por confirmar y sin datos inventados', () => {
-  const { db } = setup();
-  const visible = svc.listProducts(db);
+test('catálogo inicial: botones por producto, dudosos por confirmar y sin datos inventados', async () => {
+  const { db } = await setup();
+  const visible = await svc.listProducts(db);
   assert.equal(visible.length, 17 + 10 + 9 + 12 + 1);
   assert.ok(visible.every((p) => p.capacity_ml === null && p.per_case === null));
   // Fotos de referencia solo en productos confirmados, y todas existen.
@@ -32,98 +32,136 @@ test('catálogo inicial: botones por producto, dudosos por confirmar y sin datos
   const pending = visible.filter((p) => p.status === 'pendiente').map((p) => p.name);
   assert.deepEqual(pending.sort(), ['Flor de Caña Añejo Reserva', 'Glenmorangie The Original', 'Old / Old Sport',
     'Puerto de Indias', 'The Macallan 12', 'Zacapa'].sort());
-  const hidden = svc.listProducts(db, { all: true }).filter((p) => p.status === 'sin_identificar');
+  const hidden = (await svc.listProducts(db, { all: true })).filter((p) => p.status === 'sin_identificar');
   assert.equal(hidden.length, 2);
   assert.ok(hidden.every((p) => !p.active));
 });
 
-test('solicitar, entregar parcialmente y registrar solo lo entregado', () => {
-  const { db, id } = setup();
+test('los datos iniciales se crean una sola vez y no pisan cambios ni fotos propias', async () => {
+  const { db, id } = await setup();
+  await svc.updateProduct(db, id('Roku'), { name: 'Roku Gin' });
+  await svc.setProductPhoto(db, id('SKYY'), { mime: 'image/jpeg', data: new Uint8Array([1, 2, 3]) });
+  // Simula un arranque nuevo con otra versión del esquema.
+  await db.run("UPDATE settings SET value = '0' WHERE key = 'schema_version'");
+  await ensureSchema(db);
+  const all = await svc.listProducts(db, { all: true });
+  assert.equal(all.length, 51);
+  assert.ok(!all.some((p) => p.name === 'Roku'));
+  assert.match(all.find((p) => p.name === 'SKYY').photo, /^\/photos\/\d+$/);
+});
+
+test('solicitar, entregar parcialmente y registrar solo lo entregado', async () => {
+  const { db, id } = await setup();
   const barcelo = id('Barceló Añejo');
-  const [line] = svc.createRequest(db, { bar_id: 1, items: [{ product_id: barcelo, qty: 3 }], by: 'Ana' }, { now: NIGHT });
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: barcelo, qty: 3 }], by: 'Ana' }, { now: NIGHT });
+  let live = await svc.liveState(db, { now: later(1) });
+  const line = live.lines[0];
   assert.equal(line.qty_pending, 3);
 
   // Una nueva petición del mismo producto y barra se suma a la línea abierta.
-  const [merged] = svc.createRequest(db, { bar_id: 1, items: [{ product_id: barcelo, qty: 1 }] }, { now: later(5) });
-  assert.equal(merged.id, line.id);
-  assert.equal(merged.qty_requested, 4);
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: barcelo, qty: 1 }] }, { now: later(5) });
+  live = await svc.liveState(db, { now: later(6) });
+  assert.equal(live.lines.length, 1);
+  assert.equal(live.lines[0].qty_requested, 4);
 
-  svc.deliver(db, line.id, { qty: 2, by: 'Luis' }, { now: later(10) });
-  const after = svc.cancelPending(db, line.id, { qty: 1, by: 'Ana' }, { now: later(12) });
+  await svc.deliver(db, line.id, { qty: 2, by: 'Luis' }, { now: later(10) });
+  const after = await svc.cancelPending(db, line.id, { qty: 1, by: 'Ana' }, { now: later(12) });
   assert.equal(after.qty_delivered, 2);
   assert.equal(after.qty_pending, 1);
 
-  const r = svc.report(db, { period: 'night', date: '2026-09-26' });
+  const r = await svc.report(db, { period: 'night', date: '2026-09-26' });
   assert.equal(r.total, 2, 'solo cuentan las entregadas');
   assert.equal(r.unserved[barcelo], 1);
   assert.equal(r.consumption, false);
 });
 
-test('dos personas no pueden entregar la misma botella pendiente', () => {
-  const { db, id } = setup();
-  const [line] = svc.createRequest(db, { bar_id: 2, items: [{ product_id: id('Larios 12'), qty: 2 }] }, { now: NIGHT });
-  svc.deliver(db, line.id, { qty: 2, by: 'Luis' }, { now: later(1) });
-  assert.throws(() => svc.deliver(db, line.id, { qty: 1, by: 'Marta' }, { now: later(2) }), { status: 409 });
-  const [line2] = svc.createRequest(db, { bar_id: 2, items: [{ product_id: id('Roku'), qty: 3 }] }, { now: NIGHT });
-  svc.deliver(db, line2.id, { qty: 2 }, { now: later(1) });
-  assert.throws(() => svc.deliver(db, line2.id, { qty: 2 }, { now: later(1) }), /Solo quedan 1/);
+test('dos personas no pueden entregar la misma botella pendiente', async () => {
+  const { db, id } = await setup();
+  await svc.createRequest(db, { bar_id: 2, items: [{ product_id: id('Larios 12'), qty: 2 }, { product_id: id('Roku'), qty: 3 }] }, { now: NIGHT });
+  const [larios, roku] = (await svc.liveState(db, { now: later(1) })).lines;
+  // Dos entregas simultáneas de las mismas 2 botellas: solo una puede registrarse.
+  const results = await Promise.allSettled([
+    svc.deliver(db, larios.id, { qty: 2, by: 'Luis' }, { now: later(1) }),
+    svc.deliver(db, larios.id, { qty: 2, by: 'Marta' }, { now: later(1) }),
+  ]);
+  assert.equal(results.filter((x) => x.status === 'fulfilled').length, 1);
+  assert.equal(results.find((x) => x.status === 'rejected').reason.status, 409);
+  await svc.deliver(db, roku.id, { qty: 2 }, { now: later(1) });
+  await assert.rejects(svc.deliver(db, roku.id, { qty: 2 }, { now: later(1) }), /Solo quedan 1/);
+  const r = await svc.report(db, { period: 'night', date: '2026-09-26' });
+  assert.equal(r.total, 4);
 });
 
-test('las reposiciones después de medianoche pertenecen a la misma noche', () => {
-  const { db, id } = setup();
-  svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('Roku'), qty: 1 }] }, { now: NIGHT });
-  svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('SKYY'), qty: 1 }] }, { now: later(5 * 60) }); // 04:00
-  const sessions = db.prepare('SELECT business_date FROM sessions').all();
+test('«Voy yo» no deja que otra persona coja la misma línea', async () => {
+  const { db, id } = await setup();
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('SKYY'), qty: 1 }] }, { now: NIGHT });
+  const [line] = (await svc.liveState(db, { now: later(1) })).lines;
+  await svc.claimLine(db, line.id, { by: 'Luis' });
+  await assert.rejects(svc.claimLine(db, line.id, { by: 'Marta' }), /Luis ya la está llevando/);
+  const done = await svc.deliver(db, line.id, { qty: 1, by: 'Luis' }, { now: later(2) });
+  assert.equal(done.claimed_by, null);
+});
+
+test('las reposiciones después de medianoche pertenecen a la misma noche', async () => {
+  const { db, id } = await setup();
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('Roku'), qty: 1 }] }, { now: NIGHT });
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('SKYY'), qty: 1 }] }, { now: later(5 * 60) }); // 04:00
+  const sessions = await db.all('SELECT business_date FROM sessions');
   assert.deepEqual(sessions.map((s) => s.business_date), ['2026-09-26']);
-  const live = svc.liveState(db, { now: later(5 * 60) });
+  const live = await svc.liveState(db, { now: later(5 * 60) });
   assert.equal(live.lines.length, 2);
 });
 
-test('deshacer y corregir conservan constancia del cambio', () => {
-  const { db, id } = setup();
-  const [line] = svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('Brugal Añejo'), qty: 2 }] }, { now: NIGHT });
-  const l = svc.deliver(db, line.id, { qty: 2 }, { now: later(1) });
-  const delivery = db.prepare('SELECT id FROM deliveries WHERE line_id = ?').get(l.id);
+test('deshacer y corregir conservan constancia del cambio', async () => {
+  const { db, id } = await setup();
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('Brugal Añejo'), qty: 2 }] }, { now: NIGHT });
+  const [line] = (await svc.liveState(db, { now: later(1) })).lines;
+  await svc.deliver(db, line.id, { qty: 2 }, { now: later(1) });
+  const delivery = await db.get('SELECT id FROM deliveries WHERE line_id = ?', line.id);
 
-  assert.throws(() => svc.undoDelivery(db, delivery.id, {}, { now: later(30) }), { status: 409 });
-  svc.undoDelivery(db, delivery.id, { by: 'Luis' }, { now: later(3) });
-  assert.equal(svc.liveState(db, { now: later(4) }).lines[0].qty_pending, 2);
+  await assert.rejects(svc.undoDelivery(db, delivery.id, {}, { now: later(30) }), { status: 409 });
+  await svc.undoDelivery(db, delivery.id, { by: 'Luis' }, { now: later(3) });
+  await assert.rejects(svc.undoDelivery(db, delivery.id, {}, { now: later(4) }), { status: 409 });
+  assert.equal((await svc.liveState(db, { now: later(4) })).lines[0].qty_pending, 2);
 
-  const l2 = svc.deliver(db, line.id, { qty: 2 }, { now: later(5) });
-  const d2 = db.prepare('SELECT id FROM deliveries WHERE line_id = ? AND qty > 0').get(l2.id);
-  assert.throws(() => svc.correctDelivery(db, d2.id, { qty: 1 }), /motivo/);
-  svc.correctDelivery(db, d2.id, { qty: 1, bar_id: 2, reason: 'Era para la barra 2', by: 'Encargado' });
-  const r = svc.report(db, { period: 'night', date: '2026-09-26' });
+  await svc.deliver(db, line.id, { qty: 2 }, { now: later(5) });
+  const d2 = await db.get('SELECT id FROM deliveries WHERE line_id = ? AND qty > 0', line.id);
+  await assert.rejects(svc.correctDelivery(db, d2.id, { qty: 1 }), /motivo/);
+  await svc.correctDelivery(db, d2.id, { qty: 1, bar_id: 2, reason: 'Era para la barra 2', by: 'Encargado' });
+  const r = await svc.report(db, { period: 'night', date: '2026-09-26' });
   assert.equal(r.byBar[2], 1);
   assert.equal(r.byBar[1], undefined);
 
-  const log = svc.listAudit(db, { entity: 'reposicion' });
+  const log = await svc.listAudit(db, { entity: 'reposicion' });
   const corr = log.find((a) => a.action === 'corregir');
   assert.equal(corr.reason, 'Era para la barra 2');
   assert.deepEqual(corr.before, { botellas: 2, barra: 1, producto: 'Brugal Añejo' });
   assert.ok(log.some((a) => a.action === 'deshacer'));
 });
 
-test('«consumo» solo cuando todas las noches tienen el mismo nivel', () => {
-  const { db, id } = setup();
-  const [line] = svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('Roku'), qty: 1 }] }, { now: NIGHT });
-  svc.deliver(db, line.id, { qty: 1 }, { now: later(1) });
-  const s = svc.findSession(db, '2026-09-26');
-  svc.updateSession(db, s.id, { same_level: true });
-  assert.equal(svc.report(db, { period: 'week', date: '2026-09-26' }).consumption, true);
-  svc.updateSession(db, s.id, { same_level: null });
-  assert.equal(svc.report(db, { period: 'week', date: '2026-09-26' }).consumption, false);
+test('«consumo» solo cuando todas las noches tienen el mismo nivel', async () => {
+  const { db, id } = await setup();
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: id('Roku'), qty: 1 }] }, { now: NIGHT });
+  const [line] = (await svc.liveState(db, { now: later(1) })).lines;
+  await svc.deliver(db, line.id, { qty: 1 }, { now: later(1) });
+  const s = await svc.findSession(db, '2026-09-26');
+  await svc.updateSession(db, s.id, { same_level: true });
+  assert.equal((await svc.report(db, { period: 'week', date: '2026-09-26' })).consumption, true);
+  await svc.updateSession(db, s.id, { same_level: null });
+  assert.equal((await svc.report(db, { period: 'week', date: '2026-09-26' })).consumption, false);
 });
 
-test('agotado en almacén: visible, reversible y avisa en la previsión', () => {
-  const { db, id } = setup();
+test('agotado en almacén: visible, reversible y avisa en la previsión', async () => {
+  const { db, id } = await setup();
   const zacapa = id('Zacapa');
-  svc.setOutOfStock(db, zacapa, true, { by: 'Luis', now: NIGHT });
-  const [line] = svc.createRequest(db, { bar_id: 1, items: [{ product_id: zacapa, qty: 1 }] }, { now: later(1) });
-  assert.equal(line.out_of_stock, 1, 'la solicitud sigue visible y marcada');
-  svc.setOutOfStock(db, zacapa, false, { by: 'Luis', now: later(60) });
+  await svc.setOutOfStock(db, zacapa, true, { by: 'Luis', now: NIGHT });
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: zacapa, qty: 1 }] }, { now: later(1) });
+  const live = await svc.liveState(db, { now: later(2) });
+  assert.equal(live.lines[0].out_of_stock, 1, 'la solicitud sigue visible y marcada');
+  assert.deepEqual(live.outOfStock, [zacapa]);
+  await svc.setOutOfStock(db, zacapa, false, { by: 'Luis', now: later(60) });
 
-  const f = svc.forecast(db, { base_from: '2026-09-20', base_to: '2026-09-27', target_from: '2026-09-28', target_to: '2026-10-04', weekdays: [5, 6] },
+  const f = await svc.forecast(db, { base_from: '2026-09-20', base_to: '2026-09-27', target_from: '2026-09-28', target_to: '2026-10-04', weekdays: [5, 6] },
     { now: new Date('2026-09-28T12:00:00Z') });
   const row = f.rows.find((r) => r.product_id === zacapa);
   assert.ok(row.warnings.some((w) => w.code === 'stockout'));
@@ -132,16 +170,17 @@ test('agotado en almacén: visible, reversible y avisa en la previsión', () => 
   assert.equal(f.plannedDates.length, 2);
 });
 
-test('previsión desde el historial real', () => {
-  const { db, id } = setup();
+test('previsión desde el historial real', async () => {
+  const { db, id } = await setup();
   const larios = id('Larios 12');
   // Cuatro sábados con 5 botellas cada uno.
   for (const day of ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26']) {
     const t = new Date(`${day}T22:00:00Z`);
-    const [l] = svc.createRequest(db, { bar_id: 1, items: [{ product_id: larios, qty: 5 }] }, { now: t });
-    svc.deliver(db, l.id, { qty: 5 }, { now: later(5, t) });
+    await svc.createRequest(db, { bar_id: 1, items: [{ product_id: larios, qty: 5 }] }, { now: t });
+    const [l] = (await svc.liveState(db, { now: later(1, t) })).lines;
+    await svc.deliver(db, l.id, { qty: 5 }, { now: later(5, t) });
   }
-  const f = svc.forecast(db, {
+  const f = await svc.forecast(db, {
     base_from: '2026-09-01', base_to: '2026-09-30', target_from: '2026-10-01', target_to: '2026-10-31', weekdays: [6],
   }, { now: new Date('2026-09-28T12:00:00Z') });
   assert.equal(f.summary.baseNights, 4);
@@ -151,23 +190,23 @@ test('previsión desde el historial real', () => {
   assert.equal(row.safety, 2.5);
 });
 
-test('botellas sin identificar: se resuelven sin crear duplicados', () => {
-  const { db, id } = setup();
+test('botellas sin identificar: se resuelven sin crear duplicados', async () => {
+  const { db, id } = await setup();
   const malla = id('Botella de ron con malla');
-  const resolved = svc.resolveUnidentified(db, malla, { action: 'duplicate', target_id: id('Brugal Añejo') });
+  const resolved = await svc.resolveUnidentified(db, malla, { action: 'duplicate', target_id: id('Brugal Añejo') });
   assert.equal(resolved.status, 'descartado');
   assert.equal(resolved.active, 0);
-  const before = svc.listProducts(db).length;
+  const before = (await svc.listProducts(db)).length;
   const small = id('Botella pequeña y oscura');
-  const p = svc.resolveUnidentified(db, small, { action: 'new', name: 'Producto confirmado', category: 'whisky' });
+  const p = await svc.resolveUnidentified(db, small, { action: 'new', name: 'Producto confirmado', category: 'whisky' });
   assert.equal(p.status, 'pendiente');
-  assert.equal(svc.listProducts(db).length, before + 1);
+  assert.equal((await svc.listProducts(db)).length, before + 1);
 });
 
-test('lista de compra guardada con propuesta calculada y cantidad final editable', () => {
-  const { db, id } = setup();
-  svc.updateProduct(db, id('Roku'), { per_case: 6, capacity_ml: 700 });
-  const list = svc.savePurchase(db, null, {
+test('lista de compra guardada con propuesta calculada y cantidad final editable', async () => {
+  const { db, id } = await setup();
+  await svc.updateProduct(db, id('Roku'), { per_case: 6, capacity_ml: 700 });
+  const list = await svc.savePurchase(db, null, {
     title: 'Octubre',
     lines: [{ product_id: id('Roku'), need: 20, safety: 2, stock: 5, other_out: 1, incoming: 3, final: 3, unit: 'cajas' }],
   });
@@ -176,25 +215,29 @@ test('lista de compra guardada con propuesta calculada y cantidad final editable
   assert.equal(list.lines[0].unit, 'cajas');
 });
 
-test('API: código de acceso para el personal y PIN para el encargado', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'inv-'));
-  const db = openDb(':memory:');
-  const app = createApp(db, { dataDir: dir, env: { STAFF_CODE: 'barra', MANAGER_PIN: '4321' }, log: {} });
-  const server = createServer(app).listen(0);
-  const base = `http://localhost:${server.address().port}`;
-  try {
-    assert.equal((await fetch(`${base}/api/live`)).status, 401);
-    assert.equal((await fetch(`${base}/api/live`, { headers: { 'X-Access-Code': 'mal' } })).status, 401);
-    assert.equal((await fetch(`${base}/api/live`, { headers: { 'X-Access-Code': 'barra' } })).status, 200);
-    assert.equal((await fetch(`${base}/api/report`, { headers: { 'X-Access-Code': 'barra' } })).status, 401);
-    assert.equal((await fetch(`${base}/api/report`, { headers: { 'X-Access-Code': 'barra', 'X-Manager-Pin': '4321' } })).status, 200);
-    const page = await fetch(`${base}/`);
-    assert.equal(page.status, 200);
-    assert.equal((await fetch(`${base}/../server/db.js`)).status, 404);
-    assert.equal((await fetch(`${base}/js/shared/forecast.js`)).status, 200);
-  } finally {
-    app.close();
-    server.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
+test('API: código de acceso para el personal, PIN para el encargado, fotos y copia', async () => {
+  const { db, id } = await setup();
+  const handle = createHandler({ getDb: async () => db, env: { STAFF_CODE: 'barra', MANAGER_PIN: '4321' }, log: {} });
+  const call = (path, init = {}) => handle(new Request(`http://x${path}`, init));
+  assert.equal(await call('/index.html'), null, 'lo que no es API lo sirven los archivos estáticos');
+  assert.equal((await call('/api/live')).status, 401);
+  assert.equal((await call('/api/live', { headers: { 'X-Access-Code': 'mal' } })).status, 401);
+  assert.equal((await call('/api/live', { headers: { 'X-Access-Code': 'barra' } })).status, 200);
+  assert.equal((await call('/api/report', { headers: { 'X-Access-Code': 'barra' } })).status, 401);
+  const mgr = { 'X-Access-Code': 'barra', 'X-Manager-Pin': '4321', 'Content-Type': 'application/json' };
+  assert.equal((await call('/api/report', { headers: mgr })).status, 200);
+
+  // Foto propia guardada en la base de datos y servida en /photos/:id.
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const res = await call(`/api/products/${id('SKYY')}/photo`, { method: 'POST', headers: mgr, body: JSON.stringify({ data: png }) });
+  assert.equal(res.status, 200);
+  const { photo } = await res.json();
+  const img = await call(photo);
+  assert.equal(img.status, 200);
+  assert.equal(img.headers.get('content-type'), 'image/png');
+
+  const backup = await call('/api/backup', { headers: mgr });
+  const data = await backup.json();
+  assert.ok(data.tables.products.length > 40);
+  assert.ok(!data.tables.settings.some((r) => r.key === 'manager_pin'));
 });
