@@ -1,5 +1,7 @@
 // Utilidades de interfaz: plantillas con escape, diálogos, avisos y formatos.
 
+import { icon } from './icons.js';
+
 class Raw {
   constructor(s) { this.s = s; }
   toString() { return this.s; }
@@ -93,7 +95,7 @@ export function thumb(p, size = '') {
   if (p.photo) {
     return html`<span class="thumb ${size}"><img src="${p.photo}" alt="" loading="lazy" decoding="async"></span>`;
   }
-  return html`<span class="thumb ${size} ph cat-${p.category}" aria-hidden="true"><b>${initials(p.product_name || p.name)}</b><small>sin foto</small></span>`;
+  return html`<span class="thumb ${size} ph cat-${p.category}" aria-hidden="true"><b>${initials(p.product_name || p.name)}</b></span>`;
 }
 
 // ------------------------------------------------------------------ avisos
@@ -101,7 +103,8 @@ export function thumb(p, size = '') {
 let toastTimer;
 export function toast(msg, kind = 'ok') {
   const el = $('#toast');
-  el.textContent = msg;
+  el.innerHTML = `${icon(kind === 'error' ? 'alert' : 'done', { size: 18 })}<span></span>`;
+  el.lastChild.textContent = msg;
   el.className = `toast show ${kind}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.className = 'toast'; }, kind === 'error' ? 5000 : 2600);
@@ -124,7 +127,7 @@ export function dialog({ title, body, actions = [], wide = false, onMount }) {
     dlg.innerHTML = String(html`
       <form method="dialog" class="dlg-inner">
         <header class="dlg-head"><h2>${title}</h2>
-          <button type="button" class="icon-btn" data-close aria-label="Cerrar">✕</button></header>
+          <button type="button" class="icon-btn" data-close aria-label="Cerrar">${raw(icon('close'))}</button></header>
         <div class="dlg-body">${body}</div>
         ${actions.length ? html`<footer class="dlg-foot">${actions.map((a) => html`
           <button type="${a.submit ? 'submit' : 'button'}" class="btn ${a.kind || ''}" data-value="${a.value ?? ''}">${a.label}</button>`)}

@@ -44,6 +44,9 @@ test('los datos iniciales se crean una sola vez y no pisan cambios ni fotos prop
   // Simula un arranque nuevo con otra versión del esquema.
   await db.run("UPDATE settings SET value = '0' WHERE key = 'schema_version'");
   await ensureSchema(db);
+  // Base de datos de una versión anterior, sin la marca 'seeded': tampoco duplica.
+  await db.run("DELETE FROM settings WHERE key IN ('seeded', 'schema_version')");
+  await ensureSchema(db);
   const all = await svc.listProducts(db, { all: true });
   assert.equal(all.length, 51);
   assert.ok(!all.some((p) => p.name === 'Roku'));

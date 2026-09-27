@@ -99,8 +99,8 @@ async function login(message = '') {
   document.body.dataset.view = 'login';
   mount(main, html`
     <section class="login">
-      <h1>Reposición de barras</h1>
-      <p class="muted">Introduce el código de acceso del local.</p>
+      <h1>Vessel</h1>
+      <p class="muted">Reposición de barras. Introduce el código de acceso del local.</p>
       <form id="login-form" class="stack">
         <input name="code" type="password" inputmode="text" autocomplete="current-password"
           placeholder="Código de acceso" required autofocus>

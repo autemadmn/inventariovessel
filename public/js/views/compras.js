@@ -3,8 +3,9 @@ import { mget, mpost, mput, mdel } from '../api.js';
 import { state, productById } from '../state.js';
 import { computePurchase, casesFor } from '../shared/forecast.js';
 import {
-  $, html, mount, fmt, dateTimeLabel, toast, confirmDialog, csv, downloadText, copyText,
+  raw, $, html, mount, fmt, dateTimeLabel, toast, confirmDialog, csv, downloadText, copyText,
 } from '../ui.js';
+import { icon } from '../icons.js';
 
 export async function renderCompras(root, [id]) {
   if (id) return renderEditor(root, Number(id));
@@ -94,7 +95,7 @@ async function renderEditor(root, id) {
           <option value="botellas" ${c.unit === 'botellas' ? 'selected' : ''}>bot.</option>
           <option value="cajas" ${c.unit === 'cajas' ? 'selected' : ''}>cajas</option></select>` : html`<small class="muted">bot.</small>`}
         <small class="block" data-final>${finalText(c)}</small></td>
-      <td class="rm"><button type="button" class="icon-btn" data-remove="${i}" aria-label="Quitar">✕</button></td>
+      <td class="rm"><button type="button" class="icon-btn" data-remove="${i}" aria-label="Quitar">${raw(icon('close', { size: 18 }))}</button></td>
     </tr>`;
   };
 
@@ -111,7 +112,7 @@ async function renderEditor(root, id) {
     const missing = state.products.filter((p) => !list.lines.some((l) => l.product_id === p.id));
     mount(root, html`
       <div class="row-actions no-print">
-        <a class="btn ghost" href="#/gestion/compras">‹ Listas</a>
+        <a class="btn ghost" href="#/gestion/compras">${raw(icon('left', { size: 18 }))} Listas</a>
         <span class="spacer"></span>
         <span class="muted small" id="dirty">${dirty ? 'Cambios sin guardar' : ''}</span>
         <button type="button" class="btn primary" data-save>Guardar</button>

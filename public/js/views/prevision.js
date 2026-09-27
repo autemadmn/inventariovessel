@@ -2,8 +2,9 @@
 import { mpost, store } from '../api.js';
 import { state } from '../state.js';
 import {
-  $, html, mount, fmt, norm, dateLabel, addDays, toast, WEEKDAYS_SHORT, WEEKDAYS_LONG,
+  raw, $, html, mount, fmt, norm, dateLabel, addDays, toast, WEEKDAYS_SHORT, WEEKDAYS_LONG,
 } from '../ui.js';
+import { icon } from '../icons.js';
 
 const DEFAULTS = {
   target: 'week', target_from: '', target_to: '',
@@ -203,10 +204,10 @@ function view(f) {
     <div class="form-grid">
       <div class="field"><span>Noches cerradas (festivos, cierres)</span>
         <input type="date" data-closed min="${f.params.target_from}" max="${f.params.target_to}">
-        <div class="chips wrap">${p.closed_dates.map((d) => html`<button type="button" class="chip" data-rm-closed="${d}">${dateLabel(d)} ✕</button>`)}</div></div>
+        <div class="chips wrap">${p.closed_dates.map((d) => html`<button type="button" class="chip" data-rm-closed="${d}">${dateLabel(d)} ${raw(icon('close', { size: 14 }))}</button>`)}</div></div>
       <div class="field"><span>Noches extra abiertas</span>
         <input type="date" data-extra min="${f.params.target_from}" max="${f.params.target_to}">
-        <div class="chips wrap">${p.extra_dates.map((d) => html`<button type="button" class="chip" data-rm-extra="${d}">${dateLabel(d)} ✕</button>`)}</div></div>
+        <div class="chips wrap">${p.extra_dates.map((d) => html`<button type="button" class="chip" data-rm-extra="${d}">${dateLabel(d)} ${raw(icon('close', { size: 14 }))}</button>`)}</div></div>
     </div>
 
     <div class="form-grid">
@@ -273,7 +274,7 @@ function rowsHtml(f) {
       <th class="num">Manual</th><th class="num">Evento %</th><th class="num">Necesidad</th><th class="num">+ Margen</th><th class="num">Total</th></tr></thead>
     <tbody>${rows.map((r) => html`<tr class="${r.warnings.length ? 'has-warn' : ''}">
       <td><b>${names[r.product_id]}</b><small class="muted block">${explain(r)}</small>
-        ${r.warnings.map((w) => html`<small class="warn-text block">⚠ ${w.text}</small>`)}</td>
+        ${r.warnings.map((w) => html`<small class="warn-text block">${w.text}</small>`)}</td>
       <td class="num" data-label="Historial">${fmt(r.baseTotal)}</td>
       <td class="num" data-label="Calculado">${fmt(r.calculated)}</td>
       <td class="num" data-label="Manual"><input type="number" class="mini" min="0" step="1" inputmode="decimal" data-manual="${r.product_id}" data-key="m${r.product_id}" value="${r.manual ?? ''}" placeholder="—" aria-label="Estimación manual"></td>

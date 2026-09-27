@@ -4,8 +4,9 @@ import {
   state, subscribe, setBar, cart, saveCarts, productById, barName, pendingFor, loadLive,
 } from '../state.js';
 import {
-  $, html, mount, norm, thumb, toast, buzz, bottles, dialog,
+  raw, $, html, mount, norm, thumb, toast, buzz, bottles, dialog,
 } from '../ui.js';
+import { icon } from '../icons.js';
 
 let category = 'all';
 let query = '';
@@ -17,7 +18,8 @@ export function renderPedir(root) {
         ${state.bars.map((b) => html`<button type="button" role="radio" class="bar-btn bar-${b.id}" data-bar="${b.id}">${b.name}</button>`)}
       </div>
       <div class="filters">
-        <input type="search" id="search" placeholder="Buscar botella…" value="${query}" autocomplete="off" enterkeyhint="search">
+        <label class="search">${raw(icon('search', { size: 18 }))}
+          <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
         <div class="chips" id="chips"></div>
       </div>
       <div id="grid" class="grid"></div>
@@ -115,10 +117,10 @@ function cardHtml(p) {
         <span class="card-name">${p.name}</span>
         ${p.status === 'pendiente' ? html`<span class="tag warn" title="Por confirmar. ${p.note || ''}">Dudoso</span>` : ''}
         ${pend ? html`<span class="tag info" title="Ya pedidas y sin entregar para esta barra">${pend} pend.</span>` : ''}
-        ${p.out_of_stock ? html`<span class="out-band">Agotado almacén</span>` : ''}
+        ${p.out_of_stock ? html`<span class="out-band" title="Agotado en almacén">Agotado</span>` : ''}
       </button>
       ${n ? html`<span class="count" aria-label="${n} en la solicitud">${n}</span>
-        <button type="button" class="card-minus" data-minus="${p.id}" aria-label="Quitar una">−</button>` : ''}
+        <button type="button" class="card-minus" data-minus="${p.id}" aria-label="Quitar una">${raw(icon('minus', { size: 18 }))}</button>` : ''}
     </div>`;
 }
 
@@ -163,7 +165,7 @@ function drawCartBar() {
   mount(el, total ? html`
     <button type="button" class="btn primary big cart-btn" data-open-cart>
       <span><b>${bottles(total)}</b> · ${barName(state.bar)}</span>
-      <span>Enviar ›</span>
+      <span class="cart-go">Enviar ${raw(icon('right', { size: 18 }))}</span>
     </button>` : '');
 }
 
@@ -186,9 +188,9 @@ async function openCart() {
             ${pend ? html`<small class="info">Ya hay ${pend} pedida(s) sin entregar para esta barra</small>` : ''}
           </div>
           <div class="stepper">
-            <button type="button" class="step" data-step="-1" data-pid="${p.id}" aria-label="Quitar una">−</button>
+            <button type="button" class="step" data-step="-1" data-pid="${p.id}" aria-label="Quitar una">${raw(icon('minus', { size: 18 }))}</button>
             <output>${qty}</output>
-            <button type="button" class="step" data-step="1" data-pid="${p.id}" aria-label="Añadir una">+</button>
+            <button type="button" class="step" data-step="1" data-pid="${p.id}" aria-label="Añadir una">${raw(icon('plus', { size: 18 }))}</button>
           </div></li>`;
       })}</ul>
       <p class="muted small">Se enviará:</p>

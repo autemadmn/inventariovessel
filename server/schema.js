@@ -133,7 +133,8 @@ function seedStatements(now) {
     sort += 10;
     rows.push([u.name, u.category, 'sin_identificar', u.note, 0, sort, null]);
   }
-  const notSeeded = "NOT EXISTS (SELECT 1 FROM settings WHERE key = 'seeded')";
+  // Nunca sobre un catálogo ya existente (también bases de datos anteriores a la marca 'seeded').
+  const notSeeded = "NOT EXISTS (SELECT 1 FROM settings WHERE key = 'seeded') AND NOT EXISTS (SELECT 1 FROM products)";
   const values = rows.map((r) => `(${[...r, now, now].map(lit).join(', ')})`).join(',\n');
   const photoCases = Object.entries(PHOTOS).map(([n, ph]) => `WHEN ${lit(n)} THEN ${lit(ph)}`).join(' ');
   return [

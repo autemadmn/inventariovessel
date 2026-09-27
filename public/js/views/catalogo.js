@@ -42,7 +42,7 @@ export async function renderCatalogo(root) {
         <ul class="cat-list unid">${unidentified.map((p) => html`
           <li>${thumb(p, 'sm')}<div><b>${p.name}</b><small class="muted block">${p.note || ''}</small></div>
             <div class="btns">
-              <button type="button" class="btn small" data-new="${p.id}">Es un producto nuevo</button>
+              <button type="button" class="btn small" data-new="${p.id}">Producto nuevo</button>
               <button type="button" class="btn small ghost" data-dup="${p.id}">Ya existe</button>
             </div></li>`)}</ul>` : ''}
 

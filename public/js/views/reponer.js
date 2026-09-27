@@ -4,8 +4,9 @@
 import { post, store } from '../api.js';
 import { state, subscribe, barName, loadLive, loadBootstrap } from '../state.js';
 import {
-  $, html, mount, thumb, toast, buzz, bottles, confirmDialog, dialog, norm,
+  raw, $, html, mount, thumb, toast, buzz, bottles, confirmDialog, dialog, norm,
 } from '../ui.js';
+import { icon } from '../icons.js';
 
 let filter = store.get('reponerFilter', 'all');
 // Ajustes locales de «esta vez se lleva menos»: { lineId: botellas }.
@@ -123,9 +124,9 @@ async function rowMenu(l) {
       <p class="muted">${barName(l.bar_id)} · faltan ${bottles(l.qty_pending)}</p>
       <div class="field"><span>Botellas que se llevan</span>
         <div class="stepper big-step">
-          <button type="button" class="step" data-step="-1" aria-label="Una menos">−</button>
+          <button type="button" class="step" data-step="-1" aria-label="Una menos">${raw(icon('minus', { size: 22 }))}</button>
           <output id="adj-n">${n}</output>
-          <button type="button" class="step" data-step="1" aria-label="Una más">+</button>
+          <button type="button" class="step" data-step="1" aria-label="Una más">${raw(icon('plus', { size: 22 }))}</button>
         </div>
         <small class="muted">Lo que no se lleve seguirá pendiente después de pulsar «Hecho».</small>
       </div>`,

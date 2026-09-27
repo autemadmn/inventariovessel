@@ -3,32 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101217">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f6f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Reposición de barras</title>
+  <title>Vessel · Reposición</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/app.css">
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
   <header class="top">
     <div class="brand">
-      <strong>Reposición</strong>
-      <span id="night" class="muted"></span>
+      <span class="wordmark">Vessel</span>
+      <span id="night" class="night"></span>
     </div>
-    <button type="button" id="who-btn" class="who" aria-label="Cambiar nombre"><span aria-hidden="true">👤</span> <span id="who">Tu nombre</span></button>
+    <button type="button" id="who-btn" class="who" aria-label="Cambiar nombre">
+      <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+      <span id="who">Tu nombre</span>
+    </button>
   </header>
-  <div id="offline" class="offline" hidden>Sin conexión con el servidor. Reintentando…</div>
+  <div id="offline" class="offline" hidden>Sin conexión. Reintentando…</div>
 
   <main id="main" class="main"><p class="empty">Cargando…</p></main>
 
   <nav class="nav" aria-label="Secciones">
-    <a href="#/pedir" data-route="pedir"><span aria-hidden="true">＋</span>Pedir</a>
-    <a href="#/reponer" data-route="reponer"><span aria-hidden="true">✓</span>Reponer <b id="pending-badge" class="badge" hidden>0</b></a>
-    <a href="#/gestion" data-route="gestion"><span aria-hidden="true">≡</span>Gestión</a>
+    <a href="#/pedir" data-route="pedir">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
+      <span>Pedir</span>
+    </a>
+    <a href="#/reponer" data-route="reponer">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></svg>
+      <span>Reponer</span>
+      <b id="pending-badge" class="badge" hidden>0</b>
+    </a>
+    <a href="#/gestion" data-route="gestion">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      <span>Gestión</span>
+    </a>
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

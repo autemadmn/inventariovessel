@@ -3,8 +3,9 @@
 import { mget, mpost, mput, store } from '../api.js';
 import { state, barName, productById } from '../state.js';
 import {
-  $, html, mount, fmt, bottles, dateLabel, dateTimeLabel, addDays, toast, formDialog, csv, downloadText,
+  raw, $, html, mount, fmt, bottles, dateLabel, dateTimeLabel, addDays, toast, formDialog, csv, downloadText,
 } from '../ui.js';
+import { icon } from '../icons.js';
 
 let period = store.get('repPeriod', 'week');
 let refDate = null;
@@ -77,13 +78,13 @@ function view(r, dels, name) {
     <div class="toolbar">
       <div class="seg small">${[['night', 'Noche'], ['week', 'Semana'], ['month', 'Mes']].map(([v, l]) => html`
         <button type="button" class="${period === v ? 'on' : ''}" data-period="${v}">${l}</button>`)}</div>
-      <div class="seg small">${[['', 'Ambas barras'], ...state.bars.map((b) => [String(b.id), b.name])].map(([v, l]) => html`
+      <div class="seg small">${[['', 'Ambas'], ...state.bars.map((b) => [String(b.id), b.name])].map(([v, l]) => html`
         <button type="button" class="${bar === v ? 'on' : ''}" data-bar="${v}">${l}</button>`)}</div>
     </div>
     <div class="pager">
-      <button type="button" class="icon-btn" data-shift="-1" aria-label="Anterior">‹</button>
+      <button type="button" class="icon-btn" data-shift="-1" aria-label="Anterior">${raw(icon('left', { size: 18 }))}</button>
       <h2>${r.range.label}</h2>
-      <button type="button" class="icon-btn" data-shift="1" aria-label="Siguiente">›</button>
+      <button type="button" class="icon-btn" data-shift="1" aria-label="Siguiente">${raw(icon('right', { size: 18 }))}</button>
       <button type="button" class="btn small ghost" data-today>Hoy</button>
     </div>
 
