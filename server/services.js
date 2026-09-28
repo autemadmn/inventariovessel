@@ -167,6 +167,7 @@ function productFields(input, existing = {}) {
   }
   if (input.active !== undefined) out.active = input.active ? 1 : 0;
   if (input.sort !== undefined) out.sort = Number(input.sort) || 0;
+  if (input.habitual !== undefined) out.habitual = input.habitual ? 1 : 0;
   const status = out.status ?? existing.status;
   if (out.active === 1 && ['sin_identificar', 'descartado'].includes(status)) {
     throw bad('Identifica el producto antes de activarlo.');
@@ -192,6 +193,11 @@ export async function createProduct(db, input, { by, now } = {}) {
 export async function updateProduct(db, id, input, { by, now, reason } = {}) {
   const before = await getProduct(db, id);
   const f = productFields(input, before);
+  // Un producto que pasa a habitual va al final de los habituales.
+  if (f.habitual === 1 && !before.habitual) {
+    const { m } = await db.get('SELECT COALESCE(MAX(habitual_order), 0) AS m FROM products WHERE habitual = 1');
+    f.habitual_order = m + 1;
+  }
   const keys = Object.keys(f).filter((k) => f[k] !== before[k]);
   if (!keys.length) return before;
   await db.batch([

@@ -53,6 +53,33 @@ test('los datos iniciales se crean una sola vez y no pisan cambios ni fotos prop
   assert.match(all.find((p) => p.name === 'SKYY').photo, /^\/photos\/\d+$/);
 });
 
+test('habituales: orden de la estantería, migración de bases antiguas y cambios del encargado', async () => {
+  const { db, id } = await setup();
+  const usual = async () => (await svc.listProducts(db)).filter((p) => p.habitual)
+    .sort((x, y) => x.habitual_order - y.habitual_order).map((p) => p.name);
+  const list = await usual();
+  assert.equal(list.length, 19);
+  assert.equal(list[0], 'Moskovskaya');
+  assert.equal(list.at(-1), 'Brugal Añejo');
+
+  // Base de datos de la versión anterior: sin columnas ni marca de habituales.
+  await db.run('ALTER TABLE products DROP COLUMN habitual_order');
+  await db.run('ALTER TABLE products DROP COLUMN habitual');
+  await db.run("DELETE FROM settings WHERE key = 'habitual_init'");
+  await db.run("UPDATE settings SET value = '2' WHERE key = 'schema_version'");
+  await ensureSchema(db);
+  assert.deepEqual(await usual(), list);
+
+  // El encargado quita uno y añade otro; un nuevo arranque no lo deshace.
+  await svc.updateProduct(db, id('SKYY'), { habitual: false });
+  await svc.updateProduct(db, id('Roku'), { habitual: true });
+  await db.run("UPDATE settings SET value = '0' WHERE key = 'schema_version'");
+  await ensureSchema(db);
+  const after = await usual();
+  assert.ok(!after.includes('SKYY'));
+  assert.equal(after.at(-1), 'Roku');
+});
+
 test('solicitar, entregar parcialmente y registrar solo lo entregado', async () => {
   const { db, id } = await setup();
   const barcelo = id('Barceló Añejo');

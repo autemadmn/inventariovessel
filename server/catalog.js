@@ -128,3 +128,28 @@ export const PHOTOS = {
   'Barceló Añejo': '/img/botellas/barcelo-anejo.jpg',
   'Brugal 1888': '/img/botellas/brugal-1888.jpg',
 };
+
+// Botellas habituales de la estantería (foto del 28 sep 2026), en el orden en
+// que están colocadas. Salen las primeras en «Pedir»; el resto va en otra
+// sección. El encargado puede cambiarlo desde Gestión → Catálogo.
+export const HABITUAL = [
+  'Moskovskaya',
+  'SKYY',
+  'Zeeland Nº8',
+  'Puerto de Indias',
+  'Master’s Pink',
+  'Larios Rosé',
+  'Larios Pomelo',
+  'Larios 12',
+  'Tanqueray London Dry',
+  'Master’s London Dry',
+  'Jack Daniel’s Old No. 7',
+  'Dewar’s White Label',
+  'Johnnie Walker Red Label',
+  'J&B Rare',
+  'Old / Old Sport',
+  'DYC 8',
+  'Cacique Añejo',
+  'Barceló Añejo',
+  'Brugal Añejo',
+];

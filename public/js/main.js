@@ -1,4 +1,4 @@
-import { auth, get, post, setAuthErrorHandler, ApiError } from './api.js';
+import { auth, get, post, setAuthErrorHandler, ApiError, store } from './api.js';
 import { state, loadBootstrap, loadLive, setWho, subscribe } from './state.js';
 import { $, html, mount, formDialog, dateLabel } from './ui.js';
 import { renderPedir } from './views/pedir.js';
@@ -39,10 +39,10 @@ function renderHeader() {
 
 async function askWho() {
   const data = await formDialog('¿Quién usa este dispositivo?', html`
-    <p class="muted">Tu nombre aparece en la lista para que el resto sepa quién pide y quién repone. Se guarda en este dispositivo.</p>
+    <p class="muted">Opcional. Tu nombre aparece en la lista para que el resto sepa quién pide y quién repone. Se guarda en este dispositivo y puedes ponerlo cuando quieras desde el botón de arriba a la derecha.</p>
     <label class="field"><span>Nombre</span>
-      <input name="who" value="${state.who}" maxlength="40" autocomplete="given-name" required autofocus></label>`,
-  { ok: 'Guardar' });
+      <input name="who" value="${state.who}" maxlength="40" autocomplete="given-name" required></label>`,
+  { ok: 'Guardar', cancel: 'Ahora no' });
   if (data) {
     setWho(data.who);
     renderHeader();
@@ -143,7 +143,11 @@ async function start() {
   renderHeader();
   connect();
   await navigate();
-  if (!state.who) askWho();
+  // Se pregunta una sola vez; «Ahora no» o cerrar no vuelve a molestar.
+  if (!state.who && !store.get('whoAsked', false)) {
+    store.set('whoAsked', true);
+    askWho();
+  }
 }
 
 async function boot() {

@@ -1,9 +1,9 @@
 // Esquema y datos iniciales, comunes a Node (node:sqlite) y Cloudflare D1.
 // Todo se ejecuta a través del adaptador de base de datos (db-node.js / db-d1.js).
 
-import { CATEGORIES, INITIAL_CATALOG, PHOTOS, UNIDENTIFIED } from './catalog.js';
+import { CATEGORIES, HABITUAL, INITIAL_CATALOG, PHOTOS, UNIDENTIFIED } from './catalog.js';
 
-export const SCHEMA_VERSION = '2';
+export const SCHEMA_VERSION = '3';
 
 export const DEFAULT_SETTINGS = {
   timezone: 'Europe/Madrid',
@@ -40,6 +40,8 @@ const TABLES = [
     active INTEGER NOT NULL DEFAULT 1,
     out_of_stock INTEGER NOT NULL DEFAULT 0,
     sort INTEGER NOT NULL DEFAULT 0,
+    habitual INTEGER NOT NULL DEFAULT 0,
+    habitual_order INTEGER,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
@@ -148,6 +150,11 @@ function seedStatements(now) {
     // (bases de datos creadas antes de que existieran). Nunca sustituye una propia.
     `UPDATE products SET photo = CASE name ${photoCases} END
       WHERE photo IS NULL AND status = 'confirmado' AND name IN (${Object.keys(PHOTOS).map(lit).join(', ')})`,
+    // Botellas habituales: se marcan una sola vez por base de datos; después
+    // las gestiona el encargado desde el catálogo.
+    `UPDATE products SET habitual = 1, habitual_order = CASE name ${HABITUAL.map((n, i) => `WHEN ${lit(n)} THEN ${i + 1}`).join(' ')} END
+      WHERE name IN (${HABITUAL.map(lit).join(', ')}) AND NOT EXISTS (SELECT 1 FROM settings WHERE key = 'habitual_init')`,
+    "INSERT OR IGNORE INTO settings (key, value) VALUES ('habitual_init', '1')",
     `INSERT INTO settings (key, value) VALUES ('schema_version', ${lit(SCHEMA_VERSION)})
       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
   ];
@@ -162,5 +169,11 @@ export async function ensureSchema(db, now = new Date()) {
     // La tabla aún no existe.
   }
   await db.batch(TABLES.map((sql) => [sql]));
+  // Migraciones de columnas en bases de datos creadas con versiones anteriores.
+  const cols = new Set((await db.all('PRAGMA table_info(products)')).map((c) => c.name));
+  const alters = [];
+  if (!cols.has('habitual')) alters.push(['ALTER TABLE products ADD COLUMN habitual INTEGER NOT NULL DEFAULT 0']);
+  if (!cols.has('habitual_order')) alters.push(['ALTER TABLE products ADD COLUMN habitual_order INTEGER']);
+  if (alters.length) await db.batch(alters);
   await db.batch(seedStatements(now.toISOString()).map((sql) => [sql]));
 }

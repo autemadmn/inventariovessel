@@ -8,7 +8,6 @@ import {
 } from '../ui.js';
 import { icon } from '../icons.js';
 
-let category = 'all';
 let query = '';
 
 export function renderPedir(root) {
@@ -20,7 +19,6 @@ export function renderPedir(root) {
       <div class="filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
           <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
-        <div class="chips" id="chips"></div>
       </div>
       <div id="grid" class="grid"></div>
     </section>
@@ -28,7 +26,6 @@ export function renderPedir(root) {
 
   const draw = () => {
     drawBars();
-    drawChips();
     drawGrid();
     drawCartBar();
   };
@@ -46,16 +43,12 @@ export function renderPedir(root) {
   };
 
   function onClick(e) {
-    const t = e.target.closest('[data-bar],[data-cat],[data-add],[data-minus],[data-open-cart]');
+    const t = e.target.closest('[data-bar],[data-add],[data-minus],[data-open-cart]');
     if (!t) return;
     if (t.dataset.bar) {
       setBar(Number(t.dataset.bar));
       buzz();
       draw();
-    } else if (t.dataset.cat) {
-      category = t.dataset.cat;
-      drawChips();
-      drawGrid();
     } else if (t.dataset.add) {
       if (!state.bar) {
         toast('Primero elige la barra', 'error');
@@ -91,21 +84,14 @@ function drawBars() {
   document.querySelector('.pedir')?.classList.toggle('no-bar', !state.bar);
 }
 
-function drawChips() {
-  const el = $('#chips');
-  if (!el) return;
-  const used = new Set(state.products.map((p) => p.category));
-  mount(el, html`
-    <button type="button" class="chip ${category === 'all' ? 'on' : ''}" data-cat="all">Todas</button>
-    ${state.categories.filter((c) => used.has(c.id)).map((c) => html`
-      <button type="button" class="chip ${category === c.id ? 'on' : ''}" data-cat="${c.id}">${c.name}</button>`)}`);
-}
-
 function visibleProducts() {
   const q = norm(query.trim());
-  return state.products.filter((p) => (category === 'all' || p.category === category)
-    && (!q || norm(p.name).includes(q) || norm(p.name).replace(/\s/g, '').includes(q.replace(/\s/g, ''))));
+  return state.products.filter((p) => !q
+    || norm(p.name).includes(q) || norm(p.name).replace(/\s/g, '').includes(q.replace(/\s/g, '')));
 }
+
+// Habituales en el orden de la estantería; el resto, junto, en el orden del catálogo.
+const byShelf = (a, b) => (a.habitual_order ?? 9999) - (b.habitual_order ?? 9999) || a.sort - b.sort;
 
 function cardHtml(p) {
   const n = state.bar ? cart()[p.id] || 0 : 0;
@@ -132,13 +118,14 @@ function drawGrid() {
     mount(el, html`<p class="empty">No hay botellas que coincidan con «${query}».</p>`);
     return;
   }
-  if (category === 'all' && !query.trim()) {
-    mount(el, html`${state.categories.map((c) => {
-      const items = list.filter((p) => p.category === c.id);
-      return items.length ? html`<h2 class="grid-title">${c.name}</h2>${items.map(cardHtml)}` : '';
-    })}`);
+  if (!query.trim()) {
+    const usual = list.filter((p) => p.habitual).sort(byShelf);
+    const rest = list.filter((p) => !p.habitual);
+    mount(el, html`
+      ${usual.length ? html`<h2 class="grid-title">Habituales</h2>${usual.map(cardHtml)}` : ''}
+      ${rest.length ? html`<h2 class="grid-title">${usual.length ? 'Resto' : 'Botellas'}</h2>${rest.map(cardHtml)}` : ''}`);
   } else {
-    mount(el, html`${list.map(cardHtml)}`);
+    mount(el, html`${[...list].sort(byShelf).map(cardHtml)}`);
   }
 }
 

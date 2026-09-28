@@ -155,6 +155,11 @@ export function dialog({ title, body, actions = [], wide = false, onMount }) {
       close(data);
     });
     dlg.showModal();
+    // Sin campo con autofocus, el foco va al diálogo y no al botón de cerrar.
+    if (!dlg.querySelector('[autofocus]')) {
+      dlg.tabIndex = -1;
+      dlg.focus();
+    }
     onMount?.(dlg, close);
   });
 }
@@ -169,13 +174,15 @@ export async function confirmDialog(title, text, { ok = 'Aceptar', kind = 'prima
 }
 
 /** Formulario en diálogo. `fields` es HTML con inputs con name. */
-export function formDialog(title, fields, { ok = 'Guardar', kind = 'primary', wide = false, onMount } = {}) {
+export function formDialog(title, fields, {
+  ok = 'Guardar', cancel = 'Cancelar', kind = 'primary', wide = false, onMount,
+} = {}) {
   return dialog({
     title,
     body: fields,
     wide,
     onMount,
-    actions: [{ label: 'Cancelar', value: '' }, { label: ok, submit: true, kind }],
+    actions: [{ label: cancel, value: '' }, { label: ok, submit: true, kind }],
   }).then((v) => (v && typeof v === 'object' ? v : null));
 }
 

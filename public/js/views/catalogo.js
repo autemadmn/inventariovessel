@@ -61,6 +61,7 @@ export async function renderCatalogo(root) {
               <div><b>${p.name}</b>
                 <span class="tag ${p.status === 'pendiente' ? 'warn' : 'ok'}">${STATUS[p.status]}</span>
                 ${!p.active ? html`<span class="tag">Oculto</span>` : ''}
+                ${p.habitual ? html`<span class="tag info">Habitual</span>` : ''}
                 ${p.out_of_stock ? html`<span class="tag danger">Agotado en almacén</span>` : ''}
                 <small class="muted block">${p.capacity_ml ? `${p.capacity_ml / 10} cl` : 'Capacidad sin confirmar'} ·
                   ${p.per_case ? `${p.per_case} por caja` : 'Botellas por caja sin confirmar'}</small>
@@ -178,6 +179,7 @@ async function editProduct(p) {
       <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="100" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Sin confirmar"></label>
     </div>
     <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}> Visible en «Pedir»</label>
+    <label class="check"><input type="checkbox" name="habitual" ${p?.habitual ? 'checked' : ''}> Habitual: sale en la primera sección de «Pedir»</label>
     ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado en almacén</label>` : ''}`,
   {
     wide: true,
@@ -215,6 +217,7 @@ async function editProduct(p) {
     capacity_ml: data.capacity_ml === '' ? null : Number(data.capacity_ml),
     per_case: data.per_case === '' ? null : Number(data.per_case),
     active: data.active === 'on',
+    habitual: data.habitual === 'on',
     by: state.who,
   };
   if (isNew) {
