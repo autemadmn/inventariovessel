@@ -1,6 +1,7 @@
 // Rutas de la API con Request/Response estándar: el mismo código sirve en
 // Cloudflare Workers (worker.js) y en Node (index.js).
 import * as svc from './services.js';
+import * as alm from './almacen.js';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -95,6 +96,10 @@ export function createHandler({ getDb, env = {}, log = console }) {
       return svc.bootstrap(db, { managerRequired: Boolean(manager) });
     }],
     ['GET', '/api/live', 'staff', ({ db }) => svc.liveState(db)],
+    ['GET', '/api/almacen', 'staff', ({ db, url }) => alm.almacen(db, q(url))],
+    ['GET', '/api/almacen/botella/:id', 'staff', ({ db, id, url }) => alm.almacenBotella(db, id, q(url))],
+    ['POST', '/api/almacen/recuentos', 'staff', ({ db, body }) => alm.saveCounts(db, body)],
+    ['POST', '/api/almacen/roturas', 'staff', ({ db, body }) => alm.addBreakage(db, body)],
     ['POST', '/api/requests', 'staff', ({ db, body }) => svc.createRequest(db, body)],
     ['POST', '/api/complete', 'staff', ({ db, body }) => svc.completeLines(db, body)],
     ['POST', '/api/lines/:id/deliver', 'staff', ({ db, id, body }) => svc.deliver(db, id, body)],

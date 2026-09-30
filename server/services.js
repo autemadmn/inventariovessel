@@ -21,6 +21,7 @@ import {
   addDays, businessDate, datesBetween, daysBetween, isYmd, periodRange, previousPeriodDate, shortDate, weekday, weekStart,
 } from './dates.js';
 import { computeForecast, computePurchase } from '../public/js/shared/forecast.js';
+import { liveStock } from './almacen.js';
 
 export { HttpError };
 
@@ -64,7 +65,7 @@ export async function catalogRev(db) {
 // ---------------------------------------------------------------- ajustes
 
 export async function getSettings(db) {
-  const out = { ...DEFAULT_SETTINGS };
+  const out = { trip_weeks: DEFAULT_SETTINGS.trip_weeks, ...DEFAULT_SETTINGS };
   for (const { key, value } of await db.all('SELECT key, value FROM settings')) out[key] = value;
   return out;
 }
@@ -77,6 +78,7 @@ function toPublic(s) {
     low_data_nights: Number(s.low_data_nights),
     min_nights_per_weekday: Number(s.min_nights_per_weekday),
     undo_minutes: Number(s.undo_minutes),
+    trip_weeks: Number(s.trip_weeks),
   };
 }
 
@@ -608,10 +610,11 @@ export async function orderStaff(db, { ids }, { by, now } = {}) {
 export async function bootstrap(db, { managerRequired }) {
   // La revisión se lee antes que el resto: cualquier cambio posterior provoca otra recarga.
   const rev = await catalogRev(db);
-  const [bars, products, groups, staff, settings, date] = await Promise.all([
+  const [bars, products, groups, staff, settings, date, stores] = await Promise.all([
     listBars(db), listProducts(db), listGroups(db), listStaff(db), publicSettings(db), currentDate(db),
+    db.all('SELECT id, name, kind, sort FROM stores ORDER BY sort, id'),
   ]);
-  return { bars, categories: CATEGORIES, products, settings, date, managerRequired, groups, staff, catalog_rev: rev };
+  return { bars, categories: CATEGORIES, products, settings, date, managerRequired, groups, staff, stores, catalog_rev: rev };
 }
 
 // ---------------------------------------------------------------- noches
@@ -859,15 +862,17 @@ export async function undoDelivery(db, id, { by }, { now } = {}) {
 // ---------------------------------------------------------------- lista en vivo
 
 export async function liveState(db, { now } = {}) {
+  const current = now ?? new Date();
   const s = await getSettings(db);
   const settings = toPublic(s);
   const catalog_rev = Number(s.catalog_rev) || 0;
-  const date = businessDate(now ?? new Date(), s.timezone, Number(s.cutoff_hour));
+  const date = businessDate(current, s.timezone, Number(s.cutoff_hour));
   const session = await findSession(db, date);
   const out = (await db.all('SELECT id FROM products WHERE out_of_stock = 1 ORDER BY id')).map((r) => r.id);
-  if (!session) return { date, session: null, lines: [], recent: [], settings, outOfStock: out, catalog_rev };
+  const stock = await liveStock(db, { now: current });
+  if (!session) return { date, session: null, lines: [], recent: [], settings, outOfStock: out, stock, catalog_rev, server_time: current.toISOString() };
   const lines = (await db.all(`${LINE_SELECT} WHERE l.session_id = ? ORDER BY l.created_at, l.id`, session.id)).map(withPending);
-  const t = (now ?? new Date()).getTime();
+  const t = current.getTime();
   const recent = (await db.all(`SELECT d.*, p.name AS product_name, p.slug FROM deliveries d
     JOIN products p ON p.id = d.product_id
     WHERE d.session_id = ? ORDER BY d.delivered_at DESC, d.id DESC LIMIT 30`, session.id))
@@ -876,7 +881,7 @@ export async function liveState(db, { now } = {}) {
       can_undo: d.source === 'lista' && !d.corrected && d.qty > 0
         && (t - new Date(d.delivered_at).getTime()) / 60000 <= settings.undo_minutes,
     }));
-  return { date, session, lines, recent, settings, outOfStock: out, catalog_rev };
+  return { date, session, lines, recent, settings, outOfStock: out, stock, catalog_rev, server_time: current.toISOString() };
 }
 
 // ---------------------------------------------------------------- historial y correcciones
@@ -1452,8 +1457,8 @@ export async function deletePurchase(db, id, { by, now } = {}) {
 
 // ---------------------------------------------------------------- copia de seguridad
 
-export const BACKUP_TABLES = ['settings', 'bars', 'product_groups', 'products', 'staff', 'sessions', 'request_lines',
-  'deliveries', 'stockouts', 'audit', 'purchase_lists'];
+export const BACKUP_TABLES = ['settings', 'bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines',
+  'deliveries', 'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves'];
 
 /** Copia completa de los datos en JSON (sin los códigos de acceso ni las fotos propias). */
 export async function exportData(db, { now } = {}) {

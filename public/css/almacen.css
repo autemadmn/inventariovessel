@@ -1,0 +1,158 @@
+/* Almacén: stock del almacén del local, detalle de botella y modo «Contar».
+   Misma lista visual que Informes (gestion.css) y los tokens de app.css (claro y oscuro). */
+
+/* Cuatro pestañas en la barra inferior: Pedir, Reponer, Almacén y Gestión. */
+.nav { grid-template-columns: repeat(4, minmax(0, 150px)); }
+
+/* ------------------------------------------------------------ lista */
+
+.alm { display: flex; flex-direction: column; min-width: 0; transition: opacity 0.2s var(--ease); }
+.alm.is-loading .alm-body { opacity: 0.55; }
+.alm .empty { padding: 28px 16px; }
+
+.alm-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 4px; }
+.alm-title { min-width: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.alm-count-btn { flex: none; gap: 8px; min-height: 48px; padding: 0 16px 0 14px; }
+.alm-filters { margin-top: 4px; }
+.alm-filters .search { margin-bottom: 2px; }
+
+.alm-sec {
+  display: flex; align-items: center; gap: 8px; margin: 20px 0 8px;
+  font-size: 0.875rem; font-weight: 600; color: var(--muted);
+}
+.alm-sec span {
+  min-width: 22px; padding: 0 7px; border-radius: 11px; line-height: 22px; text-align: center;
+  background: var(--surface-2); font-size: 0.75rem; font-variant-numeric: tabular-nums;
+}
+.alm-sec.no_queda { color: var(--danger); }
+.alm-sec.no_queda span { background: var(--danger-soft); }
+.alm-sec.queda_poco { color: var(--warn); }
+.alm-sec.queda_poco span { background: var(--warn-soft); }
+.alm-body > .alm-sec:first-child { margin-top: 10px; }
+
+.alm-row .inf-name { gap: 4px; }
+.alm-row .inf-name .tag { font-size: 0.75rem; }
+.alm-num { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 52%; text-align: right; }
+.alm-num small { color: var(--muted); font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
+.alm-row.queda-poco .alm-num small { color: var(--warn); }
+
+/* «3 cajas + 4»: los números mandan, las palabras acompañan. */
+.alm-qty { display: inline-flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 0 5px; line-height: 1; }
+.alm-qty b { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.alm-qty i { font-style: normal; color: var(--muted); font-size: 0.875rem; font-weight: 500; }
+.alm-none { color: var(--danger); font-size: 1.0625rem; font-weight: 700; white-space: nowrap; }
+.alm-row.no-queda .thumb img, .alm-row.no-queda .thumb svg { filter: grayscale(1); opacity: 0.5; }
+
+.alm-hint { margin: 20px 0 0; color: var(--muted); text-align: center; }
+.alm-zero { margin-top: 20px; }
+.alm-zero .inf-list.quiet .inf-row { min-height: 56px; }
+
+/* ------------------------------------------------------------ detalle */
+
+.alm-detail .bt-head { margin-top: 4px; }
+.alm-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.alm-stock {
+  margin-top: 8px; padding: 18px 16px 16px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius);
+}
+.alm-stock p { margin: 0; }
+.alm-stock-big.alm-qty { justify-content: flex-start; gap: 0 8px; }
+.alm-stock-big.alm-qty b { font-size: 3rem; letter-spacing: -0.03em; }
+.alm-stock-big.alm-qty i { font-size: 1.125rem; }
+.alm-stock-big.alm-none, .alm-stock-big.muted-big { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+.alm-stock-big.muted-big { color: var(--muted); }
+.alm-stock-sub { margin-top: 8px !important; font-size: 1.0625rem; font-weight: 500; }
+.alm-stock.queda-poco .alm-stock-sub { color: var(--warn); }
+.alm-stock-meta { margin-top: 10px !important; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
+.alm-stock.no-queda { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+
+.alm-actions { display: grid; gap: 8px; margin-top: 12px; }
+.alm-actions .btn { min-height: 52px; gap: 8px; }
+@media (min-width: 520px) { .alm-actions { grid-template-columns: 1fr 1fr; } }
+
+.alm-hist li { gap: 12px; padding-left: 12px; padding-right: 14px; }
+.alm-h-ico {
+  display: grid; place-items: center; flex: none; width: 32px; height: 32px;
+  border-radius: 50%; background: var(--surface-2); color: var(--muted);
+}
+.alm-hist .bt-del-qty { min-width: 2.5rem; color: var(--muted); }
+.alm-hist .count .bt-del-qty { color: var(--text); }
+.alm-hist .count .alm-h-ico { background: var(--accent-soft); color: var(--accent); }
+.alm-hist .broken .bt-del-qty { color: var(--danger); }
+.alm-hist .broken .alm-h-ico { background: var(--danger-soft); color: var(--danger); }
+.alm-hist .bt-del-text small { overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------------ Contar */
+
+.cnt-h { margin: 8px 0 4px; }
+.cnt-pick { display: grid; gap: 8px; margin-top: 12px; }
+.cnt-pick-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 64px; padding: 8px 12px 8px 16px; border-radius: var(--radius);
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--text);
+  text-align: left; touch-action: manipulation;
+}
+.cnt-pick-btn:active { background: var(--surface-2); }
+.cnt-pick-btn span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cnt-pick-btn b { font-size: 1.0625rem; font-weight: 600; overflow-wrap: anywhere; }
+.cnt-pick-btn small { color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.cnt-pick-btn .icon { color: var(--faint); }
+.cnt-pick-btn.all { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cnt-pick-btn.all + .cnt-pick-btn { margin-top: 8px; }
+
+.cnt-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cnt-top .inf-back { margin-top: 0; }
+.cnt-end { min-height: 44px; }
+.cnt-bar { height: 6px; margin-top: 8px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.cnt-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.3s var(--ease); }
+.cnt-pos { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 8px 0 0; color: var(--muted); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.cnt-pos b { color: var(--text); font-weight: 600; }
+
+.cnt-form { display: flex; flex-direction: column; gap: 16px; margin-top: 12px; }
+.cnt-card { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.thumb.cnt-img { width: 150px; aspect-ratio: 3 / 4; flex: none; }
+.cnt-card h2 { font-size: 1.5rem; font-weight: 600; overflow-wrap: anywhere; }
+
+.cnt-fields { display: flex; flex-direction: column; gap: 12px; }
+.cnt-field { display: flex; flex-direction: column; gap: 6px; }
+.cnt-field label { font-size: 0.9375rem; font-weight: 600; }
+.cnt-field label small { color: var(--muted); font-weight: 500; }
+.cnt-step { display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 8px; }
+.cnt-step .step { width: 56px; height: 56px; border-radius: 14px; touch-action: manipulation; }
+.cnt-step input {
+  min-height: 56px; padding: 0 8px; border-radius: 14px; text-align: center;
+  font-size: 1.75rem; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.cnt-step input::placeholder { color: var(--faint); }
+.cnt-total { min-height: 1.4em; margin: 0; color: var(--muted); font-size: 0.9375rem; text-align: center; font-variant-numeric: tabular-nums; }
+.cnt-total:empty { display: none; }
+
+.cnt-btns { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+.cnt-btns .btn.big { min-height: 56px; padding: 0 12px; }
+
+/* Hoja «Contar esta botella». */
+.cnt-mini { display: flex; align-items: center; gap: 12px; }
+.cnt-mini b { font-weight: 600; font-size: 1.0625rem; }
+
+/* ------------------------------------------------------------ Reponer: lo que queda */
+
+.row-text .row-left { color: var(--muted); font-weight: 400; }
+.row-text .row-left.none { color: var(--danger); font-weight: 500; }
+
+@media (max-width: 400px) {
+  .alm-qty b { font-size: 1.5rem; }
+  .alm-stock-big.alm-qty b { font-size: 2.625rem; }
+  .thumb.cnt-img { width: 128px; }
+  .cnt-card h2 { font-size: 1.3125rem; }
+}
+
+/* Pantallas bajas (móvil con teclado o pequeño): menos foto para que todo quepa. */
+@media (max-height: 740px) {
+  .thumb.cnt-img { width: 80px; }
+  .cnt-form { gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alm, .cnt-bar i { transition: none; }
+}

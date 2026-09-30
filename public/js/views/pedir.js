@@ -1,7 +1,7 @@
 // Pantalla principal: elegir barra, tocar botellas y enviar la solicitud.
 import { post } from '../api.js';
 import {
-  state, subscribe, setBar, selection, cart, saveCarts, productById, barName, pendingFor, loadLive,
+  state, subscribe, setBar, selection, cart, saveCarts, productById, barName, pendingFor, loadLive, isOut,
 } from '../state.js';
 import {
   raw, $, html, mount, norm, thumb, toast, buzz, bottles, dialog,
@@ -92,14 +92,15 @@ function matches(p, q) {
 function cardHtml(p) {
   const n = state.bar ? cart()[p.id] || 0 : 0;
   const pend = state.bar ? pendingFor(p.id, state.bar) : 0;
+  const out = isOut(p);
   return html`
-    <div class="card ${n ? 'in-cart' : ''} ${p.out_of_stock ? 'out' : ''}" data-card="${p.id}">
+    <div class="card ${n ? 'in-cart' : ''} ${out ? 'out' : ''}" data-card="${p.id}">
       <button type="button" class="card-main" data-add="${p.id}" aria-label="Añadir una botella de ${p.name}">
         ${thumb(p)}
         <span class="card-name">${p.name}</span>
         ${p.status === 'pendiente' ? html`<span class="tag warn" title="Por confirmar. ${p.note || ''}">Dudoso</span>` : ''}
         ${pend ? html`<span class="tag info" title="Ya pedidas y sin entregar para esta barra">${pend} pend.</span>` : ''}
-        ${p.out_of_stock ? html`<span class="out-band" title="Agotado en almacén">Agotado</span>` : ''}
+        ${out ? html`<span class="out-band" title="Agotado en almacén">Agotado</span>` : ''}
       </button>
       ${n ? html`<span class="count" aria-label="${n} en la solicitud">${n}</span>
         <button type="button" class="card-minus" data-minus="${p.id}" aria-label="Quitar una">${raw(icon('minus', { size: 18 }))}</button>` : ''}
@@ -170,7 +171,7 @@ async function openCart() {
         return html`<li>
           ${thumb(p, 'sm')}
           <div class="cart-name">${p.name}
-            ${p.out_of_stock ? html`<small class="danger">Agotado en almacén: puede que no haya para reponer</small>` : ''}
+            ${isOut(p) ? html`<small class="danger">Agotado en almacén: puede que no haya para reponer</small>` : ''}
             ${pend ? html`<small class="info">Ya hay ${pend} pedida(s) sin entregar para esta barra</small>` : ''}
           </div>
           <div class="stepper">

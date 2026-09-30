@@ -44,6 +44,13 @@ Salen las botellas de la **selección**, agrupadas y en el orden que decide el e
   reponer. Es distinto de «falta en la barra»: lo pedido sigue visible. Cuando llega mercancía se
   vuelve a marcar como disponible.
 
+### Almacén (todo el personal)
+Muestra las botellas de In Vessel y cuánto queda según los recuentos, las roturas y lo repuesto a las
+barras. «Contar» permite registrar las existencias de una botella o de un grupo sin mostrar la cifra
+esperada. En el detalle de cada botella se ve el historial reciente y se puede anotar una rotura.
+Una botella sin recuento aparece como «Sin contar»; una cifra negativa se muestra como «No queda» y
+«Revisar». El aviso nunca impide pedir o reponer.
+
 ### Gestión (encargado, con PIN)
 Cuatro pestañas (Informes, Selección, Personal y Catálogo) y Ajustes en el engranaje.
 
@@ -141,7 +148,7 @@ Calcula media hora. Hazlo con el local cerrado.
    crearse.
 2. **Crea las tablas.** En el panel del proyecto: **SQL Editor → New query**. Ejecuta primero
    `CREATE SCHEMA IF NOT EXISTS vessel_reposicion;`. Después, antes del contenido de cada archivo
-   `supabase/migrations/0001_schema.sql`, `0002_seed.sql` y `0003_informe.sql`, añade en la misma consulta
+   `supabase/migrations/0001_schema.sql`, `0002_seed.sql`, `0003_informe.sql` y `0004_almacen.sql`, añade en la misma consulta
    `SET search_path TO vessel_reposicion;` y pulsa **Run**. Así las tablas quedan en el esquema que
    usa el Worker (`DATABASE_SCHEMA` en `wrangler.jsonc`). Las migraciones se pueden repetir sin duplicar datos.
 3. **Copia la dirección de conexión.** Botón **Connect** (arriba) → **Connection string** →
@@ -234,6 +241,7 @@ server/
   index.js      entrada para Node (API + archivos de public/)
   handler.js    rutas de la API y control de acceso (Request/Response estándar)
   services.js   lógica: solicitudes, entregas, selección, personal, informes, previsión, compras
+  almacen.js    recuentos, roturas, existencias y consumo semanal
   schema.js     ajustes por defecto y comprobación de que las migraciones están aplicadas
   db-pg.js      acceso a Postgres/Supabase (postgres.js)
   db-pglite.js  acceso a PGlite (local y pruebas; aplica las migraciones al abrir)
@@ -245,6 +253,7 @@ supabase/migrations/
   0001_schema.sql  tablas (RLS activado, sin políticas)
   0002_seed.sql    datos iniciales (generado por scripts/db/build-seed.mjs)
   0003_informe.sql validación de botellas por caja
+  0004_almacen.sql almacenes, recuentos, movimientos y viajes
 scripts/db/     build-seed.mjs e import-backup.mjs
 public/         interfaz (HTML, CSS y JavaScript sin compilación)
   js/shared/forecast.js  cálculo de previsión y compra conservado para la API

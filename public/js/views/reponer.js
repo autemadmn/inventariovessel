@@ -2,7 +2,9 @@
 // Tocar una fila (opcional) permite indicar que se llevó menos, quitarla o
 // marcar el producto como agotado en almacén.
 import { post, store } from '../api.js';
-import { state, subscribe, barName, loadLive, loadBootstrap } from '../state.js';
+import {
+  state, subscribe, barName, loadLive, loadBootstrap, productById, stockFor, stockText, isOut,
+} from '../state.js';
 import {
   raw, $, html, mount, thumb, toast, buzz, bottles, confirmDialog, dialog, norm,
 } from '../ui.js';
@@ -29,15 +31,24 @@ function openLines() {
 
 const toDeliver = (l) => Math.min(adjust[l.id] ?? l.qty_pending, l.qty_pending);
 
+/** Lo que queda en el almacén del local; nada si la botella no se ha contado. */
+function leftHtml(l) {
+  const left = stockFor(l.product_id);
+  if (left === null) return '';
+  if (left <= 0) return html`<small class="row-left none">No queda en almacén</small>`;
+  return html`<small class="row-left">Quedan ${stockText(left, productById(l.product_id)?.per_case)}</small>`;
+}
+
 function rowHtml(l) {
   const n = toDeliver(l);
   return html`
     <li>
-      <button type="button" class="row ${l.out_of_stock ? 'out' : ''} ${n < l.qty_pending ? 'adjusted' : ''}" data-line="${l.id}">
+      <button type="button" class="row ${isOut(l) ? 'out' : ''} ${n < l.qty_pending ? 'adjusted' : ''}" data-line="${l.id}">
         ${thumb(l, 'mini')}
         <span class="row-text">
           <b>${l.product_name}</b>
-          <small>${l.out_of_stock ? html`<span class="danger">Agotado en almacén · </span>` : ''}Faltan ${l.qty_pending}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${n}</span>` : ''}</small>
+          <small>${isOut(l) ? html`<span class="danger">Agotado en almacén · </span>` : ''}Faltan ${l.qty_pending}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${n}</span>` : ''}</small>
+          ${leftHtml(l)}
         </span>
         <span class="row-qty">x${n}</span>
       </button>
@@ -184,9 +195,9 @@ async function stockPanel() {
   const body = () => {
     const nq = norm(q);
     const list = state.products.filter((p) => !nq || norm(p.name).includes(nq))
-      .sort((a, b) => b.out_of_stock - a.out_of_stock);
+      .sort((a, b) => Number(isOut(b)) - Number(isOut(a)));
     return html`<ul class="stock-list">${list.map((p) => html`
-      <li class="${p.out_of_stock ? 'out' : ''}">
+      <li class="${isOut(p) ? 'out' : ''}">
         ${thumb(p, 'xs')}<span>${p.name}</span>
         <button type="button" class="btn small ${p.out_of_stock ? '' : 'ghost'}" data-stock="${p.id}" data-out="${p.out_of_stock ? '0' : '1'}">
           ${p.out_of_stock ? 'Agotado · marcar disponible' : 'Marcar agotado'}</button>
