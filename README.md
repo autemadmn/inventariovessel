@@ -47,22 +47,25 @@ Salen las botellas de la **selección**, agrupadas y en el orden que decide el e
 ### Gestión (encargado, con PIN)
 Cuatro pestañas (Informes, Selección, Personal y Catálogo) y Ajustes en el engranaje.
 
-- **Informes** (se abre por defecto): botellas por noche, semana, mes o fechas elegidas, comparadas con el
-  periodo anterior. Filtros por grupo de la selección (o «Fuera de la selección») y por barra. Gráfica por
-  noche, totales por grupo y lista de botellas con cajas y sueltas (si se conocen las botellas por caja) y la
-  etiqueta «Agotado». Descarga en CSV.
-- **Detalle de botella** (tocando una fila del informe): noches, reposiciones con «Corregir» (motivo
-  obligatorio) y «Añadir olvidada», periodos en que estuvo agotada, botón para marcarla agotada o disponible
-  y edición de las botellas por caja. Nada se borra: las correcciones quedan registradas.
+- **Informes** (se abre por defecto): qué alcohol se ha repuesto. Arriba, «Último finde · Este mes · Mes
+  pasado»; debajo, los grupos de la selección en su orden (y «Otras» si alguna botella sin grupo se movió).
+  Cada botella sale con su imagen, el número de botellas repuestas en grande, las cajas («5 cajas + 2») si se
+  conocen las botellas por caja y la etiqueta «Agotado». Las que no se repusieron quedan plegadas al final.
+- **Detalle de botella** (tocando una fila): total del periodo y sus cajas, reparto Barra 1 / Barra 2 y una
+  gráfica con un punto por semana de todo su histórico (las semanas sin apertura no salen). Desde aquí se
+  marca agotada o disponible y se cambian las botellas por caja. Plegadas al final, las reposiciones del
+  periodo con «Corregir» (motivo obligatorio) y «Añadir una olvidada». Nada se borra.
 - **Selección**: qué botellas salen en «Pedir». Crear, renombrar, ordenar y borrar grupos; ordenar las
   botellas dentro de cada grupo y moverlas entre grupos arrastrando desde el asa (en el móvil, mantener
   pulsado) o con el menú «…» de cada fila. Una botella «fuera de la selección» no sale en «Pedir», pero
   sigue en el catálogo, en Reponer y en el histórico. Los cambios llegan a los demás móviles en unos segundos.
 - **Personal**: añadir, renombrar, ordenar y quitar (desactivar) los nombres que salen en «¿Quién eres?».
   Los retirados siguen en el histórico y se pueden volver a activar.
-- **Catálogo**: corregir nombres, confirmar capacidad y botellas por caja, añadir fotos (desde la cámara del móvil)
-  y resolver las botellas sin identificar.
-- **Ajustes** (engranaje): nombres de las barras, hora de corte, códigos de acceso y copia de seguridad.
+- **Catálogo**: ver las botellas, añadir una y editarla: foto (desde la cámara del móvil), nombre, grupo,
+  botellas por caja, agotado y activo. Categoría, estado, capacidad y nota quedan en «Más datos». También se
+  resuelven aquí las botellas sin identificar.
+- **Ajustes** (engranaje): nombres de las barras, códigos de acceso y copia de seguridad. La jornada (corte a
+  las 12:00, hora de Madrid) no se cambia desde la app.
 
 ## Catálogo inicial
 

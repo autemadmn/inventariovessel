@@ -1,4 +1,4 @@
-// Ajustes generales, nombres de las barras y códigos de acceso.
+// Ajustes: nombres de las barras, códigos de acceso y copia de seguridad.
 import { auth, mget, mput } from '../api.js';
 import { state, loadBootstrap } from '../state.js';
 import { html, mount, toast } from '../ui.js';
@@ -11,14 +11,10 @@ export async function renderAjustes(root) {
       <div class="form-grid">${s.bars.map((b) => html`
         <label class="field"><span>Nombre de la barra ${b.id}</span><input name="bar_${b.id}" value="${b.name}" maxlength="40" required></label>`)}</div>
 
-      <h3 class="section-title">Noche de trabajo</h3>
-      <div class="form-grid">
-        <label class="field"><span>Hora de corte</span>
-          <input name="cutoff_hour" type="number" min="0" max="23" value="${s.cutoff_hour}" required>
-          <small class="muted">Lo que ocurra antes de esta hora cuenta para la noche anterior (por defecto, 12:00).</small></label>
-        <label class="field"><span>Zona horaria</span><input name="timezone" value="${s.timezone}" required></label>
-        <label class="field"><span>Minutos para deshacer una entrega</span><input name="undo_minutes" type="number" min="0" max="120" value="${s.undo_minutes}"></label>
-      </div>
+      <!-- La jornada (corte a las 12:00, Europe/Madrid) no se toca desde aquí: se reenvía tal cual. -->
+      <input type="hidden" name="cutoff_hour" value="${s.cutoff_hour}">
+      <input type="hidden" name="timezone" value="${s.timezone}">
+      <input type="hidden" name="undo_minutes" value="${s.undo_minutes}">
 
       <h3 class="section-title">Acceso</h3>
       <p class="muted small">La aplicación está en internet: usa un código para el personal y un PIN distinto para el encargado.</p>

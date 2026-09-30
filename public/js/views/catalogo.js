@@ -1,5 +1,7 @@
-// Catálogo provisional: corregir nombres, confirmar capacidades y botellas por
-// caja, añadir fotos e identificar las botellas dudosas sin crear duplicados.
+// Catálogo: ver las botellas, añadir una nueva y editarla (foto, nombre, grupo,
+// botellas por caja, agotado, activo). Los datos de ficha (categoría, estado,
+// capacidad, nota) quedan plegados en «Más datos». También se identifican aquí
+// las botellas dudosas sin crear duplicados.
 import {
   mget, mpost, mput, mdel, post,
 } from '../api.js';
@@ -7,13 +9,6 @@ import { state, loadBootstrap } from '../state.js';
 import {
   html, mount, thumb, toast, formDialog, resizeImage, norm,
 } from '../ui.js';
-
-const STATUS = {
-  confirmado: 'Confirmado',
-  pendiente: 'Por confirmar',
-  sin_identificar: 'Sin identificar',
-  descartado: 'Descartado',
-};
 
 let q = '';
 
@@ -26,14 +21,8 @@ export async function renderCatalogo(root) {
     const unidentified = products.filter((p) => p.status === 'sin_identificar');
     const discarded = products.filter((p) => p.status === 'descartado');
     const normal = products.filter((p) => !['sin_identificar', 'descartado'].includes(p.status) && match(p));
-    const pendingCount = products.filter((p) => p.status === 'pendiente' && p.active).length;
-    const missingData = products.filter((p) => p.active && (!p.capacity_ml || !p.per_case)).length;
 
     mount(root, html`
-      <div class="notice">
-        <p>${pendingCount} por confirmar · ${missingData} sin capacidad o botellas por caja.</p>
-      </div>
-
       ${unidentified.length ? html`
         <h3 class="section-title">Pendientes de identificar</h3>
         <p class="muted small">No aparecen en «Pedir» hasta que se identifiquen. Si resultan ser un producto que ya existe, márcalo así para no duplicarlo.</p>
@@ -57,13 +46,11 @@ export async function renderCatalogo(root) {
             <li class="${p.active ? '' : 'inactive'}">
               ${thumb(p, 'sm')}
               <div><b>${p.name}</b>
-                <span class="tag ${p.status === 'pendiente' ? 'warn' : 'ok'}">${STATUS[p.status]}</span>
+                ${p.out_of_stock ? html`<span class="tag danger">Agotado</span>` : ''}
                 ${!p.active ? html`<span class="tag">Oculto</span>` : ''}
-                ${p.group_id ? html`<span class="tag info">${groupName(p.group_id)}</span>` : ''}
-                ${p.out_of_stock ? html`<span class="tag danger">Agotado en almacén</span>` : ''}
-                <small class="muted block">${p.capacity_ml ? `${p.capacity_ml / 10} cl` : 'Capacidad sin confirmar'} ·
-                  ${p.per_case ? `${p.per_case} por caja` : 'Botellas por caja sin confirmar'}</small>
-                ${p.note ? html`<small class="muted block">${p.note}</small>` : ''}
+                ${p.status === 'pendiente' ? html`<span class="tag warn">Por confirmar</span>` : ''}
+                <small class="muted block">${[p.group_id ? groupName(p.group_id) : 'Fuera de la selección',
+    p.per_case ? `${p.per_case} por caja` : ''].filter(Boolean).join(' · ')}</small>
               </div>
               <div class="btns">
                 <label class="btn small ${p.photo ? 'ghost' : ''}">${p.photo ? 'Cambiar foto' : 'Foto'}
@@ -185,19 +172,21 @@ async function editProduct(p) {
         ${state.products.find((x) => x.id === p.id)?.image ? html`<small class="muted">Con imagen de catálogo, la foto propia solo se usa como respaldo.</small>` : ''}
       </div></div>` : ''}
     <label class="field"><span>Nombre</span><input name="name" value="${p?.name ?? ''}" required maxlength="80"></label>
-    <label class="field"><span>Categoría</span>${categorySelect(p?.category ?? 'otros')}</label>
-    <label class="field"><span>Estado</span><select name="status">
-      <option value="confirmado" ${p?.status === 'confirmado' ? 'selected' : ''}>Confirmado</option>
-      <option value="pendiente" ${!p || p.status === 'pendiente' ? 'selected' : ''}>Por confirmar</option></select></label>
-    <label class="field"><span>Nota (qué falta confirmar, variedad…)</span><input name="note" value="${p?.note ?? ''}" maxlength="400"></label>
-    <div class="form-grid">
-      <label class="field"><span>Capacidad (ml)</span><input name="capacity_ml" type="number" min="1" max="10000" inputmode="numeric" value="${p?.capacity_ml ?? ''}" placeholder="Sin confirmar"></label>
-      <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="10000" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Sin confirmar"></label>
-    </div>
     <label class="field"><span>Grupo</span>${groupSelect(isNew ? defaultGroupId() : p.group_id)}
-      <small class="muted">Solo las botellas con grupo salen en «Pedir». Se ordenan en Gestión → Selección.</small></label>
-    <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}> Activo (si lo desmarcas, deja de salir en Pedir y en Selección; sigue en el histórico)</label>
-    ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado en almacén</label>` : ''}`,
+      <small class="muted">Solo las botellas con grupo salen en «Pedir». Se ordenan en Selección.</small></label>
+    <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="10000" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Por ejemplo, 6"></label>
+    ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado</label>` : ''}
+    <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}>
+      <span>Activo<small class="muted block">Si lo desmarcas, deja de salir en Pedir y en Selección. Sigue en el histórico.</small></span></label>
+    <details class="more-data">
+      <summary>Más datos</summary>
+      <label class="field"><span>Categoría</span>${categorySelect(p?.category ?? 'otros')}</label>
+      <label class="field"><span>Estado</span><select name="status">
+        <option value="confirmado" ${p?.status === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+        <option value="pendiente" ${!p || p.status === 'pendiente' ? 'selected' : ''}>Por confirmar</option></select></label>
+      <label class="field"><span>Capacidad (ml)</span><input name="capacity_ml" type="number" min="1" max="10000" inputmode="numeric" value="${p?.capacity_ml ?? ''}" placeholder="Sin confirmar"></label>
+      <label class="field"><span>Nota</span><input name="note" value="${p?.note ?? ''}" maxlength="400"></label>
+    </details>`,
   {
     wide: true,
     onMount(dlg) {
