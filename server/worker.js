@@ -18,7 +18,7 @@ export default {
     const res = await handler(request, {
       getDb: async () => {
         if (!env.DATABASE_URL) throw new HttpError(503, 'Falta el secreto DATABASE_URL.');
-        db ??= pgDb(env.DATABASE_URL);
+        db ??= pgDb(env.DATABASE_URL, { schema: env.DATABASE_SCHEMA });
         if (!schemaOk) {
           await checkSchema(db);
           schemaOk = true;

@@ -7,6 +7,7 @@
   "compatibility_date": "2025-09-01",
   // postgres.js necesita los módulos de Node (sockets, crypto, buffer).
   "compatibility_flags": ["nodejs_compat"],
+  "vars": { "DATABASE_SCHEMA": "vessel_reposicion" },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

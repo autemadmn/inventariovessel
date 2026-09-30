@@ -2,5 +2,5 @@
 # Los valores reales van como secretos en Cloudflare: `npx wrangler secret put <NOMBRE>`.
 STAFF_CODE=
 MANAGER_PIN=
-# URI del pooler de Supabase en modo Transaction (puerto 6543).
+# URI del pooler de Supabase en modo Session (puerto 5432).
 DATABASE_URL=

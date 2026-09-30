@@ -30,7 +30,7 @@ const MIME = {
 let db;
 let where;
 if (process.env.DATABASE_URL) {
-  db = pgDb(process.env.DATABASE_URL, { max: 5 });
+  db = pgDb(process.env.DATABASE_URL, { max: 5, schema: process.env.DATABASE_SCHEMA });
   await checkSchema(db);
   where = 'Postgres (DATABASE_URL)';
 } else {

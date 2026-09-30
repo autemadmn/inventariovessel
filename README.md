@@ -165,14 +165,14 @@ Calcula media hora. Hazlo con el local cerrado.
    (por ejemplo `reposicion-barras`), elige una contraseña de base de datos larga (guárdala en un sitio
    seguro: se usa en el paso 3) y la región más cercana (por ejemplo *West EU*). Espera a que termine de
    crearse.
-2. **Crea las tablas.** En el panel del proyecto: **SQL Editor → New query**. Abre el archivo
-   `supabase/migrations/0001_schema.sql` de este repositorio, copia todo su contenido, pégalo y pulsa
-   **Run**. Después haz lo mismo con `supabase/migrations/0002_seed.sql` (catálogo, grupos y personal
-   iniciales). Las dos se pueden repetir sin peligro: no duplican nada.
-   *(Alternativa para quien use la terminal: `npx supabase link` y `npx supabase db push`.)*
+2. **Crea las tablas.** En el panel del proyecto: **SQL Editor → New query**. Ejecuta primero
+   `CREATE SCHEMA IF NOT EXISTS vessel_reposicion;`. Después, antes del contenido de cada archivo
+   `supabase/migrations/0001_schema.sql` y `0002_seed.sql`, añade en la misma consulta
+   `SET search_path TO vessel_reposicion;` y pulsa **Run**. Así las tablas quedan en el esquema que
+   usa el Worker (`DATABASE_SCHEMA` en `wrangler.jsonc`). Las migraciones se pueden repetir sin duplicar datos.
 3. **Copia la dirección de conexión.** Botón **Connect** (arriba) → **Connection string** →
-   **Transaction pooler** (puerto **6543**). Copia la URI, que tiene esta forma:
-   `postgresql://postgres.<proyecto>:[YOUR-PASSWORD]@aws-0-<región>.pooler.supabase.com:6543/postgres`,
+   **Session pooler** (puerto **5432**). Copia la URI, que tiene esta forma:
+   `postgresql://postgres.<proyecto>:[YOUR-PASSWORD]@<pooler-host>:5432/postgres`,
    y cambia `[YOUR-PASSWORD]` por la contraseña del paso 1.
 4. **Guárdala como secreto en Cloudflare.** En la carpeta del repositorio:
    ```bash
@@ -186,11 +186,11 @@ Calcula media hora. Hazlo con el local cerrado.
 6. **Importa la copia en Supabase.** En la carpeta del repositorio (hace falta `npm install` una vez):
    ```bash
    # macOS / Linux
-   DATABASE_URL='postgresql://…6543/postgres' node scripts/db/import-backup.mjs copia.json
+   DATABASE_URL='postgresql://…5432/postgres' node scripts/db/import-backup.mjs copia.json
    ```
    ```powershell
    # Windows (PowerShell)
-   $env:DATABASE_URL='postgresql://…6543/postgres'; node scripts/db/import-backup.mjs copia.json
+   $env:DATABASE_URL='postgresql://…5432/postgres'; node scripts/db/import-backup.mjs copia.json
    ```
    Muestra cuántas filas ha importado de cada tabla. Las copias de la versión anterior se convierten
    solas: los «habituales» pasan al grupo «Habituales» en su orden, el resto a «Resto», y se crea el
@@ -208,6 +208,16 @@ Calcula media hora. Hazlo con el local cerrado.
    ha borrado y vuelve a usarse tal como estaba en el paso 5; lo que se haya registrado después solo
    estará en Supabase (descárgalo con la copia de seguridad antes de volver atrás si lo necesitas).
    Cuando todo funcione unos días con Supabase, la base D1 se puede borrar desde el panel de Cloudflare.
+
+### Compartir un proyecto de Supabase con otra aplicación
+
+Para no modificar sus tablas, crea un esquema y un usuario de Postgres exclusivos para Reposición.
+Ejecuta `0001_schema.sql` y `0002_seed.sql` con el `search_path` fijado a ese esquema. Configura
+`DATABASE_SCHEMA` con su nombre (en `wrangler.jsonc` para el Worker y como variable de entorno en Node
+al importar la copia). La URI `DATABASE_URL` debe usar el usuario propio mediante el **Session pooler**:
+`postgresql://<usuario>.<proyecto>:[YOUR-PASSWORD]@<pooler-host>:5432/postgres`.
+El usuario debe tener `USAGE` y `CREATE` en su esquema y ser propietario de sus tablas, sin permisos
+sobre las tablas de la otra app.
 
 ## Probarla en local
 
@@ -229,6 +239,7 @@ Los datos de la versión anterior en `./data/*.db` (SQLite) no se leen: descarga
 con la versión anterior e impórtala así.
 
 Variables de entorno de la versión Node: `STAFF_CODE`, `MANAGER_PIN`, `DATABASE_URL` (opcional),
+`DATABASE_SCHEMA` (si se comparte proyecto),
 `DATA_DIR` y `PORT`. Para `npm run cf:dev`, copia `.dev.vars.example` como `.dev.vars` y rellénalo.
 También hay un `Dockerfile` por si se prefiere un servidor propio (PGlite en el volumen `/data`, o
 Supabase con `DATABASE_URL`).

@@ -30,7 +30,7 @@ function wrap(q) {
   return t;
 }
 
-/** `schema` (solo para el test de concurrencia) fija el search_path de la conexión. */
+/** `schema` fija el search_path de la conexión para aislar los datos de la app. */
 export function pgDb(url, { max = 1, schema } = {}) {
   const sql = postgres(url, {
     prepare: false, max, fetch_types: false, idle_timeout: 5, connect_timeout: 10,

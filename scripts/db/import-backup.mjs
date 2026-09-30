@@ -31,7 +31,7 @@ try {
     db = await openPglite(resolve(pgliteDir));
   } else if (process.env.DATABASE_URL) {
     const { pgDb } = await import('../../server/db-pg.js');
-    db = pgDb(process.env.DATABASE_URL);
+    db = pgDb(process.env.DATABASE_URL, { schema: process.env.DATABASE_SCHEMA });
     await checkSchema(db);
   } else {
     throw new Error('Falta DATABASE_URL (o usa --pglite <carpeta>).');
