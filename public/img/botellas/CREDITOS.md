@@ -1,5 +1,13 @@
 # Créditos de las fotografías
 
+## Botellas PNG generadas
+
+Las 18 imágenes PNG del manifiesto son representaciones generadas con OpenAI ImageGen a partir de las fotografías de referencia indicadas en `manifest.json`. No son fotografías oficiales de los productos; los detalles pequeños de las etiquetas pueden variar. Se generaron para: moskovskaya, skyy, zeeland-n8, puerto-de-indias, masters-pink, larios-rose, larios-pomelo, larios-12, tanqueray-london-dry, masters-london-dry, jack-daniels-old-no-7, dewars-white-label, johnnie-walker-red-label, j-b-rare, dyc-8, cacique-anejo, barcelo-anejo y brugal-anejo.
+
+«Old / Old Sport» sigue sin imagen de producto porque su identificación está pendiente. La referencia de Puerto de Indias corresponde a Strawberry; la variedad del inventario sigue pendiente de confirmar.
+
+## Fotografías de referencia
+
 Fotos de referencia de las botellas, obtenidas de fuentes con licencia libre y reducidas de tamaño (la de DYC 8 está además recortada). Se pueden sustituir por fotos propias desde Gestión → Catálogo.
 
 | Producto | Archivo | Fuente | Autoría | Licencia |

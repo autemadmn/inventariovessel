@@ -1,1 +1,20 @@
-{}
+{
+  "moskovskaya": { "file": "moskovskaya.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/4053500002018"], "confidence": "media", "generated_at": "2026-09-30" },
+  "skyy": { "file": "skyy.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/0721059017503"], "confidence": "media", "generated_at": "2026-09-30" },
+  "zeeland-n8": { "file": "zeeland-n8.png", "model": "openai-imagegen", "refs": ["https://valenciaplaza.com/guiahedonista/comer3/zeeland-el-gin-de-moda"], "confidence": "media", "generated_at": "2026-09-30" },
+  "puerto-de-indias": { "file": "puerto-de-indias.png", "model": "openai-imagegen", "refs": ["https://evinium.com/ginebra/194-ginebra-strawberry-puerto-de-indias-70cl.html"], "confidence": "media", "generated_at": "2026-09-30" },
+  "masters-pink": { "file": "masters-pink.png", "model": "openai-imagegen", "refs": ["https://www.campoluzenoteca.com/gin-master-pink-70cl-6548.html"], "confidence": "media", "generated_at": "2026-09-30" },
+  "larios-rose": { "file": "larios-rose.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/8411144100402"], "confidence": "media", "generated_at": "2026-09-30" },
+  "larios-pomelo": { "file": "larios-pomelo.png", "model": "openai-imagegen", "refs": ["https://www.lariosgin.es/en/gins"], "confidence": "alta", "generated_at": "2026-09-30" },
+  "larios-12": { "file": "larios-12.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/8411144100198"], "confidence": "media", "generated_at": "2026-09-30" },
+  "tanqueray-london-dry": { "file": "tanqueray-london-dry.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5000281015248"], "confidence": "media", "generated_at": "2026-09-30" },
+  "masters-london-dry": { "file": "masters-london-dry.png", "model": "openai-imagegen", "refs": ["https://www.vinoscovigran.com/es/402-ginebra-master-s.html"], "confidence": "media", "generated_at": "2026-09-30" },
+  "jack-daniels-old-no-7": { "file": "jack-daniels-old-no-7.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5099873089798"], "confidence": "media", "generated_at": "2026-09-30" },
+  "dewars-white-label": { "file": "dewars-white-label.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5000277001200"], "confidence": "media", "generated_at": "2026-09-30" },
+  "johnnie-walker-red-label": { "file": "johnnie-walker-red-label.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5000267014203"], "confidence": "media", "generated_at": "2026-09-30" },
+  "j-b-rare": { "file": "j-b-rare.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5010103800303"], "confidence": "media", "generated_at": "2026-09-30" },
+  "dyc-8": { "file": "dyc-8.png", "model": "openai-imagegen", "refs": ["https://commons.wikimedia.org/wiki/File:Botella_DYC.jpg"], "confidence": "media", "generated_at": "2026-09-30" },
+  "cacique-anejo": { "file": "cacique-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5000281030838"], "confidence": "media", "generated_at": "2026-09-30" },
+  "barcelo-anejo": { "file": "barcelo-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/7461323129237"], "confidence": "media", "generated_at": "2026-09-30" },
+  "brugal-anejo": { "file": "brugal-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/7460855200353"], "confidence": "media", "generated_at": "2026-09-30" }
+}
