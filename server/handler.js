@@ -1,6 +1,5 @@
 // Rutas de la API con Request/Response estándar: el mismo código sirve en
 // Cloudflare Workers (worker.js) y en Node (index.js).
-import { CATEGORIES } from './catalog.js';
 import * as svc from './services.js';
 
 const SECURITY_HEADERS = {
@@ -39,9 +38,9 @@ function decodeDataUrl(data) {
 
 /**
  * @param {object} opts
- * @param {() => Promise<object>} opts.getDb  adaptador de base de datos listo para usar
+ * @param {(reqCtx: object) => Promise<object>} opts.getDb  adaptador de base de datos listo para usar
  * @param {object} opts.env  variables de entorno (STAFF_CODE, MANAGER_PIN)
- * @returns {(request: Request) => Promise<Response|null>}  null si la ruta no es de la API
+ * @returns {(request: Request, reqCtx?: object) => Promise<Response|null>}  null si la ruta no es de la API
  */
 export function createHandler({ getDb, env = {}, log = console }) {
   // Límite sencillo de intentos fallidos por IP (por instancia).
@@ -92,10 +91,8 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['POST', '/api/auth/manager', 'manager', () => ({ ok: true })],
 
     ['GET', '/api/bootstrap', 'staff', async ({ db }) => {
-      const [bars, products, settings, date, { manager }] = await Promise.all([
-        svc.listBars(db), svc.listProducts(db), svc.publicSettings(db), svc.currentDate(db), secrets(db),
-      ]);
-      return { bars, categories: CATEGORIES, products, settings, date, managerRequired: Boolean(manager) };
+      const { manager } = await secrets(db);
+      return svc.bootstrap(db, { managerRequired: Boolean(manager) });
     }],
     ['GET', '/api/live', 'staff', ({ db }) => svc.liveState(db)],
     ['POST', '/api/requests', 'staff', ({ db, body }) => svc.createRequest(db, body)],
@@ -106,12 +103,25 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['POST', '/api/deliveries/:id/undo', 'staff', ({ db, id, body }) => svc.undoDelivery(db, id, body)],
     ['POST', '/api/products/:id/stock', 'staff', ({ db, id, body }) => svc.setOutOfStock(db, id, body.out_of_stock, { by: body.by })],
 
+    // Rutas literales antes que las de :id.
     ['GET', '/api/products', 'manager', ({ db }) => svc.listProducts(db, { all: true })],
+    ['PUT', '/api/products/order', 'manager', ({ db, body }) => svc.orderProducts(db, body)],
     ['POST', '/api/products', 'manager', ({ db, body }) => svc.createProduct(db, body, { by: body.by })],
     ['PUT', '/api/products/:id', 'manager', ({ db, id, body }) => svc.updateProduct(db, id, body, { by: body.by, reason: body.reason })],
     ['POST', '/api/products/:id/resolve', 'manager', ({ db, id, body }) => svc.resolveUnidentified(db, id, body, { by: body.by })],
     ['POST', '/api/products/:id/photo', 'manager', ({ db, id, body }) => svc.setProductPhoto(db, id, decodeDataUrl(body.data), { by: body.by })],
     ['DELETE', '/api/products/:id/photo', 'manager', ({ db, id, url }) => svc.removeProductPhoto(db, id, { by: url.searchParams.get('by') })],
+
+    ['GET', '/api/staff', 'manager', ({ db }) => svc.listStaff(db, { all: true })],
+    ['POST', '/api/staff', 'manager', ({ db, body }) => svc.createStaff(db, body, { by: body.by })],
+    ['PUT', '/api/staff/order', 'manager', ({ db, body }) => svc.orderStaff(db, body, { by: body.by })],
+    ['PUT', '/api/staff/:id', 'manager', ({ db, id, body }) => svc.updateStaff(db, id, body, { by: body.by })],
+    ['POST', '/api/groups', 'manager', ({ db, body }) => svc.createGroup(db, body, { by: body.by })],
+    ['PUT', '/api/groups/order', 'manager', ({ db, body }) => svc.orderGroups(db, body, { by: body.by })],
+    ['PUT', '/api/groups/:id', 'manager', ({ db, id, body }) => svc.renameGroup(db, id, body, { by: body.by })],
+    ['DELETE', '/api/groups/:id', 'manager', ({ db, id, url }) => svc.deleteGroup(db, id, {
+      move_to: url.searchParams.get('move_to') ?? undefined, by: url.searchParams.get('by'),
+    })],
 
     ['GET', '/api/report', 'manager', ({ db, url }) => svc.report(db, q(url))],
     ['GET', '/api/deliveries', 'manager', ({ db, url }) => svc.listDeliveries(db, q(url))],
@@ -126,7 +136,7 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['GET', '/api/purchases/:id', 'manager', ({ db, id }) => svc.getPurchase(db, id)],
     ['POST', '/api/purchases', 'manager', ({ db, body }) => svc.savePurchase(db, null, body, { by: body.by })],
     ['PUT', '/api/purchases/:id', 'manager', ({ db, id, body }) => svc.savePurchase(db, id, body, { by: body.by })],
-    ['DELETE', '/api/purchases/:id', 'manager', ({ db, id }) => svc.deletePurchase(db, id)],
+    ['DELETE', '/api/purchases/:id', 'manager', ({ db, id, url }) => svc.deletePurchase(db, id, { by: url.searchParams.get('by') })],
     ['GET', '/api/audit', 'manager', ({ db, url }) => svc.listAudit(db, q(url))],
     ['GET', '/api/settings', 'manager', async ({ db }) => {
       const { staff, manager } = await secrets(db);
@@ -173,13 +183,21 @@ export function createHandler({ getDb, env = {}, log = console }) {
     }
   }
 
-  return async function handle(request) {
+  // Errores de Postgres que no son fallos del servidor sino cambios simultáneos.
+  const PG_ERRORS = {
+    '40P01': 'Otra persona ha cambiado esto a la vez. Inténtalo de nuevo.',
+    40001: 'Otra persona ha cambiado esto a la vez. Inténtalo de nuevo.',
+    23503: 'Algo ha cambiado mientras tanto: recarga e inténtalo de nuevo.',
+    23505: 'Ya existe un elemento con ese nombre.',
+  };
+
+  return async function handle(request, reqCtx = {}) {
     const url = new URL(request.url);
     const { pathname } = url;
     const photo = /^\/photos\/(\d+)$/.exec(pathname);
     if (!pathname.startsWith('/api/') && !photo) return null;
     try {
-      const db = await getDb();
+      const db = await getDb(reqCtx);
       if (photo) {
         const p = await svc.getPhoto(db, Number(photo[1]));
         if (!p) return json(404, { error: 'Foto no encontrada.' });
@@ -196,9 +214,10 @@ export function createHandler({ getDb, env = {}, log = console }) {
       if (result instanceof Response) return result;
       return json(200, result ?? { ok: true });
     } catch (err) {
-      const status = err.status || 500;
-      if (status >= 500) log.error?.(err);
-      return json(status, { error: status >= 500 ? 'Error interno del servidor.' : err.message });
+      if (err instanceof svc.HttpError) return json(err.status, { error: err.message });
+      if (PG_ERRORS[err?.code]) return json(409, { error: PG_ERRORS[err.code] });
+      log.error?.(err);
+      return json(500, { error: 'Error interno del servidor.' });
     }
   };
 }

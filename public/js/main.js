@@ -1,6 +1,6 @@
 import { auth, get, post, setAuthErrorHandler, ApiError, store } from './api.js';
-import { state, loadBootstrap, loadLive, setWho, subscribe } from './state.js';
-import { $, html, mount, formDialog, dateLabel } from './ui.js';
+import { state, loadBootstrap, loadLive, loadManifest, setWho, subscribe } from './state.js';
+import { $, html, raw, mount, dialog, formDialog, dateLabel, silhouette } from './ui.js';
 import { renderPedir } from './views/pedir.js';
 import { renderReponer } from './views/reponer.js';
 import { renderGestion } from './views/gestion.js';
@@ -37,16 +37,97 @@ function renderHeader() {
   $('#night').textContent = state.date ? `Noche ${dateLabel(state.date)}` : '';
 }
 
+// Mantiene el nombre del dispositivo alineado con la lista de personal: sigue
+// los renombrados y olvida a quien ya no está activo. Devuelve true si lo olvidó.
+function syncWho() {
+  if (!state.who) return false;
+  const same = (a, b) => a.toLocaleLowerCase('es') === b.toLocaleLowerCase('es');
+  if (state.whoId) {
+    const p = state.staff.find((s) => s.id === state.whoId);
+    if (p) {
+      if (p.name !== state.who) setWho(p.name, p.id);
+      return false;
+    }
+  } else if (!state.staff.length) {
+    return false; // escrito a mano y sin lista: se respeta
+  } else {
+    const p = state.staff.find((s) => same(s.name, state.who));
+    if (p) {
+      setWho(p.name, p.id);
+      return false;
+    }
+  }
+  setWho('', null);
+  store.set('whoAsked', null);
+  return true;
+}
+
+let asking = false;
 async function askWho() {
-  const data = await formDialog('¿Quién usa este dispositivo?', html`
-    <p class="muted">Opcional. Tu nombre aparece en la lista para que el resto sepa quién pide y quién repone. Se guarda en este dispositivo y puedes ponerlo cuando quieras desde el botón de arriba a la derecha.</p>
-    <label class="field"><span>Nombre</span>
-      <input name="who" value="${state.who}" maxlength="40" autocomplete="given-name" required></label>`,
-  { ok: 'Guardar', cancel: 'Ahora no' });
-  if (data) {
-    setWho(data.who);
+  if (asking) return;
+  asking = true;
+  try {
+    await chooseWho();
+  } finally {
+    asking = false;
+  }
+}
+
+/** Pregunta automática: espera a que se cierre cualquier otro diálogo para no apilarse. */
+function askWhoWhenFree() {
+  if (document.querySelector('dialog[open]')) setTimeout(askWhoWhenFree, 1500);
+  else askWho();
+}
+
+async function chooseWho() {
+  if (!state.staff.length) {
+    const data = await formDialog('¿Quién usa este dispositivo?', html`
+      <p class="muted">Opcional. Tu nombre aparece en la lista para que el resto sepa quién pide y quién repone. Se guarda en este dispositivo y puedes ponerlo cuando quieras desde el botón de arriba a la derecha.</p>
+      <label class="field"><span>Nombre</span>
+        <input name="who" value="${state.who}" maxlength="40" autocomplete="given-name" required></label>`,
+    { ok: 'Guardar', cancel: 'Ahora no' });
+    if (data) {
+      setWho(data.who);
+      renderHeader();
+    }
+    return;
+  }
+  const chosen = await dialog({
+    title: '¿Quién eres?',
+    body: html`
+      <p class="muted">Tu nombre aparece en la lista para que el resto sepa quién pide y quién repone. Se guarda en este dispositivo.</p>
+      <div class="who-list">${state.staff.map((s, i) => html`
+        <button type="button" class="who-choice ${s.id === state.whoId ? 'on' : ''}" data-id="${s.id}"
+          ${i === 0 ? raw('autofocus') : ''} aria-pressed="${String(s.id === state.whoId)}">${s.name}</button>`)}
+      </div>`,
+    actions: [{ label: 'Ahora no', value: '' }],
+    onMount(dlg, close) {
+      dlg.addEventListener('click', (e) => {
+        const b = e.target.closest('.who-choice');
+        if (b) close(Number(b.dataset.id));
+      });
+    },
+  });
+  const person = state.staff.find((s) => s.id === chosen);
+  if (person) {
+    setWho(person.name, person.id);
     renderHeader();
   }
+}
+
+// Si la imagen de catálogo no carga, se ve la silueta y no un hueco roto.
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  const box = img instanceof HTMLImageElement && img.closest('.thumb.float');
+  if (!box) return;
+  const size = [...box.classList].filter((c) => !['thumb', 'float'].includes(c)).join(' ');
+  box.replaceWith(...silhouetteNodes({ category: box.dataset.cat }, size));
+}, true);
+
+function silhouetteNodes(p, size) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = String(silhouette(p, size));
+  return [...tpl.content.childNodes];
 }
 
 // ------------------------------------------------------------ tiempo real
@@ -138,11 +219,15 @@ setAuthErrorHandler(async (err, manager) => {
   await start();
 });
 
+let started = false;
 async function start() {
-  await Promise.all([loadBootstrap(), loadLive()]);
+  await loadManifest();
+  await loadBootstrap();
+  await loadLive();
   renderHeader();
   connect();
   await navigate();
+  started = true;
   // Se pregunta una sola vez; «Ahora no» o cerrar no vuelve a molestar.
   if (!state.who && !store.get('whoAsked', false)) {
     store.set('whoAsked', true);
@@ -152,7 +237,15 @@ async function start() {
 
 async function boot() {
   $('#who-btn').addEventListener('click', askWho);
-  subscribe(renderHeader);
+  subscribe((what) => {
+    // Si el encargado retiró a esta persona, se le vuelve a preguntar (una vez).
+    // Al arrancar lo hace start(), cuando la pantalla ya está pintada.
+    if (what === 'bootstrap' && syncWho() && started) {
+      store.set('whoAsked', true);
+      askWhoWhenFree();
+    }
+    renderHeader();
+  });
   window.addEventListener('hashchange', navigate);
   try {
     const { accessRequired } = await get('/api/auth');

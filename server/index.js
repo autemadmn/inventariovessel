@@ -1,9 +1,11 @@
 // Servidor para Node (uso local o en un servidor propio). En Cloudflare se usa worker.js.
+// Con DATABASE_URL usa ese Postgres (Supabase); sin ella, PGlite en data/pglite.
 import { createServer } from 'node:http';
 import { createReadStream, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
-import { openNodeDb } from './db-node.js';
-import { ensureSchema } from './schema.js';
+import { pgDb } from './db-pg.js';
+import { openPglite } from './db-pglite.js';
+import { checkSchema } from './schema.js';
 import { createHandler } from './handler.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -25,8 +27,16 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
 };
 
-const db = openNodeDb(join(dataDir, 'inventario.db'));
-await ensureSchema(db);
+let db;
+let where;
+if (process.env.DATABASE_URL) {
+  db = pgDb(process.env.DATABASE_URL, { max: 5 });
+  await checkSchema(db);
+  where = 'Postgres (DATABASE_URL)';
+} else {
+  db = await openPglite(join(dataDir, 'pglite'));
+  where = join(dataDir, 'pglite');
+}
 const handle = createHandler({ getDb: async () => db, env: process.env });
 
 function serveFile(res, file) {
@@ -83,13 +93,13 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, () => {
-  console.log(`Reposición de barras en http://localhost:${port} (datos en ${dataDir})`);
+  console.log(`Reposición de barras en http://localhost:${port} (datos en ${where})`);
   if (!process.env.STAFF_CODE) console.warn('Aviso: sin STAFF_CODE, cualquiera con la dirección podrá entrar (se puede fijar en Ajustes).');
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
-  process.on(sig, () => server.close(() => {
-    db.close();
+  process.on(sig, () => server.close(async () => {
+    await db.end();
     process.exit(0);
   }));
 }

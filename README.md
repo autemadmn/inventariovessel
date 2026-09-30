@@ -11,7 +11,15 @@ pocos segundos.
 
 ## Cómo se usa
 
+### Al abrir la app
+Sale «¿Quién eres?» con un botón por cada persona del personal (Gestión → Personal). Se elige una vez
+y el dispositivo lo recuerda; «Ahora no» lo cierra y el botón de arriba a la derecha lo vuelve a abrir.
+No son cuentas: el nombre solo sirve para que el registro diga quién pidió y quién repuso.
+
 ### Pedir (personal de barra)
+Salen las botellas de la **selección**, agrupadas y en el orden que decide el encargado (al principio,
+«Habituales» en el orden de la estantería y luego «Resto»).
+
 1. Elegir la barra (el dispositivo la recuerda).
 2. Tocar las botellas: cada toque suma una. Se ajusta con «−» en la tarjeta o con «+ / −» al revisar.
 3. Buscar por nombre (sin tildes: «ciroc», «hendricks») o filtrar por categoría.
@@ -40,6 +48,12 @@ pocos segundos.
 - **Informes**: totales por producto, por barra y en conjunto, por noche, semana o mes, comparados con el
   periodo anterior. Descarga en CSV. Corrección de reposiciones (motivo obligatorio) y alta de reposiciones
   olvidadas. Nada se borra: todo queda en «Cambios».
+- **Selección**: qué botellas salen en «Pedir». Crear, renombrar, ordenar y borrar grupos; ordenar las
+  botellas dentro de cada grupo y moverlas entre grupos arrastrando desde el asa (en el móvil, mantener
+  pulsado) o con el menú «…» de cada fila. Una botella «fuera de la selección» no sale en «Pedir», pero
+  sigue en el catálogo, en Reponer y en el histórico. Los cambios llegan a los demás móviles en unos segundos.
+- **Personal**: añadir, renombrar, ordenar y quitar (desactivar) los nombres que salen en «¿Quién eres?».
+  Los retirados siguen en el histórico y se pueden volver a activar.
 - **Noches**: una noche de trabajo agrupa todo lo que ocurre hasta la hora de corte (12:00 por defecto) del día
   siguiente, aunque siga después de medianoche. Aquí se indica si las barras empezaron y terminaron con el
   **mismo nivel** de existencias. Los informes solo hablan de «consumo aproximado» cuando todas las noches del
@@ -91,11 +105,15 @@ Solo botellas de las estanterías de las fotos (la nevera queda fuera). Es provi
   uno que ya existe, sin crear duplicados.
 - No se han inventado capacidades ni botellas por caja: quedan «sin confirmar» hasta que el encargado
   las introduzca.
-- **Fotos**: 29 productos confirmados traen una foto de referencia de fuentes con licencia libre
-  (Open Food Facts y Wikimedia Commons), revisada una a una; fuentes y licencias en
-  `public/img/botellas/CREDITOS.md`. Los productos por confirmar no llevan foto hasta saber la variedad
-  exacta. Donde no hay foto se muestra un distintivo con las iniciales. Desde Gestión → Catálogo → «Foto»
-  se puede hacer una foto propia con el móvil, que sustituye a la de referencia.
+- **Imágenes**, por orden de prioridad:
+  1. Imagen de catálogo: `public/img/botellas/<slug>.png` (botella sin fondo, se ve «flotando»),
+     listada en `public/img/botellas/manifest.json`.
+  2. Foto: la propia que haga el encargado desde Gestión → Catálogo → «Foto», o la de referencia
+     que traen 29 productos confirmados (Open Food Facts y Wikimedia Commons; fuentes y licencias en
+     `public/img/botellas/CREDITOS.md`).
+  3. Si no hay ninguna, una silueta neutra de botella: nunca una foto inventada.
+  Los productos por confirmar no llevan foto hasta saber la variedad exacta. El *slug* (nombre del archivo
+  de imagen) se fija al crear el producto y no cambia al renombrarlo.
 
 ## Fuera de esta versión
 
@@ -103,8 +121,12 @@ Productos de la nevera, registro de copas individuales, operativa de la VIP e in
 
 ## Publicarla en Cloudflare (recomendado)
 
-La app funciona como un **Worker de Cloudflare** con su base de datos **D1**. El plan gratuito de
-Cloudflare es suficiente para dos barras y los datos se guardan de forma permanente.
+La app funciona como un **Worker de Cloudflare** (la API y el control de acceso) con la base de datos en
+**Supabase** (Postgres). El navegador nunca habla con Supabase: solo con el Worker. Los planes gratuitos de
+Cloudflare y Supabase son suficientes para dos barras.
+
+Si es la primera vez, haz antes los pasos 1 a 4 de [Pasar a Supabase](#pasar-a-supabase) (crear la base
+de datos y guardar el secreto `DATABASE_URL`).
 
 1. Crea una cuenta gratuita en https://dash.cloudflare.com/sign-up (o entra en la tuya).
 2. En el menú de la izquierda: **Compute (Workers) → Workers & Pages → Create → Import a repository**
@@ -113,37 +135,111 @@ Cloudflare es suficiente para dos barras y los datos se guardan de forma permane
    - **Project name**: `reposicion-barras` (debe coincidir con el nombre de `wrangler.jsonc`).
    - **Build command**: déjalo vacío. **Deploy command**: `npx wrangler deploy` (el que propone).
    - Rama: `main`.
-4. Pulsa **Create and deploy**. En uno o dos minutos Cloudflare crea el Worker y la base de datos
-   (se crea sola la primera vez) y da una dirección `https://reposicion-barras.<tu-usuario>.workers.dev`.
-5. **Pon los códigos de acceso**: entra en el Worker → **Settings → Variables and Secrets → Add** y crea
-   dos del tipo **Secret**:
+4. Pulsa **Create and deploy**. En uno o dos minutos Cloudflare crea el Worker y da una dirección
+   `https://reposicion-barras.<tu-usuario>.workers.dev`.
+5. **Pon los secretos**: entra en el Worker → **Settings → Variables and Secrets → Add** y crea
+   tres del tipo **Secret**:
    - `STAFF_CODE`: el código que usará el personal para entrar.
    - `MANAGER_PIN`: el PIN del encargado (distinto).
-   Guarda (**Deploy**). Sin ellos, cualquiera que conozca la dirección podría entrar.
+   - `DATABASE_URL`: la dirección de Supabase (ver [Pasar a Supabase](#pasar-a-supabase), paso 3).
+   Guarda (**Deploy**). Sin los dos primeros, cualquiera que conozca la dirección podría entrar; sin el
+   tercero, la app muestra «Falta el secreto DATABASE_URL.».
 6. Abre la dirección en el móvil y usa **«Añadir a pantalla de inicio»** para tenerla como una app.
 
 Cada vez que se sube un cambio a `main`, Cloudflare vuelve a publicar la app sola; los datos no se tocan.
 
 **Copias de seguridad**: Gestión → Ajustes → «Descargar copia de seguridad» descarga todos los datos
-(JSON). Cloudflare D1 además guarda un historial de los últimos días (*Time Travel*).
+(JSON), salvo las fotos propias. Supabase hace además sus propias copias diarias (según el plan).
 
-**Límites del plan gratuito** (holgados para este uso): 100 000 peticiones al día al Worker y
-5 millones de lecturas / 100 000 escrituras diarias en D1. Cada móvil con la app abierta consulta la
-lista cada 4 segundos (unas 900 peticiones por hora).
+**Límites del plan gratuito** (holgados para este uso): 100 000 peticiones al día al Worker. Cada móvil
+con la app abierta consulta la lista cada 4 segundos (unas 900 peticiones por hora) y cada petición abre
+y cierra una conexión con Supabase. Un proyecto gratuito de Supabase se pausa tras una semana sin uso: se
+reactiva desde su panel.
+
+## Pasar a Supabase
+
+Paso a paso para cambiar la base de datos de Cloudflare D1 (versión anterior) a Supabase sin perder nada.
+Calcula media hora. Hazlo con el local cerrado.
+
+1. **Crea el proyecto en Supabase.** Entra en https://supabase.com, **New project**. Ponle un nombre
+   (por ejemplo `reposicion-barras`), elige una contraseña de base de datos larga (guárdala en un sitio
+   seguro: se usa en el paso 3) y la región más cercana (por ejemplo *West EU*). Espera a que termine de
+   crearse.
+2. **Crea las tablas.** En el panel del proyecto: **SQL Editor → New query**. Abre el archivo
+   `supabase/migrations/0001_schema.sql` de este repositorio, copia todo su contenido, pégalo y pulsa
+   **Run**. Después haz lo mismo con `supabase/migrations/0002_seed.sql` (catálogo, grupos y personal
+   iniciales). Las dos se pueden repetir sin peligro: no duplican nada.
+   *(Alternativa para quien use la terminal: `npx supabase link` y `npx supabase db push`.)*
+3. **Copia la dirección de conexión.** Botón **Connect** (arriba) → **Connection string** →
+   **Transaction pooler** (puerto **6543**). Copia la URI, que tiene esta forma:
+   `postgresql://postgres.<proyecto>:[YOUR-PASSWORD]@aws-0-<región>.pooler.supabase.com:6543/postgres`,
+   y cambia `[YOUR-PASSWORD]` por la contraseña del paso 1.
+4. **Guárdala como secreto en Cloudflare.** En la carpeta del repositorio:
+   ```bash
+   npx wrangler secret put DATABASE_URL
+   ```
+   y pega la URI cuando la pida. (O en el panel: Worker → Settings → Variables and Secrets → Add →
+   Secret `DATABASE_URL`.) No la escribas nunca en un archivo del repositorio.
+5. **Descarga la copia de la app actual, antes de desplegar.** En la app que está funcionando ahora:
+   Gestión → Ajustes → «Descargar copia de seguridad». Guarda el archivo (por ejemplo `copia.json`).
+   A partir de aquí, que nadie pida ni reponga hasta terminar.
+6. **Importa la copia en Supabase.** En la carpeta del repositorio (hace falta `npm install` una vez):
+   ```bash
+   # macOS / Linux
+   DATABASE_URL='postgresql://…6543/postgres' node scripts/db/import-backup.mjs copia.json
+   ```
+   ```powershell
+   # Windows (PowerShell)
+   $env:DATABASE_URL='postgresql://…6543/postgres'; node scripts/db/import-backup.mjs copia.json
+   ```
+   Muestra cuántas filas ha importado de cada tabla. Las copias de la versión anterior se convierten
+   solas: los «habituales» pasan al grupo «Habituales» en su orden, el resto a «Resto», y se crea el
+   personal inicial (Carlos, Sergio, Alejandro). Si la base ya tiene noches o pedidos, se detiene; para
+   sustituirlos, repite añadiendo `--force`. Las **fotos propias** hechas con el móvil no viajan en la
+   copia: el script dice cuántas eran; vuelve a hacerlas desde Gestión → Catálogo.
+7. **Despliega**: `npx wrangler deploy` (o sube el cambio a `main` si Cloudflare publica solo).
+8. **Comprueba la app**: entra con el código, elige tu nombre, mira que «Pedir» muestra Habituales y
+   Resto, pide una botella de prueba en un móvil y comprueba que aparece en «Reponer» en otro en unos
+   segundos; márcala como hecha. En Gestión → Informes deben verse las noches anteriores. Si sale
+   «Faltan las migraciones de Supabase.», repite el paso 2; si sale «Falta el secreto DATABASE_URL.»,
+   el paso 4.
+9. **Cómo volver atrás** si algo va mal: en Cloudflare, Worker → **Deployments**, elige el despliegue
+   anterior a este cambio y pulsa **Rollback** (o vuelve a desplegar el commit anterior). La base D1 no se
+   ha borrado y vuelve a usarse tal como estaba en el paso 5; lo que se haya registrado después solo
+   estará en Supabase (descárgalo con la copia de seguridad antes de volver atrás si lo necesitas).
+   Cuando todo funcione unos días con Supabase, la base D1 se puede borrar desde el panel de Cloudflare.
 
 ## Probarla en local
 
 Requisitos: **Node.js 22.16 o superior**.
 
 ```bash
-npm install        # solo hace falta para las herramientas de Cloudflare
-npm start          # versión Node: http://localhost:3000 (datos en ./data)
-npm run cf:dev     # versión Cloudflare en local: http://localhost:8787
+npm install        # dependencias (postgres, PGlite y las herramientas de Cloudflare)
+npm start          # versión Node: http://localhost:3000
+npm run cf:dev     # versión Cloudflare en local: http://localhost:8787 (necesita .dev.vars)
 npm test           # pruebas automáticas
 ```
 
-En la versión Node, las variables de entorno son `STAFF_CODE`, `MANAGER_PIN`, `DATA_DIR` y `PORT`.
-También hay un `Dockerfile` por si se prefiere un servidor propio con un volumen persistente en `/data`.
+**Base de datos en local.** Sin `DATABASE_URL`, `npm start` usa **PGlite** (Postgres dentro del propio
+proceso, sin instalar nada) con los datos en `./data/pglite`. Al arrancar aplica las migraciones de
+`supabase/migrations/`, así que el SQL es el mismo que en Supabase. Con `DATABASE_URL` usa ese Postgres.
+Para cargar una copia en la base local:
+`node scripts/db/import-backup.mjs copia.json --pglite data/pglite` (con la app parada).
+Los datos de la versión anterior en `./data/*.db` (SQLite) no se leen: descarga su copia de seguridad
+con la versión anterior e impórtala así.
+
+Variables de entorno de la versión Node: `STAFF_CODE`, `MANAGER_PIN`, `DATABASE_URL` (opcional),
+`DATA_DIR` y `PORT`. Para `npm run cf:dev`, copia `.dev.vars.example` como `.dev.vars` y rellénalo.
+También hay un `Dockerfile` por si se prefiere un servidor propio (PGlite en el volumen `/data`, o
+Supabase con `DATABASE_URL`).
+
+**Pruebas.** `npm test` crea una base PGlite nueva en memoria para cada prueba: no hace falta Supabase.
+`test/concurrency-pg.test.js` comprueba dos «Hecho» simultáneos con dos conexiones reales; solo se
+ejecuta con `TEST_DATABASE_URL` apuntando a un Postgres **de pruebas** (nunca al de producción): crea un
+esquema temporal y lo borra al terminar.
+
+Si cambias el catálogo inicial en `server/catalog.js`, regenera la semilla con
+`node scripts/db/build-seed.mjs` (una prueba avisa si no coinciden).
 
 ## Estructura
 
@@ -152,15 +248,21 @@ server/
   worker.js     entrada para Cloudflare Workers (API; los archivos de public/ los sirve Cloudflare)
   index.js      entrada para Node (API + archivos de public/)
   handler.js    rutas de la API y control de acceso (Request/Response estándar)
-  services.js   lógica: solicitudes, entregas, correcciones, informes, previsión, compras
-  schema.js     tablas y datos iniciales
-  db-d1.js      acceso a Cloudflare D1
-  db-node.js    acceso a SQLite en Node
+  services.js   lógica: solicitudes, entregas, selección, personal, informes, previsión, compras
+  schema.js     ajustes por defecto y comprobación de que las migraciones están aplicadas
+  db-pg.js      acceso a Postgres/Supabase (postgres.js)
+  db-pglite.js  acceso a PGlite (local y pruebas; aplica las migraciones al abrir)
+  sql.js        utilidades comunes de los dos adaptadores
+  import-backup.js  importación de copias de seguridad (también de la versión anterior)
   dates.js      noches de trabajo, semanas y meses
-  catalog.js    catálogo inicial y fotos de referencia
+  catalog.js    catálogo inicial, grupos, personal inicial y slugs
+supabase/migrations/
+  0001_schema.sql  tablas (RLS activado, sin políticas)
+  0002_seed.sql    datos iniciales (generado por scripts/db/build-seed.mjs)
+scripts/db/     build-seed.mjs e import-backup.mjs
 public/         interfaz (HTML, CSS y JavaScript sin compilación)
   js/shared/forecast.js  cálculo de previsión y compra (lo usan el servidor y el navegador)
-  img/botellas/          fotos de referencia y sus créditos
+  img/botellas/          imágenes y fotos de referencia, manifest.json y créditos
 test/           pruebas (node --test)
 wrangler.jsonc  configuración de Cloudflare
 ```

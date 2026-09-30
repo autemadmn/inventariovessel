@@ -1,7 +1,7 @@
 // Pantalla principal: elegir barra, tocar botellas y enviar la solicitud.
 import { post } from '../api.js';
 import {
-  state, subscribe, setBar, cart, saveCarts, productById, barName, pendingFor, loadLive,
+  state, subscribe, setBar, selection, cart, saveCarts, productById, barName, pendingFor, loadLive,
 } from '../state.js';
 import {
   raw, $, html, mount, norm, thumb, toast, buzz, bottles, dialog,
@@ -84,14 +84,10 @@ function drawBars() {
   document.querySelector('.pedir')?.classList.toggle('no-bar', !state.bar);
 }
 
-function visibleProducts() {
-  const q = norm(query.trim());
-  return state.products.filter((p) => !q
-    || norm(p.name).includes(q) || norm(p.name).replace(/\s/g, '').includes(q.replace(/\s/g, '')));
+// Solo la selección (productos con grupo), en el orden de los grupos.
+function matches(p, q) {
+  return !q || norm(p.name).includes(q) || norm(p.name).replace(/\s/g, '').includes(q.replace(/\s/g, ''));
 }
-
-// Habituales en el orden de la estantería; el resto, junto, en el orden del catálogo.
-const byShelf = (a, b) => (a.habitual_order ?? 9999) - (b.habitual_order ?? 9999) || a.sort - b.sort;
 
 function cardHtml(p) {
   const n = state.bar ? cart()[p.id] || 0 : 0;
@@ -113,20 +109,23 @@ function cardHtml(p) {
 function drawGrid() {
   const el = $('#grid');
   if (!el) return;
-  const list = visibleProducts();
-  if (!list.length) {
+  const all = selection();
+  if (!all.length) {
+    mount(el, html`<p class="empty">No hay botellas en la selección. El encargado puede añadirlas en Gestión → Selección.</p>`);
+    return;
+  }
+  const q = norm(query.trim());
+  const shown = all
+    .map(({ group, products }) => ({ group, products: products.filter((p) => matches(p, q)) }))
+    .filter((g) => g.products.length);
+  if (!shown.length) {
     mount(el, html`<p class="empty">No hay botellas que coincidan con «${query}».</p>`);
     return;
   }
-  if (!query.trim()) {
-    const usual = list.filter((p) => p.habitual).sort(byShelf);
-    const rest = list.filter((p) => !p.habitual);
-    mount(el, html`
-      ${usual.length ? html`<h2 class="grid-title">Habituales</h2>${usual.map(cardHtml)}` : ''}
-      ${rest.length ? html`<h2 class="grid-title">${usual.length ? 'Resto' : 'Botellas'}</h2>${rest.map(cardHtml)}` : ''}`);
-  } else {
-    mount(el, html`${[...list].sort(byShelf).map(cardHtml)}`);
-  }
+  // Con búsqueda se sigue el mismo orden, pero sin cabeceras de grupo.
+  mount(el, q
+    ? html`${shown.flatMap((g) => g.products).map(cardHtml)}`
+    : html`${shown.map((g) => html`<h2 class="grid-title">${g.group.name}</h2>${g.products.map(cardHtml)}`)}`);
 }
 
 function drawCard(pid) {

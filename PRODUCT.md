@@ -44,7 +44,10 @@ explicable. No es un TPV ni un inventario genérico.
 - Informes por producto/barra/noche/semana/mes; «consumo» solo si el nivel de las barras es el mismo.
 - Previsión por promedio por noche o por día de la semana; lista de compra editable en botellas/cajas.
 - Fuera de alcance: nevera, copas individuales, VIP, integración con Ágora.
-- Stack: HTML/CSS/JS sin compilación; Cloudflare Workers + D1.
+- Selección editable por el encargado (grupos y orden de «Pedir») y lista de personal para elegir
+  quién usa el dispositivo (solo nombres, no cuentas).
+- Stack: HTML/CSS/JS sin compilación; Cloudflare Workers + Supabase (Postgres) mediante postgres.js;
+  PGlite en local y en las pruebas.
 
 ## Brand Commitments
 

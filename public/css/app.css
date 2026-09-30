@@ -145,7 +145,7 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
 .night { font-size: 0.875rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .who {
   display: inline-flex; align-items: center; gap: 6px;
-  min-height: 36px; max-width: 42vw; padding: 0 12px 0 10px;
+  min-height: 44px; max-width: 42vw; padding: 0 12px 0 10px;
   background: var(--surface-2); border: 0; border-radius: 999px;
   font-size: 0.875rem; font-weight: 500; color: var(--text);
 }
@@ -258,14 +258,30 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
 }
 /* En botellas altas, la etiqueta suele estar en el tercio inferior. */
 .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 70%; }
-.thumb.ph b { color: var(--faint); font-size: 1.125rem; font-weight: 600; letter-spacing: 0.02em; }
 .thumb.xs { width: 32px; flex: none; border-radius: 6px; }
-.thumb.xs.ph b { font-size: 0.6875rem; }
 .thumb.sm { width: 48px; flex: none; }
-.thumb.sm.ph b { font-size: 0.875rem; }
 .thumb.mini { width: 44px; flex: none; }
-.thumb.mini.ph b { font-size: 0.8125rem; }
 .thumb.lg { width: 112px; flex: none; border-radius: var(--radius); }
+
+/* Imagen de catálogo: botella flotante, sin fondo, borde ni recorte. */
+.thumb.float { overflow: visible; background: none; border-radius: 0; }
+.thumb.float img {
+  object-fit: contain; object-position: 50% 50%;
+  filter: drop-shadow(0 2px 3px rgba(20, 20, 18, 0.22));
+}
+@media (prefers-color-scheme: dark) {
+  /* Halo claro sutil: el vidrio oscuro no se pierde sobre la superficie oscura. */
+  .thumb.float img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.28)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.65)); }
+}
+/* Sin imagen ni foto: silueta neutra, con un matiz leve por categoría. */
+.thumb.sil { --hue: var(--faint); color: color-mix(in srgb, var(--hue) 45%, var(--faint)); }
+.thumb.sil svg { width: 52%; height: 70%; opacity: 0.75; }
+.thumb.sil.xs svg, .thumb.sil.sm svg, .thumb.sil.mini svg { width: 60%; height: 76%; }
+.thumb.cat-ginebra { --hue: var(--bar1); }
+.thumb.cat-vodka { --hue: var(--accent); }
+.thumb.cat-whisky { --hue: var(--warn); }
+.thumb.cat-ron { --hue: var(--danger); }
+.thumb.cat-tequila { --hue: var(--ok); }
 
 /* ---------------------------------------------------------------- Pedir */
 .pedir .bar-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
@@ -402,6 +418,7 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
 .dlg-inner { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 12px 8px 20px; }
 .dlg-head h2 { font-size: 1.125rem; }
+.dlg-head .icon-btn { min-width: 44px; min-height: 44px; }
 .dlg-body { display: flex; flex-direction: column; gap: 14px; padding: 4px 20px 16px; overflow-y: auto; }
 .dlg-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
 .dlg-foot .btn { flex: 1 1 auto; }
@@ -443,6 +460,27 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast.error { background: var(--danger); color: var(--danger-ink); }
 .toast.error .icon { color: var(--danger-ink); }
+/* Con «Deshacer», abajo, al alcance del pulgar (solo sale en Gestión, sin barra de pedido). */
+.toast.has-action {
+  top: auto; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 8px); padding-right: 8px;
+}
+.toast.has-action.show { pointer-events: auto; transform: translate(-50%, 0); }
+.toast-action {
+  margin-left: 4px; min-height: 36px; padding: 0 12px; border-radius: 8px;
+  background: color-mix(in srgb, currentColor 16%, transparent); color: inherit;
+  font: inherit; font-weight: 600; touch-action: manipulation;
+}
+
+/* ---------------------------------------------------------------- selector de personal */
+.who-list { display: grid; gap: 8px; }
+.who-choice {
+  display: flex; align-items: center; min-height: 56px; padding: 0 16px; border-radius: var(--radius);
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--text);
+  font-size: 1.0625rem; font-weight: 600; text-align: left; touch-action: manipulation;
+}
+.who-choice:active { background: var(--surface-2); }
+.who-choice.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
 
 .notice { margin: 12px 0; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); font-size: 0.9375rem; }
 .notice.ok { background: var(--ok-soft); }

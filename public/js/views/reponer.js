@@ -106,7 +106,16 @@ async function complete() {
   if (!items.length) return;
   const where = filter === 'all' ? '' : ` de ${barName(filter)}`;
   if (!await confirmDialog('¿Reposición hecha?', `Se registrarán ${bottles(total)} como repuestas${where}.`, { ok: 'Sí, hecho' })) return;
-  const res = await post('/api/complete', { items, by: state.who });
+  let res;
+  try {
+    res = await post('/api/complete', { items, by: state.who });
+  } catch (err) {
+    if (err.status !== 409) throw err;
+    // Otra persona ya lo ha repuesto: no es un fallo, solo se actualiza la lista.
+    toast(err.message, 'info');
+    await loadLive();
+    return;
+  }
   // Lo que quede pendiente vuelve a mostrarse completo la próxima vez.
   for (const l of lines) delete adjust[l.id];
   buzz(30);

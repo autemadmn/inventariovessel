@@ -130,26 +130,45 @@ export const PHOTOS = {
 };
 
 // Botellas habituales de la estantería (foto del 28 sep 2026), en el orden en
-// que están colocadas. Salen las primeras en «Pedir»; el resto va en otra
-// sección. El encargado puede cambiarlo desde Gestión → Catálogo.
-export const HABITUAL = [
-  'Moskovskaya',
-  'SKYY',
-  'Zeeland Nº8',
-  'Puerto de Indias',
-  'Master’s Pink',
-  'Larios Rosé',
-  'Larios Pomelo',
-  'Larios 12',
-  'Tanqueray London Dry',
-  'Master’s London Dry',
-  'Jack Daniel’s Old No. 7',
-  'Dewar’s White Label',
-  'Johnnie Walker Red Label',
-  'J&B Rare',
-  'Old / Old Sport',
-  'DYC 8',
-  'Cacique Añejo',
-  'Barceló Añejo',
-  'Brugal Añejo',
+// que están colocadas. Forman el grupo inicial «Habituales»; el resto de
+// productos activos va a «Resto». Después lo gestiona el encargado desde
+// Gestión → Selección.
+export const HABITUAL_SLUGS = [
+  'moskovskaya',
+  'skyy',
+  'zeeland-n8',
+  'puerto-de-indias',
+  'masters-pink',
+  'larios-rose',
+  'larios-pomelo',
+  'larios-12',
+  'tanqueray-london-dry',
+  'masters-london-dry',
+  'jack-daniels-old-no-7',
+  'dewars-white-label',
+  'johnnie-walker-red-label',
+  'j-b-rare',
+  'old-old-sport',
+  'dyc-8',
+  'cacique-anejo',
+  'barcelo-anejo',
+  'brugal-anejo',
 ];
+
+export const INITIAL_GROUPS = ['Habituales', 'Resto'];
+
+export const INITIAL_STAFF = ['Carlos', 'Sergio', 'Alejandro'];
+
+/**
+ * Identificador estable de un producto (nombre del archivo de su imagen).
+ * Se fija al crear el producto y no cambia al renombrarlo.
+ */
+export function slugify(name) {
+  return String(name)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[º°ª’'`´]/g, '')
+    .replace(/&/g, '-')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'producto';
+}

@@ -1,5 +1,10 @@
 .git
+.wrangler
+.dev.vars
 data
 node_modules
 test
+assets
+docs
+scripts
 *.db

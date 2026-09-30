@@ -3,6 +3,8 @@ import { auth, mpost } from '../api.js';
 import { state } from '../state.js';
 import { $, html, mount, formDialog, toast } from '../ui.js';
 import { renderInformes } from './informes.js';
+import { renderSeleccion } from './seleccion.js';
+import { renderPersonal } from './personal.js';
 import { renderNoches } from './noches.js';
 import { renderPrevision } from './prevision.js';
 import { renderCompras } from './compras.js';
@@ -12,6 +14,8 @@ import { renderAjustes } from './ajustes.js';
 
 const TABS = [
   ['informes', 'Informes', renderInformes],
+  ['seleccion', 'Selección', renderSeleccion],
+  ['personal', 'Personal', renderPersonal],
   ['noches', 'Noches', renderNoches],
   ['prevision', 'Previsión', renderPrevision],
   ['compras', 'Compras', renderCompras],
@@ -54,6 +58,8 @@ export async function renderGestion(root, [tab, ...rest]) {
         <a href="#/gestion/${id}" class="${id === current[0] ? 'on' : ''}">${label}</a>`)}</nav>
       <div id="tab"></div>
     </section>`);
+  // Las pestañas no caben a 390 px: se deja la activa a la vista.
+  $('.tabs a.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   try {
     return await current[2]($('#tab'), rest);
   } catch (err) {

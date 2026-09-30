@@ -1,0 +1,6 @@
+# Copia este archivo como .dev.vars para `npx wrangler dev` (nunca lo subas al repositorio).
+# Los valores reales van como secretos en Cloudflare: `npx wrangler secret put <NOMBRE>`.
+STAFF_CODE=
+MANAGER_PIN=
+# URI del pooler de Supabase en modo Transaction (puerto 6543).
+DATABASE_URL=

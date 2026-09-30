@@ -61,7 +61,7 @@ export async function renderCatalogo(root) {
               <div><b>${p.name}</b>
                 <span class="tag ${p.status === 'pendiente' ? 'warn' : 'ok'}">${STATUS[p.status]}</span>
                 ${!p.active ? html`<span class="tag">Oculto</span>` : ''}
-                ${p.habitual ? html`<span class="tag info">Habitual</span>` : ''}
+                ${p.group_id ? html`<span class="tag info">${groupName(p.group_id)}</span>` : ''}
                 ${p.out_of_stock ? html`<span class="tag danger">Agotado en almacén</span>` : ''}
                 <small class="muted block">${p.capacity_ml ? `${p.capacity_ml / 10} cl` : 'Capacidad sin confirmar'} ·
                   ${p.per_case ? `${p.per_case} por caja` : 'Botellas por caja sin confirmar'}</small>
@@ -127,9 +127,12 @@ export async function renderCatalogo(root) {
         const data = await formDialog('Identificar como producto nuevo', html`
           <p class="muted small">${p.note || ''}</p>
           <label class="field"><span>Nombre del producto</span><input name="name" value="" required maxlength="80" placeholder="Nombre que aparece en la etiqueta"></label>
-          <label class="field"><span>Categoría</span>${categorySelect(p.category)}</label>`, { ok: 'Añadir al catálogo' });
+          <label class="field"><span>Categoría</span>${categorySelect(p.category)}</label>
+          <label class="field"><span>Grupo</span>${groupSelect(defaultGroupId())}</label>`, { ok: 'Añadir al catálogo' });
         if (!data) return;
-        await mpost(`/api/products/${p.id}/resolve`, { action: 'new', ...data, by: state.who });
+        await mpost(`/api/products/${p.id}/resolve`, {
+          action: 'new', ...data, group_id: data.group_id === '' ? null : Number(data.group_id), by: state.who,
+        });
         toast('Producto añadido (queda «por confirmar» hasta revisar capacidad y caja)');
         await reload();
       } else if (d.dup) {
@@ -152,6 +155,20 @@ export async function renderCatalogo(root) {
   draw();
 }
 
+const groupName = (id) => state.groups.find((g) => g.id === id)?.name ?? 'Grupo';
+
+/** Grupo por defecto al crear: «Resto» si existe; si no, el último. */
+function defaultGroupId() {
+  const g = state.groups.find((x) => x.name === 'Resto') ?? state.groups[state.groups.length - 1];
+  return g?.id ?? null;
+}
+
+function groupSelect(selected) {
+  return html`<select name="group_id">
+    <option value="" ${selected === null || selected === undefined ? 'selected' : ''}>Fuera de la selección</option>
+    ${state.groups.map((g) => html`<option value="${g.id}" ${g.id === selected ? 'selected' : ''}>${g.name}</option>`)}</select>`;
+}
+
 function categorySelect(selected) {
   return html`<select name="category">${state.categories.map((c) => html`
     <option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.name}</option>`)}</select>`;
@@ -167,6 +184,7 @@ async function editProduct(p) {
         <label class="btn small">Hacer o elegir foto<input type="file" accept="image/*" capture="environment" id="ph-file" hidden></label>
         ${p.photo ? html`<button type="button" class="btn small ghost" id="ph-remove">Quitar foto</button>` : ''}
         <small class="muted">Usa una foto real de la botella para reconocerla rápido.</small>
+        ${state.products.find((x) => x.id === p.id)?.image ? html`<small class="muted">Con imagen de catálogo, la foto propia solo se usa como respaldo.</small>` : ''}
       </div></div>` : ''}
     <label class="field"><span>Nombre</span><input name="name" value="${p?.name ?? ''}" required maxlength="80"></label>
     <label class="field"><span>Categoría</span>${categorySelect(p?.category ?? 'otros')}</label>
@@ -178,8 +196,9 @@ async function editProduct(p) {
       <label class="field"><span>Capacidad (ml)</span><input name="capacity_ml" type="number" min="1" max="10000" inputmode="numeric" value="${p?.capacity_ml ?? ''}" placeholder="Sin confirmar"></label>
       <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="100" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Sin confirmar"></label>
     </div>
-    <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}> Visible en «Pedir»</label>
-    <label class="check"><input type="checkbox" name="habitual" ${p?.habitual ? 'checked' : ''}> Habitual: sale en la primera sección de «Pedir»</label>
+    <label class="field"><span>Grupo</span>${groupSelect(isNew ? defaultGroupId() : p.group_id)}
+      <small class="muted">Solo las botellas con grupo salen en «Pedir». Se ordenan en Gestión → Selección.</small></label>
+    <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}> Activo (si lo desmarcas, deja de salir en Pedir y en Selección; sigue en el histórico)</label>
     ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado en almacén</label>` : ''}`,
   {
     wide: true,
@@ -217,9 +236,10 @@ async function editProduct(p) {
     capacity_ml: data.capacity_ml === '' ? null : Number(data.capacity_ml),
     per_case: data.per_case === '' ? null : Number(data.per_case),
     active: data.active === 'on',
-    habitual: data.habitual === 'on',
     by: state.who,
   };
+  const groupId = data.group_id === '' ? null : Number(data.group_id);
+  if (isNew || groupId !== (p.group_id ?? null)) body.group_id = groupId;
   if (isNew) {
     await mpost('/api/products', body);
     toast('Producto añadido');

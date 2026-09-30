@@ -82,33 +82,68 @@ export function addDays(ymd, n) {
 
 // ------------------------------------------------------------------ productos
 
-const STOP = new Set(['the', 'de', 'la', 'el', 'j&b']);
-
-function initials(name) {
-  if (/^j&b/i.test(name)) return 'J&B';
-  const words = name.replace(/[’']s\b/g, '').split(/[\s/]+/).filter((w) => w && !STOP.has(w.toLowerCase()));
-  return words.slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+// Imágenes de catálogo (PNG de botella sin fondo): manifest.json las lista por slug.
+let manifest = {};
+export function setManifest(m) {
+  manifest = m && typeof m === 'object' ? m : {};
+}
+export function imageFor(slug) {
+  return slug && manifest[slug] ? `/img/botellas/${manifest[slug].file}` : null;
 }
 
-/** Foto del producto o, si aún no hay, un distintivo claramente no fotográfico. */
-export function thumb(p, size = '') {
-  if (p.photo) {
-    return html`<span class="thumb ${size}"><img src="${p.photo}" alt="" loading="lazy" decoding="async"></span>`;
+const SIL = '<svg viewBox="0 0 48 64" fill="currentColor"><path d="M20 3h8v3.5c0 1.3.4 2 1 3.2 1.4 2.8 4 5 4 10.3V58a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3V20c0-5.3 2.6-7.5 4-10.3.6-1.2 1-1.9 1-3.2z"/></svg>';
+
+/** Silueta neutra de botella: no pretende ser el producto. */
+export function silhouette(p, size = '') {
+  return html`<span class="thumb sil ${size} cat-${p.category}" aria-hidden="true">${raw(SIL)}</span>`;
+}
+
+/**
+ * Prioridad: PNG de catálogo (botella flotante) → foto subida → silueta.
+ * `x` es un producto o una línea de la lista (con slug, photo y category).
+ */
+export function thumb(x, size = '') {
+  const img = x.image ?? imageFor(x.slug);
+  if (img) {
+    return html`<span class="thumb float ${size}" data-cat="${x.category}"><img src="${img}" alt="" loading="lazy" decoding="async" width="512" height="683"></span>`;
   }
-  return html`<span class="thumb ${size} ph cat-${p.category}" aria-hidden="true"><b>${initials(p.product_name || p.name)}</b></span>`;
+  if (x.photo) {
+    return html`<span class="thumb ${size}"><img src="${x.photo}" alt="" loading="lazy" decoding="async"></span>`;
+  }
+  return silhouette(x, size);
 }
 
 // ------------------------------------------------------------------ avisos
 
 let toastTimer;
-export function toast(msg, kind = 'ok') {
+let toastAction = null;
+/** `action` = { label, onClick }: botón dentro del aviso (p. ej. «Deshacer»). */
+export function toast(msg, kind = 'ok', { action } = {}) {
   const el = $('#toast');
-  el.innerHTML = `${icon(kind === 'error' ? 'alert' : 'done', { size: 18 })}<span></span>`;
+  el.innerHTML = `${icon(kind === 'error' ? 'alert' : kind === 'info' ? 'info' : 'done', { size: 18 })}<span></span>`;
   el.lastChild.textContent = msg;
-  el.className = `toast show ${kind}`;
+  toastAction = action || null;
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    el.append(btn);
+  }
+  el.className = `toast show ${kind}${action ? ' has-action' : ''}`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = 'toast'; }, kind === 'error' ? 5000 : 2600);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); toastAction = null; },
+    action ? 6000 : kind === 'error' ? 5000 : 2600);
 }
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest?.('#toast .toast-action') || !toastAction) return;
+  const { onClick } = toastAction;
+  toastAction = null;
+  clearTimeout(toastTimer);
+  $('#toast').classList.remove('show');
+  onClick?.();
+});
 
 export function buzz(ms = 12) {
   try { navigator.vibrate?.(ms); } catch { /* sin vibración */ }

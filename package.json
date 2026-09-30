@@ -16,5 +16,9 @@
   },
   "devDependencies": {
     "wrangler": "^4.141.0"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "postgres": "^3.4.9"
   }
 }

@@ -8,6 +8,8 @@ const ENTITIES = [
   ['reposicion', 'Reposiciones'],
   ['solicitud', 'Solicitudes'],
   ['producto', 'Productos'],
+  ['seleccion', 'Selección'],
+  ['personal', 'Personal'],
   ['noche', 'Noches'],
   ['compra', 'Compras'],
   ['ajustes', 'Ajustes'],
@@ -19,6 +21,7 @@ const LABELS = {
   botellas: 'botellas', barra: 'barra', producto: 'producto', noche: 'noche',
   same_level: 'mismo nivel', notes: 'notas', photo: 'foto', capacity_ml: 'capacidad (ml)', per_case: 'por caja',
   status: 'estado', active: 'visible', name: 'nombre', category: 'categoría', note: 'nota',
+  group_id: 'grupo', group_order: 'posición', destino: 'destino', orden: 'orden',
 };
 
 function show(k, v) {

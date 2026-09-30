@@ -5,17 +5,17 @@
   "name": "reposicion-barras",
   "main": "server/worker.js",
   "compatibility_date": "2025-09-01",
+  // postgres.js necesita los módulos de Node (sockets, crypto, buffer).
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*", "/photos/*"]
   },
-  // Base de datos. Al desplegar por primera vez, Cloudflare la crea sola.
-  "d1_databases": [
-    { "binding": "DB", "database_name": "reposicion-barras", "database_id": "c29bf407-c3c3-42c3-b588-16c318921af0" }
-  ],
   "observability": { "enabled": true }
-  // STAFF_CODE y MANAGER_PIN se añaden como secretos en el panel de Cloudflare
-  // (Worker → Settings → Variables and Secrets), nunca en este archivo.
+  // La base de datos es Postgres en Supabase (ver README, «Pasar a Supabase»).
+  // STAFF_CODE, MANAGER_PIN y DATABASE_URL se añaden como secretos
+  // (`npx wrangler secret put DATABASE_URL` o en el panel de Cloudflare:
+  // Worker → Settings → Variables and Secrets), nunca en este archivo.
 }
