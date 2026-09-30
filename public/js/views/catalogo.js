@@ -31,9 +31,7 @@ export async function renderCatalogo(root) {
 
     mount(root, html`
       <div class="notice">
-        <p>Catálogo provisional. ${pendingCount ? html`<b>${pendingCount}</b> producto(s) por confirmar. ` : ''}
-        ${missingData ? html`<b>${missingData}</b> sin capacidad o botellas por caja confirmadas (necesario para expresar las compras en cajas).` : ''}</p>
-        <p class="muted small">No se inventan nombres, capacidades ni fotos: lo que falte queda «por confirmar». Las botellas ocultas detrás de otras no son automáticamente productos distintos.</p>
+        <p>${pendingCount} por confirmar · ${missingData} sin capacidad o botellas por caja.</p>
       </div>
 
       ${unidentified.length ? html`
@@ -194,7 +192,7 @@ async function editProduct(p) {
     <label class="field"><span>Nota (qué falta confirmar, variedad…)</span><input name="note" value="${p?.note ?? ''}" maxlength="400"></label>
     <div class="form-grid">
       <label class="field"><span>Capacidad (ml)</span><input name="capacity_ml" type="number" min="1" max="10000" inputmode="numeric" value="${p?.capacity_ml ?? ''}" placeholder="Sin confirmar"></label>
-      <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="100" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Sin confirmar"></label>
+      <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="10000" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Sin confirmar"></label>
     </div>
     <label class="field"><span>Grupo</span>${groupSelect(isNew ? defaultGroupId() : p.group_id)}
       <small class="muted">Solo las botellas con grupo salen en «Pedir». Se ordenan en Gestión → Selección.</small></label>

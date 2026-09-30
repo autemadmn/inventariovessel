@@ -124,6 +124,8 @@ export function createHandler({ getDb, env = {}, log = console }) {
     })],
 
     ['GET', '/api/report', 'manager', ({ db, url }) => svc.report(db, q(url))],
+    ['GET', '/api/informe', 'manager', ({ db, url }) => svc.informe(db, q(url))],
+    ['GET', '/api/informe/botella/:id', 'manager', ({ db, id, url }) => svc.informeBotella(db, id, q(url))],
     ['GET', '/api/deliveries', 'manager', ({ db, url }) => svc.listDeliveries(db, q(url))],
     ['POST', '/api/deliveries', 'manager', ({ db, body }) => svc.addManualDelivery(db, body)],
     ['PUT', '/api/deliveries/:id', 'manager', ({ db, id, body }) => svc.correctDelivery(db, id, body)],

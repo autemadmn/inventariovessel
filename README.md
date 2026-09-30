@@ -1,8 +1,8 @@
 # Reposición de barras
 
 Web app sencilla para gestionar la reposición de botellas de alcohol en las dos barras de la discoteca:
-preparar listas de reposición en segundos, registrar lo que se entrega cada noche y usar ese historial
-para prever compras.
+preparar listas de reposición en segundos, registrar lo que se entrega cada noche y consultar ese historial
+en Informes.
 
 Es una aplicación **independiente**: no se conecta con Ágora ni con ningún otro sistema del local.
 Se publica en internet (Cloudflare) y el personal la usa desde el navegador del móvil o la tablet (no hace
@@ -45,53 +45,24 @@ Salen las botellas de la **selección**, agrupadas y en el orden que decide el e
   vuelve a marcar como disponible.
 
 ### Gestión (encargado, con PIN)
-- **Informes**: totales por producto, por barra y en conjunto, por noche, semana o mes, comparados con el
-  periodo anterior. Descarga en CSV. Corrección de reposiciones (motivo obligatorio) y alta de reposiciones
-  olvidadas. Nada se borra: todo queda en «Cambios».
+Cuatro pestañas (Informes, Selección, Personal y Catálogo) y Ajustes en el engranaje.
+
+- **Informes** (se abre por defecto): botellas por noche, semana, mes o fechas elegidas, comparadas con el
+  periodo anterior. Filtros por grupo de la selección (o «Fuera de la selección») y por barra. Gráfica por
+  noche, totales por grupo y lista de botellas con cajas y sueltas (si se conocen las botellas por caja) y la
+  etiqueta «Agotado». Descarga en CSV.
+- **Detalle de botella** (tocando una fila del informe): noches, reposiciones con «Corregir» (motivo
+  obligatorio) y «Añadir olvidada», periodos en que estuvo agotada, botón para marcarla agotada o disponible
+  y edición de las botellas por caja. Nada se borra: las correcciones quedan registradas.
 - **Selección**: qué botellas salen en «Pedir». Crear, renombrar, ordenar y borrar grupos; ordenar las
   botellas dentro de cada grupo y moverlas entre grupos arrastrando desde el asa (en el móvil, mantener
   pulsado) o con el menú «…» de cada fila. Una botella «fuera de la selección» no sale en «Pedir», pero
   sigue en el catálogo, en Reponer y en el histórico. Los cambios llegan a los demás móviles en unos segundos.
 - **Personal**: añadir, renombrar, ordenar y quitar (desactivar) los nombres que salen en «¿Quién eres?».
   Los retirados siguen en el histórico y se pueden volver a activar.
-- **Noches**: una noche de trabajo agrupa todo lo que ocurre hasta la hora de corte (12:00 por defecto) del día
-  siguiente, aunque siga después de medianoche. Aquí se indica si las barras empezaron y terminaron con el
-  **mismo nivel** de existencias. Los informes solo hablan de «consumo aproximado» cuando todas las noches del
-  periodo lo cumplen; si no, hablan de «botellas repuestas».
-- **Previsión**: ver abajo.
-- **Compras**: ver abajo.
 - **Catálogo**: corregir nombres, confirmar capacidad y botellas por caja, añadir fotos (desde la cámara del móvil)
   y resolver las botellas sin identificar.
-- **Cambios**: registro de todo lo que se pide, entrega, corrige o modifica, con quién, cuándo y por qué.
-- **Ajustes**: nombres de las barras, hora de corte, margen de seguridad, códigos de acceso y copia de seguridad.
-
-## Previsión
-
-Se basa **solo en botellas entregadas**. Las pendientes o no servidas se muestran como aviso, nunca se suman.
-
-- **Promedio por noche** (por defecto): botellas repuestas en el historial ÷ noches del historial × noches
-  previstas. Si un mes se repusieron 50 botellas y el siguiente tiene las mismas noches, la previsión es 50;
-  si tiene más o menos noches de apertura, se ajusta con el promedio por noche.
-- **Por día de la semana**: se activa cuando cada día previsto tiene al menos 3 noches de historial (configurable).
-  Suma, noche a noche, el promedio del mismo día de la semana.
-- Días de apertura, noches cerradas y noches extra se eligen en la pantalla.
-- **Ajuste por evento** (% general o por producto) y **margen de seguridad** configurable.
-- Si hay pocas noches de historial (menos de 4, configurable) se avisa y se puede introducir una **estimación manual**.
-- Si un producto estuvo **agotado** durante el historial, se advierte de que las reposiciones pueden infravalorar
-  su demanda.
-
-## Lista de compra
-
-```
-Botellas que comprar = necesidad prevista + margen de seguridad − existencias disponibles − entregas previstas
-```
-
-- Existencias disponibles = existencias utilizables − salidas previstas a otros destinos (VIP, etc.), para que
-  el almacén compartido no se cuente dos veces.
-- El resultado nunca es negativo y se redondea **hacia arriba** a botellas enteras.
-- Con las botellas por caja confirmadas se expresa en cajas: «2 cajas + 3 sueltas · o 3 cajas: 9 botellas de más».
-- Es una propuesta: el encargado puede cambiar cada cantidad (en botellas o cajas), guardar, copiar el texto,
-  descargar CSV o imprimir.
+- **Ajustes** (engranaje): nombres de las barras, hora de corte, códigos de acceso y copia de seguridad.
 
 ## Catálogo inicial
 
@@ -167,7 +138,7 @@ Calcula media hora. Hazlo con el local cerrado.
    crearse.
 2. **Crea las tablas.** En el panel del proyecto: **SQL Editor → New query**. Ejecuta primero
    `CREATE SCHEMA IF NOT EXISTS vessel_reposicion;`. Después, antes del contenido de cada archivo
-   `supabase/migrations/0001_schema.sql` y `0002_seed.sql`, añade en la misma consulta
+   `supabase/migrations/0001_schema.sql`, `0002_seed.sql` y `0003_informe.sql`, añade en la misma consulta
    `SET search_path TO vessel_reposicion;` y pulsa **Run**. Así las tablas quedan en el esquema que
    usa el Worker (`DATABASE_SCHEMA` en `wrangler.jsonc`). Las migraciones se pueden repetir sin duplicar datos.
 3. **Copia la dirección de conexión.** Botón **Connect** (arriba) → **Connection string** →
@@ -270,9 +241,10 @@ server/
 supabase/migrations/
   0001_schema.sql  tablas (RLS activado, sin políticas)
   0002_seed.sql    datos iniciales (generado por scripts/db/build-seed.mjs)
+  0003_informe.sql validación de botellas por caja
 scripts/db/     build-seed.mjs e import-backup.mjs
 public/         interfaz (HTML, CSS y JavaScript sin compilación)
-  js/shared/forecast.js  cálculo de previsión y compra (lo usan el servidor y el navegador)
+  js/shared/forecast.js  cálculo de previsión y compra conservado para la API
   img/botellas/          imágenes y fotos de referencia, manifest.json y créditos
 test/           pruebas (node --test)
 wrangler.jsonc  configuración de Cloudflare

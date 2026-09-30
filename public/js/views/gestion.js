@@ -1,28 +1,22 @@
 // Zona del encargado: pestañas y acceso con PIN.
 import { auth, mpost } from '../api.js';
 import { state } from '../state.js';
-import { $, html, mount, formDialog, toast } from '../ui.js';
+import { $, html, raw, mount, formDialog, toast } from '../ui.js';
+import { icon } from '../icons.js';
 import { renderInformes } from './informes.js';
 import { renderSeleccion } from './seleccion.js';
 import { renderPersonal } from './personal.js';
-import { renderNoches } from './noches.js';
-import { renderPrevision } from './prevision.js';
-import { renderCompras } from './compras.js';
 import { renderCatalogo } from './catalogo.js';
-import { renderCambios } from './cambios.js';
 import { renderAjustes } from './ajustes.js';
 
 const TABS = [
   ['informes', 'Informes', renderInformes],
   ['seleccion', 'Selección', renderSeleccion],
   ['personal', 'Personal', renderPersonal],
-  ['noches', 'Noches', renderNoches],
-  ['prevision', 'Previsión', renderPrevision],
-  ['compras', 'Compras', renderCompras],
   ['catalogo', 'Catálogo', renderCatalogo],
-  ['cambios', 'Cambios', renderCambios],
-  ['ajustes', 'Ajustes', renderAjustes],
 ];
+// Ajustes (barras, hora de corte, códigos, copia) no es pestaña: se abre desde el engranaje.
+const ROUTES = [...TABS, ['ajustes', 'Ajustes', renderAjustes]];
 
 export async function askPin(message = '') {
   const data = await formDialog('PIN de encargado', html`
@@ -51,14 +45,16 @@ export async function renderGestion(root, [tab, ...rest]) {
     go();
     return undefined;
   }
-  const current = TABS.find((t) => t[0] === tab) ?? TABS[0];
+  const current = ROUTES.find((t) => t[0] === tab) ?? TABS[0];
   mount(root, html`
     <section class="gestion">
-      <nav class="tabs">${TABS.map(([id, label]) => html`
-        <a href="#/gestion/${id}" class="${id === current[0] ? 'on' : ''}">${label}</a>`)}</nav>
+      <nav class="tabs" aria-label="Secciones de Gestión">${TABS.map(([id, label]) => html`
+        <a href="#/gestion/${id}" class="${id === current[0] ? 'on' : ''}" ${id === current[0] ? raw('aria-current="page"') : ''}>${label}</a>`)}
+        <a href="#/gestion/ajustes" class="tabs-gear ${current[0] === 'ajustes' ? 'on' : ''}" ${current[0] === 'ajustes' ? raw('aria-current="page"') : ''} aria-label="Ajustes" title="Ajustes">${raw(icon('settings'))}</a>
+      </nav>
       <div id="tab"></div>
     </section>`);
-  // Las pestañas no caben a 390 px: se deja la activa a la vista.
+  // Si las pestañas no caben, se deja la activa a la vista.
   $('.tabs a.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   try {
     return await current[2]($('#tab'), rest);

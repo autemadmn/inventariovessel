@@ -18,7 +18,7 @@ import { CATEGORIES, slugify } from './catalog.js';
 import { DEFAULT_SETTINGS } from './schema.js';
 import { HttpError } from './errors.js';
 import {
-  addDays, businessDate, datesBetween, isYmd, periodRange, previousPeriodDate, weekday,
+  addDays, businessDate, datesBetween, daysBetween, isYmd, periodRange, previousPeriodDate, shortDate, weekday,
 } from './dates.js';
 import { computeForecast, computePurchase } from '../public/js/shared/forecast.js';
 
@@ -954,18 +954,23 @@ export async function listAudit(db, { limit = 200, entity, entity_id } = {}) {
 
 // ---------------------------------------------------------------- informes
 
-async function stockoutNightsFor(db, dates) {
+async function stockoutNightsFor(db, dates, { distinct = false } = {}) {
   const out = {};
   if (!dates.length) return out;
   const s = await getSettings(db);
   const dateOf = (iso) => businessDate(new Date(iso), s.timezone, Number(s.cutoff_hour));
   const first = dates.reduce((a, b) => (a < b ? a : b));
+  const counted = distinct ? new Set() : null;
   for (const so of await db.all('SELECT * FROM stockouts ORDER BY id')) {
     const start = dateOf(so.started_at);
     const end = so.ended_at ? dateOf(so.ended_at) : '9999-12-31';
     if (end < first) continue;
     for (const d of dates) {
-      if (d >= start && d <= end) out[so.product_id] = (out[so.product_id] || 0) + 1;
+      const key = `${so.product_id}:${d}`;
+      if (d >= start && d <= end && (!counted || !counted.has(key))) {
+        out[so.product_id] = (out[so.product_id] || 0) + 1;
+        counted?.add(key);
+      }
     }
   }
   return out;
@@ -1054,6 +1059,201 @@ export async function report(db, { period = 'week', date, bar_id } = {}, { now }
       unknown: sessions.filter((s) => s.same_level === null).length,
     },
     stockouts, unserved,
+  };
+}
+
+// El informe nuevo conserva report() para los consumidores anteriores.
+function customRangeLabel(from, to) {
+  const year = (ymd) => ymd.slice(0, 4);
+  const crossYear = year(from) !== year(to);
+  return `Del ${shortDate(from)}${crossYear ? ` ${year(from)}` : ''} al ${shortDate(to)}${crossYear ? ` ${year(to)}` : ''}`;
+}
+
+async function informePeriod(db, { period = 'week', date, from, to, bar_id } = {}, now) {
+  if (!['night', 'week', 'month', 'custom'].includes(period)) throw bad('Periodo no válido.');
+  let range;
+  let ref;
+  if (period === 'custom') {
+    if (!isYmd(from) || !isYmd(to)) throw bad('Fecha no válida.');
+    if (from > to) throw bad('Revisa las fechas: el inicio es posterior al final.');
+    const days = daysBetween(from, to) + 1;
+    if (days > 366) throw bad('El rango no puede superar 366 días.');
+    range = { from, to, label: customRangeLabel(from, to) };
+    ref = to;
+  } else {
+    if (date !== undefined && !isYmd(date)) throw bad('Fecha no válida.');
+    ref = date ?? await currentDate(db, now);
+    range = periodRange(period, ref);
+  }
+
+  let barId = null;
+  if (bar_id !== undefined && bar_id !== null && bar_id !== '') {
+    barId = Number(bar_id);
+    if (!Number.isInteger(barId) || barId < 1) throw bad('Barra no válida.');
+    await barExists(db, barId);
+  }
+
+  let previousRange;
+  if (period === 'night') {
+    const prev = await db.get('SELECT business_date FROM sessions WHERE business_date < ? ORDER BY business_date DESC LIMIT 1', ref);
+    previousRange = prev ? periodRange('night', prev.business_date) : null;
+  } else if (period === 'custom') {
+    const end = addDays(from, -1);
+    const start = addDays(end, -(daysBetween(from, to)));
+    previousRange = { from: start, to: end, label: customRangeLabel(start, end) };
+  } else {
+    previousRange = periodRange(period, previousPeriodDate(period, ref));
+  }
+  return { period, date: ref, range, previousRange, bar_id: barId };
+}
+
+function summedRows(rows) {
+  const products = new Map();
+  for (const r of rows) {
+    const p = products.get(r.product_id) ?? { bottles: 0, byBar: {}, byNight: new Map() };
+    p.bottles += r.qty;
+    p.byBar[r.bar_id] = (p.byBar[r.bar_id] || 0) + r.qty;
+    const night = p.byNight.get(r.date) ?? { bottles: 0, byBar: {} };
+    night.bottles += r.qty;
+    night.byBar[r.bar_id] = (night.byBar[r.bar_id] || 0) + r.qty;
+    p.byNight.set(r.date, night);
+    products.set(r.product_id, p);
+  }
+  return products;
+}
+
+const casesFor = (bottles, perCase) => perCase == null ? null
+  : { full: Math.floor(bottles / perCase), loose: bottles % perCase };
+
+async function informeData(db, params, now) {
+  const period = await informePeriod(db, params, now);
+  const { range, previousRange, bar_id: barId } = period;
+  const [sessions, currentRows, previousRows, products, groups] = await Promise.all([
+    db.all('SELECT business_date, same_level FROM sessions WHERE business_date BETWEEN ? AND ? ORDER BY business_date', range.from, range.to),
+    aggregate(db, range.from, range.to, barId),
+    previousRange ? aggregate(db, previousRange.from, previousRange.to, barId) : [],
+    db.all(`SELECT p.*, g.name AS group_name, g.sort AS group_sort
+      FROM products p LEFT JOIN product_groups g ON g.id = p.group_id`),
+    listGroups(db),
+  ]);
+  const current = summedRows(currentRows);
+  const previous = summedRows(previousRows);
+  const unserved = await unservedFor(db, range.from, range.to, barId);
+  const stockoutNights = await stockoutNightsFor(db, sessions.map((s) => s.business_date), { distinct: true });
+  const sameLevel = {
+    yes: sessions.filter((s) => s.same_level === 1).length,
+    no: sessions.filter((s) => s.same_level === 0).length,
+    unknown: sessions.filter((s) => s.same_level === null).length,
+  };
+  return { ...period, sessions, current, previous, products, groups, unserved, stockoutNights,
+    sameLevel, basis: sessions.length && sameLevel.yes === sessions.length ? 'consumo' : 'repuestas' };
+}
+
+export async function informe(db, params = {}, { now } = {}) {
+  const data = await informeData(db, params, now);
+  const groupParam = params.group ?? 'all';
+  let selectedGroup = null;
+  if (groupParam !== 'all' && groupParam !== 'none') {
+    const id = Number(groupParam);
+    if (!/^[1-9]\d*$/.test(String(groupParam)) || !Number.isSafeInteger(id)) throw bad('Grupo no válido.');
+    selectedGroup = data.groups.find((g) => g.id === id);
+    if (!selectedGroup) throw bad('Grupo no válido.');
+  }
+  const group = groupParam === 'none' ? { id: null, name: 'Fuera de la selección' }
+    : selectedGroup ? { id: selectedGroup.id, name: selectedGroup.name } : null;
+  const selected = (p) => groupParam === 'all' || (groupParam === 'none' ? p.group_id === null : p.group_id === selectedGroup.id);
+  const included = data.products.filter((p) => selected(p)
+    && (p.active === 1 || data.current.has(p.id) || data.previous.has(p.id)));
+  const zero = { bottles: 0, byBar: {}, byNight: new Map() };
+  const products = included.map((p) => {
+    const cur = data.current.get(p.id) ?? zero;
+    const previous = data.previous.get(p.id)?.bottles ?? 0;
+    return {
+      product_id: p.id, name: p.name, slug: p.slug, photo: p.photo, category: p.category,
+      status: p.status, group_id: p.group_id, group_order: p.group_order,
+      per_case: p.per_case, out_of_stock: p.out_of_stock === 1,
+      bottles: cur.bottles, previous,
+      diff: data.previousRange ? cur.bottles - previous : 0,
+      byBar: cur.byBar, cases: casesFor(cur.bottles, p.per_case),
+      stockout_nights: data.stockoutNights[p.id] || 0, unserved: data.unserved[p.id] || 0,
+      group_sort: p.group_sort,
+    };
+  }).sort((a, b) => b.bottles - a.bottles || (a.group_sort ?? Infinity) - (b.group_sort ?? Infinity)
+    || (a.group_order ?? Infinity) - (b.group_order ?? Infinity) || a.name.localeCompare(b.name, 'es'))
+    .map(({ group_sort, ...p }) => p);
+  const selectedIds = new Set(included.map((p) => p.id));
+  const byBar = {};
+  const byNight = new Map();
+  let bottles = 0;
+  let previous = 0;
+  for (const [id, cur] of data.current) {
+    if (!selectedIds.has(id)) continue;
+    bottles += cur.bottles;
+    for (const [bar, qty] of Object.entries(cur.byBar)) byBar[bar] = (byBar[bar] || 0) + qty;
+    for (const [date, n] of cur.byNight) {
+      const target = byNight.get(date) ?? { bottles: 0, byBar: {} };
+      target.bottles += n.bottles;
+      for (const [bar, qty] of Object.entries(n.byBar)) target.byBar[bar] = (target.byBar[bar] || 0) + qty;
+      byNight.set(date, target);
+    }
+  }
+  for (const [id, prev] of data.previous) if (selectedIds.has(id)) previous += prev.bottles;
+  const byGroup = [...data.groups.map((g) => ({ group_id: g.id, name: g.name, bottles: 0, previous: 0 })),
+    { group_id: null, name: 'Fuera de la selección', bottles: 0, previous: 0 }];
+  const groupRow = (id) => byGroup.find((g) => g.group_id === id);
+  for (const p of data.products) {
+    const row = groupRow(p.group_id);
+    row.bottles += data.current.get(p.id)?.bottles ?? 0;
+    row.previous += data.previous.get(p.id)?.bottles ?? 0;
+  }
+  return {
+    period: data.period, date: data.date, range: data.range, previousRange: data.previousRange,
+    bar_id: data.bar_id, group, groups: data.groups, basis: data.basis, sameLevel: data.sameLevel,
+    totals: { bottles, previous, diff: data.previousRange ? bottles - previous : 0, byBar },
+    byGroup,
+    nights: data.sessions.map((s) => ({ business_date: s.business_date, same_level: s.same_level,
+      bottles: byNight.get(s.business_date)?.bottles ?? 0, byBar: byNight.get(s.business_date)?.byBar ?? {} })),
+    products,
+  };
+}
+
+export async function informeBotella(db, id, params = {}, { now } = {}) {
+  const data = await informeData(db, params, now);
+  const p = data.products.find((x) => x.id === Number(id));
+  if (!p) throw notFound('Producto');
+  const cur = data.current.get(p.id) ?? { bottles: 0, byBar: {}, byNight: new Map() };
+  const previous = data.previous.get(p.id)?.bottles ?? 0;
+  const settings = await getSettings(db);
+  const dateOf = (iso) => businessDate(new Date(iso), settings.timezone, Number(settings.cutoff_hour));
+  const stockoutRows = await db.all('SELECT * FROM stockouts WHERE product_id = ? ORDER BY started_at, id', p.id);
+  const covered = (so, date) => date >= dateOf(so.started_at) && date <= (so.ended_at ? dateOf(so.ended_at) : '9999-12-31');
+  const stockouts = stockoutRows.filter((so) => dateOf(so.started_at) <= data.range.to
+    && (!so.ended_at || dateOf(so.ended_at) >= data.range.from))
+    .map((so) => ({ started_at: so.started_at, ended_at: so.ended_at, started_by: so.started_by,
+      ended_by: so.ended_by, nights: data.sessions.filter((s) => covered(so, s.business_date)).length }));
+  const deliveries = await db.all(`SELECT d.id, s.business_date, d.delivered_at, d.bar_id, d.qty,
+      d.delivered_by, d.source, d.corrected
+    FROM deliveries d JOIN sessions s ON s.id = d.session_id
+    WHERE d.product_id = ? AND s.business_date BETWEEN ? AND ? ${data.bar_id ? 'AND d.bar_id = ?' : ''}
+    ORDER BY d.delivered_at DESC, d.id DESC LIMIT 500`,
+  p.id, data.range.from, data.range.to, ...(data.bar_id ? [data.bar_id] : []));
+  const open = stockoutRows.filter((so) => so.ended_at === null).at(-1);
+  return {
+    product: { id: p.id, name: p.name, slug: p.slug, photo: p.photo, category: p.category,
+      status: p.status, capacity_ml: p.capacity_ml, per_case: p.per_case, active: p.active === 1,
+      group: p.group_id === null ? null : { id: p.group_id, name: p.group_name },
+      out_of_stock: p.out_of_stock === 1, out_of_stock_since: open?.started_at ?? null },
+    period: data.period, date: data.date, range: data.range, previousRange: data.previousRange,
+    bar_id: data.bar_id, basis: data.basis, bottles: cur.bottles, previous,
+    diff: data.previousRange ? cur.bottles - previous : 0, byBar: cur.byBar,
+    cases: casesFor(cur.bottles, p.per_case), unserved: data.unserved[p.id] || 0,
+    stockout_nights: data.stockoutNights[p.id] || 0,
+    nights: data.sessions.map((s) => ({ business_date: s.business_date, same_level: s.same_level,
+      bottles: cur.byNight.get(s.business_date)?.bottles ?? 0,
+      byBar: cur.byNight.get(s.business_date)?.byBar ?? {},
+      out_of_stock: stockoutRows.some((so) => covered(so, s.business_date)) })),
+    deliveries: deliveries.map((d) => ({ ...d, corrected: d.corrected === 1 })),
+    stockouts,
   };
 }
 

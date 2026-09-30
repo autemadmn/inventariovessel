@@ -20,13 +20,6 @@ export async function renderAjustes(root) {
         <label class="field"><span>Minutos para deshacer una entrega</span><input name="undo_minutes" type="number" min="0" max="120" value="${s.undo_minutes}"></label>
       </div>
 
-      <h3 class="section-title">Previsión</h3>
-      <div class="form-grid">
-        <label class="field"><span>Margen de seguridad por defecto (%)</span><input name="safety_pct" type="number" min="0" max="200" value="${s.safety_pct}"></label>
-        <label class="field"><span>Noches mínimas para una previsión fiable</span><input name="low_data_nights" type="number" min="1" max="60" value="${s.low_data_nights}"></label>
-        <label class="field"><span>Noches de cada día de la semana para distinguirlos</span><input name="min_nights_per_weekday" type="number" min="1" max="20" value="${s.min_nights_per_weekday}"></label>
-      </div>
-
       <h3 class="section-title">Acceso</h3>
       <p class="muted small">La aplicación está en internet: usa un código para el personal y un PIN distinto para el encargado.</p>
       <div class="form-grid">
@@ -67,9 +60,6 @@ export async function renderAjustes(root) {
       cutoff_hour: f.cutoff_hour,
       timezone: f.timezone,
       undo_minutes: f.undo_minutes,
-      safety_pct: f.safety_pct,
-      low_data_nights: f.low_data_nights,
-      min_nights_per_weekday: f.min_nights_per_weekday,
       by: state.who,
     };
     if (f.staff_code) body.staff_code = f.staff_code;
