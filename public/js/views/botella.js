@@ -1,4 +1,4 @@
-// Informes → detalle de una botella: noches, reposiciones (con corrección),
+// Informes → detalle de una botella: semanas, reposiciones (con corrección),
 // cortes de agotado, estado agotado/disponible y botellas por caja.
 import { mget, mpost, mput } from '../api.js';
 import { state, barName } from '../state.js';
@@ -8,8 +8,9 @@ import {
 import { icon } from '../icons.js';
 import {
   filters, query, periodControls, applyFilterClick, applyRange, diffMarkup, casesLabel, basisTitle,
-  nightChart, bindChart, selectColumn, onWidthChange,
+  onWidthChange,
 } from './informes.js';
+import { weekChart, bindWeekChart, selectWeekPoint } from './weekly-chart.js';
 
 const back = () => html`
   <a class="inf-back" href="#/gestion/informes">${raw(icon('left', { size: 18 }))} Informes</a>`;
@@ -29,15 +30,16 @@ export async function renderBotella(root, rawId) {
   const drawChart = () => {
     const box = $('#bt-chart', root);
     if (!box || !r) return;
-    mount(box, nightChart(r.nights, { width: box.clientWidth - 24, bar: filters.bar, stock: true }));
-    selectColumn(box, r.nights.length - 1);
+    const selected = Number($('.chart-week.on', box)?.dataset.i ?? r.weeks.length - 1);
+    mount(box, weekChart(r.weeks, { width: box.clientWidth - 24, bar: filters.bar }));
+    selectWeekPoint(box, selected);
   };
 
   const draw = () => {
     mount(root, view(r));
     const box = $('#bt-chart', root);
     if (box) {
-      bindChart(box);
+      bindWeekChart(box);
       drawChart();
     }
   };
@@ -150,8 +152,8 @@ function view(r) {
         ${r.unserved ? html`<div class="kpi"><span>Pedidas sin llegar</span><b>${fmt(r.unserved)}</b></div>` : ''}
       </div>
 
-      ${r.nights.length > 1 ? html`
-        <h3 class="section-title">Por noche</h3>
+      ${r.weeks.length ? html`
+        <h3 class="section-title">Por semana</h3>
         <div class="chart-box" id="bt-chart"></div>` : ''}
 
       <div class="inf-list-head">
@@ -162,7 +164,7 @@ function view(r) {
         <li class="${d.qty === 0 ? 'void' : ''}">
           <span class="bt-del-text">
             <b>${dateLabel(d.business_date)} · ${timeLabel(d.delivered_at)}</b>
-            <small><span class="bar-tag bar-${d.bar_id}">${barName(d.bar_id)}</span>${d.delivered_by ? ` · ${d.delivered_by}` : ''}
+            <small><span class="bar-tag bar-${d.bar_id}">${barName(d.bar_id)}</span>
               ${d.corrected ? html` <span class="tag">editada</span>` : ''}</small>
           </span>
           <span class="bt-del-qty">${fmt(d.qty)}</span>
@@ -173,9 +175,9 @@ function view(r) {
         <h3 class="section-title">Agotado</h3>
         <ul class="bt-cuts">${r.stockouts.map((s) => html`
           <li>
-            <span><b>${dateTimeLabel(s.started_at)}</b>${s.started_by ? html` <small class="muted">${s.started_by}</small>` : ''}</span>
+            <span><b>${dateTimeLabel(s.started_at)}</b></span>
             <span class="muted">→</span>
-            <span>${s.ended_at ? html`<b>${dateTimeLabel(s.ended_at)}</b>${s.ended_by ? html` <small class="muted">${s.ended_by}</small>` : ''}`
+            <span>${s.ended_at ? html`<b>${dateTimeLabel(s.ended_at)}</b>`
     : html`<span class="tag danger">Sigue agotado</span>`}</span>
             <small class="muted">${plural(s.nights, 'noche', 'noches')}</small>
           </li>`)}</ul>` : ''}
@@ -224,7 +226,7 @@ async function correct(r, delId, products) {
   const d = r.deliveries.find((x) => x.id === delId);
   if (!d) return false;
   const data = await formDialog('Corregir reposición', html`
-    <p class="muted small">${dateLabel(d.business_date)} · ${dateTimeLabel(d.delivered_at)}${d.delivered_by ? ` · ${d.delivered_by}` : ''}</p>
+    <p class="muted small">${dateLabel(d.business_date)} · ${dateTimeLabel(d.delivered_at)}</p>
     <label class="field"><span>Botella</span><select name="product_id">${productOptions(products, r.product.id)}</select></label>
     <label class="field"><span>Barra</span><select name="bar_id">${barOptions(d.bar_id)}</select></label>
     <label class="field"><span>Botellas (0 para anularla)</span><input name="qty" type="number" min="0" max="999" inputmode="numeric" value="${d.qty}" required></label>

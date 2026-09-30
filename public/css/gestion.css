@@ -140,7 +140,7 @@ body.sel-dragging { user-select: none; -webkit-user-select: none; cursor: grabbi
 .kpi.alert b { color: var(--danger); }
 .kpi b.kpi-text { font-size: 1.0625rem; line-height: 1.6; }
 
-/* Gráfica por noche (SVG propio). */
+/* Gráficas de informes y detalle (SVG propio). */
 .chart-box {
   padding: 12px 12px 8px; background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius); min-width: 0; overflow: hidden;
@@ -160,6 +160,10 @@ body.sel-dragging { user-select: none; -webkit-user-select: none; cursor: grabbi
 .chart:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .chart.has-sel .chart-col:not(.on) .mark { opacity: 0.7; }
 .chart-col.on .hit { fill: var(--surface-2); }
+.week-chart .week-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.week-chart .week-point { fill: var(--accent); stroke: var(--surface); stroke-width: 2; pointer-events: none; }
+.week-chart .chart-week.on .week-point { stroke: var(--text); stroke-width: 3; }
+.week-chart .chart-week { cursor: pointer; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; font-size: 0.8125rem; color: var(--muted); }
 .chart-legend .key { display: inline-flex; align-items: center; gap: 6px; }
 .chart-legend .key::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--faint); }

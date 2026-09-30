@@ -60,6 +60,20 @@ test('Hecho suma la reposición una vez en la noche de la solicitud', async (t) 
   assert.equal(detail.deliveries[0].business_date, '2026-09-26');
 });
 
+test('Hecho después del corte del lunes conserva la semana de la solicitud del domingo', async (t) => {
+  const { db, id } = await setup(t);
+  const product = await id('Roku');
+  await svc.createRequest(db, { bar_id: 1, items: [{ product_id: product, qty: 2 }] },
+    { now: new Date('2026-09-27T21:00:00Z') }); // 23:00 del domingo en Madrid
+  const line = await db.get('SELECT id FROM request_lines WHERE product_id = ?', product);
+  await svc.completeLines(db, { items: [{ line_id: line.id, qty: 2, delivered: 0 }], by: 'Luis' },
+    { now: new Date('2026-09-28T10:05:00Z') }); // 12:05 del lunes en Madrid
+  const detail = await svc.informeBotella(db, product, { period: 'custom', from: '2026-09-27', to: '2026-09-28' });
+  assert.equal(detail.deliveries[0].business_date, '2026-09-27');
+  assert.deepEqual(detail.weeks.map((w) => [w.week_start, w.bottles]), [['2026-09-21', 2]]);
+  assert.equal((await svc.informe(db, { period: 'night', date: '2026-09-28' })).totals.bottles, 0);
+});
+
 test('jornada de Madrid cruza medianoche y los dos cambios de hora', async (t) => {
   const { db, id } = await setup(t);
   const product = await id('Roku');
@@ -172,6 +186,8 @@ test('detalle: noches sin entregas, orden descendente, agotado reversible y cons
   assert.equal(detail.product.out_of_stock, true);
   assert.equal(detail.product.out_of_stock_since, NIGHT.toISOString());
   assert.equal(detail.stockouts[0].ended_at, null);
+  assert.equal(Object.hasOwn(detail.stockouts[0], 'started_by'), false);
+  assert.equal(Object.hasOwn(detail.deliveries[0], 'delivered_by'), false);
   assert.equal(detail.nights.find((n) => n.business_date === '2026-09-26').out_of_stock, true);
   await svc.ensureSession(db, '2026-09-27', later(24 * 60));
   detail = await svc.informeBotella(db, product, { period: 'week', date: '2026-09-26', bar_id: '1' });
@@ -185,6 +201,32 @@ test('detalle: noches sin entregas, orden descendente, agotado reversible y cons
   assert.equal(detail.stockouts[0].ended_at, later(60).toISOString());
   await assert.rejects(svc.informeBotella(db, 99999, { period: 'week' }),
     { status: 404, message: 'Producto no encontrado' });
+});
+
+test('detalle: un punto por semana activa, ceros con actividad y semanas completas', async (t) => {
+  const { db, id } = await setup(t);
+  const product = await id('Roku');
+  const other = await id('Larios 12');
+  await manual(db, '2026-09-06', product, 1, 2);
+  await manual(db, '2026-09-07', product, 1, 3);
+  await svc.createRequest(db, { bar_id: 2, items: [{ product_id: other, qty: 1 }] },
+    { now: new Date('2026-09-14T21:00:00Z') });
+  await svc.ensureSession(db, '2026-09-21', NIGHT); // sesión vacía: no abrió
+  await manual(db, '2026-09-28', product, 2, 4);
+  await manual(db, '2026-10-01', product, 1, 5);
+
+  const detail = await svc.informeBotella(db, product, { period: 'month', date: '2026-09-30' });
+  assert.equal(detail.bottles, 9, 'el total del filtro sigue siendo solo septiembre');
+  assert.deepEqual(detail.weeks.map((w) => [w.week_start, w.week_end, w.bottles]), [
+    ['2026-08-31', '2026-09-06', 2],
+    ['2026-09-07', '2026-09-13', 3],
+    ['2026-09-14', '2026-09-20', 0],
+    ['2026-09-28', '2026-10-04', 9],
+  ]);
+  assert.deepEqual(detail.weeks[3].byBar, { 1: 5, 2: 4 });
+  const onlyBar1 = await svc.informeBotella(db, product,
+    { period: 'month', date: '2026-09-30', bar_id: '1' });
+  assert.deepEqual(onlyBar1.weeks.map((w) => w.bottles), [2, 3, 0, 5]);
 });
 
 test('filtros inválidos, migración idempotente y acceso de personal al estado agotado', async (t) => {

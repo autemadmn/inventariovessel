@@ -18,7 +18,7 @@ import { CATEGORIES, slugify } from './catalog.js';
 import { DEFAULT_SETTINGS } from './schema.js';
 import { HttpError } from './errors.js';
 import {
-  addDays, businessDate, datesBetween, daysBetween, isYmd, periodRange, previousPeriodDate, shortDate, weekday,
+  addDays, businessDate, datesBetween, daysBetween, isYmd, periodRange, previousPeriodDate, shortDate, weekday, weekStart,
 } from './dates.js';
 import { computeForecast, computePurchase } from '../public/js/shared/forecast.js';
 
@@ -741,6 +741,8 @@ export async function completeLines(db, { items, by }, { now } = {}) {
     await t.all(`SELECT id FROM request_lines WHERE id IN (${marks(ids)}) ORDER BY id FOR UPDATE`, ...ids);
     const done = [];
     for (const w of [...wanted].sort((a, b) => a.line_id - b.line_id)) {
+      // La entrega conserva l.session_id: «Hecho» cuenta en la jornada de la solicitud,
+      // aunque delivered_at caiga después del corte de las 12:00 en Madrid.
       const r = await t.run(`INSERT INTO deliveries
           (session_id, bar_id, product_id, line_id, qty, delivered_at, delivered_by, source)
         SELECT l.session_id, l.bar_id, l.product_id, l.id, ?::int, ?::text, ?::text, 'lista'
@@ -1229,14 +1231,44 @@ export async function informeBotella(db, id, params = {}, { now } = {}) {
   const covered = (so, date) => date >= dateOf(so.started_at) && date <= (so.ended_at ? dateOf(so.ended_at) : '9999-12-31');
   const stockouts = stockoutRows.filter((so) => dateOf(so.started_at) <= data.range.to
     && (!so.ended_at || dateOf(so.ended_at) >= data.range.from))
-    .map((so) => ({ started_at: so.started_at, ended_at: so.ended_at, started_by: so.started_by,
-      ended_by: so.ended_by, nights: data.sessions.filter((s) => covered(so, s.business_date)).length }));
+    .map((so) => ({ started_at: so.started_at, ended_at: so.ended_at,
+      nights: data.sessions.filter((s) => covered(so, s.business_date)).length }));
   const deliveries = await db.all(`SELECT d.id, s.business_date, d.delivered_at, d.bar_id, d.qty,
-      d.delivered_by, d.source, d.corrected
+      d.source, d.corrected
     FROM deliveries d JOIN sessions s ON s.id = d.session_id
     WHERE d.product_id = ? AND s.business_date BETWEEN ? AND ? ${data.bar_id ? 'AND d.bar_id = ?' : ''}
     ORDER BY d.delivered_at DESC, d.id DESC LIMIT 500`,
   p.id, data.range.from, data.range.to, ...(data.bar_id ? [data.bar_id] : []));
+  // La gráfica toma semanas completas (lunes-domingo), incluso si el filtro
+  // empieza o termina a mitad de semana. Solo aparecen semanas con actividad
+  // real del local; una semana activa sin esta botella conserva su punto a cero.
+  const graphFrom = weekStart(data.range.from);
+  const graphTo = addDays(weekStart(data.range.to), 6);
+  const [activeDates, weeklyDeliveries] = await Promise.all([
+    db.all(`SELECT s.business_date FROM sessions s
+      WHERE s.business_date BETWEEN ? AND ?
+        AND (EXISTS (SELECT 1 FROM request_lines l WHERE l.session_id = s.id)
+          OR EXISTS (SELECT 1 FROM deliveries d WHERE d.session_id = s.id AND d.qty > 0))
+      ORDER BY s.business_date`, graphFrom, graphTo),
+    db.all(`SELECT s.business_date, d.bar_id, SUM(d.qty)::int AS qty
+      FROM deliveries d JOIN sessions s ON s.id = d.session_id
+      WHERE d.product_id = ? AND s.business_date BETWEEN ? AND ? AND d.qty > 0
+        ${data.bar_id ? 'AND d.bar_id = ?' : ''}
+      GROUP BY s.business_date, d.bar_id ORDER BY s.business_date`,
+    p.id, graphFrom, graphTo, ...(data.bar_id ? [data.bar_id] : [])),
+  ]);
+  const byWeek = new Map();
+  for (const d of weeklyDeliveries) {
+    const start = weekStart(d.business_date);
+    const week = byWeek.get(start) ?? { bottles: 0, byBar: {} };
+    week.bottles += d.qty;
+    week.byBar[d.bar_id] = (week.byBar[d.bar_id] || 0) + d.qty;
+    byWeek.set(start, week);
+  }
+  const weeks = [...new Set(activeDates.map((d) => weekStart(d.business_date)))].map((start) => ({
+    week_start: start, week_end: addDays(start, 6),
+    bottles: byWeek.get(start)?.bottles ?? 0, byBar: byWeek.get(start)?.byBar ?? {},
+  }));
   const open = stockoutRows.filter((so) => so.ended_at === null).at(-1);
   return {
     product: { id: p.id, name: p.name, slug: p.slug, photo: p.photo, category: p.category,
@@ -1252,6 +1284,7 @@ export async function informeBotella(db, id, params = {}, { now } = {}) {
       bottles: cur.byNight.get(s.business_date)?.bottles ?? 0,
       byBar: cur.byNight.get(s.business_date)?.byBar ?? {},
       out_of_stock: stockoutRows.some((so) => covered(so, s.business_date)) })),
+    weeks,
     deliveries: deliveries.map((d) => ({ ...d, corrected: d.corrected === 1 })),
     stockouts,
   };

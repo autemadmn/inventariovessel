@@ -5,14 +5,12 @@ import { $, html, raw, mount, formDialog, toast } from '../ui.js';
 import { icon } from '../icons.js';
 import { renderInformes } from './informes.js';
 import { renderSeleccion } from './seleccion.js';
-import { renderPersonal } from './personal.js';
 import { renderCatalogo } from './catalogo.js';
 import { renderAjustes } from './ajustes.js';
 
 const TABS = [
   ['informes', 'Informes', renderInformes],
   ['seleccion', 'Selección', renderSeleccion],
-  ['personal', 'Personal', renderPersonal],
   ['catalogo', 'Catálogo', renderCatalogo],
 ];
 // Ajustes (barras, hora de corte, códigos, copia) no es pestaña: se abre desde el engranaje.
