@@ -28,7 +28,7 @@ export async function askPin(message = '') {
   const data = await formDialog('PIN de encargado', html`
     ${message ? html`<p class="error">${message}</p>` : ''}
     <label class="field"><span>PIN</span>
-      <input name="pin" type="password" inputmode="numeric" autocomplete="off" required autofocus></label>`,
+      <input name="pin" type="password" inputmode="text" autocomplete="off" required autofocus></label>`,
   { ok: 'Entrar' });
   if (!data) return false;
   auth.pin = data.pin;
