@@ -1,5 +1,7 @@
-// Informes → detalle de una botella: semanas, reposiciones (con corrección),
-// cortes de agotado, estado agotado/disponible y botellas por caja.
+// Informes → detalle de una botella: total del periodo, cajas, reparto por barra
+// y la evolución semanal de todo su histórico. Aquí mismo se cambian las botellas
+// por caja y el estado agotado. Las reposiciones del periodo quedan plegadas al
+// final, por si hay que corregir alguna.
 import { mget, mpost, mput } from '../api.js';
 import { state, barName } from '../state.js';
 import {
@@ -7,8 +9,7 @@ import {
 } from '../ui.js';
 import { icon } from '../icons.js';
 import {
-  filters, query, periodControls, applyFilterClick, applyRange, diffMarkup, casesLabel, basisTitle,
-  onWidthChange,
+  query, periodControls, applyPeriodClick, casesLabel, rangeLabel, busy, onWidthChange,
 } from './informes.js';
 import { weekChart, bindWeekChart, selectWeekPoint } from './weekly-chart.js';
 
@@ -24,6 +25,7 @@ export async function renderBotella(root, rawId) {
 
   let r = null;
   let products = null; // para los desplegables de corrección, se piden al usarlos
+  let open = false; // «Reposiciones» sigue abierto al volver a dibujar
 
   const load = () => mget(`/api/informe/botella/${id}?${query()}`);
 
@@ -31,12 +33,13 @@ export async function renderBotella(root, rawId) {
     const box = $('#bt-chart', root);
     if (!box || !r) return;
     const selected = Number($('.chart-week.on', box)?.dataset.i ?? r.weeks.length - 1);
-    mount(box, weekChart(r.weeks, { width: box.clientWidth - 24, bar: filters.bar }));
+    mount(box, weekChart(r.weeks, { width: box.clientWidth - 24 }));
     selectWeekPoint(box, selected);
   };
 
   const draw = () => {
-    mount(root, view(r));
+    mount(root, view(r, open));
+    $('#bt-dels', root)?.addEventListener('toggle', (e) => { open = e.target.open; });
     const box = $('#bt-chart', root);
     if (box) {
       bindWeekChart(box);
@@ -47,14 +50,15 @@ export async function renderBotella(root, rawId) {
   let requestId = 0;
   const refresh = async () => {
     const request = ++requestId;
-    let result;
-    try { result = await load(); } catch (err) {
-      if (request !== requestId) return;
-      throw err;
+    busy(root, true);
+    try {
+      const result = await load();
+      if (request !== requestId || !root.isConnected) return;
+      r = result;
+      draw();
+    } finally {
+      if (request === requestId) busy(root, false);
     }
-    if (request !== requestId || !root.isConnected) return;
-    r = result;
-    draw();
   };
 
   const allProducts = async () => {
@@ -75,20 +79,9 @@ export async function renderBotella(root, rawId) {
         if (!await correct(r, Number(d.correct), await allProducts())) return;
       } else if (d.addManual !== undefined) {
         if (!await addManual(r, await allProducts())) return;
-      } else if (!applyFilterClick(d, r?.range)) {
+      } else if (!applyPeriodClick(d)) {
         return;
       }
-      await refresh();
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  });
-
-  root.addEventListener('submit', async (e) => {
-    if (e.target.id !== 'inf-range') return;
-    e.preventDefault();
-    if (!applyRange(e.target)) return;
-    try {
       await refresh();
     } catch (err) {
       toast(err.message, 'error');
@@ -106,14 +99,11 @@ export async function renderBotella(root, rawId) {
   return onWidthChange(root, drawChart);
 }
 
-function view(r) {
+function view(r, open) {
   const p = r.product;
-  const multiBar = !r.bar_id && state.bars.length > 1;
-  const meta = [
-    p.group ? p.group.name : 'Fuera de la selección',
-    p.capacity_ml ? `${fmt(p.capacity_ml / 10)} cl` : '',
-    state.categories.find((c) => c.id === p.category)?.name ?? '',
-  ].filter(Boolean).join(' · ');
+  const bars = state.bars.length ? state.bars : [{ id: 1, name: 'Barra 1' }, { id: 2, name: 'Barra 2' }];
+  const top = Math.max(1, ...bars.map((b) => r.byBar?.[b.id] || 0));
+  const cases = r.bottles ? casesLabel(r.cases) : '';
 
   return html`
     <div class="inf bt">
@@ -123,64 +113,50 @@ function view(r) {
         ${thumb(p, 'lg')}
         <div class="bt-title">
           <h2>${p.name}</h2>
-          <p class="muted small">${meta}</p>
-          <p class="bt-tags">
-            ${p.out_of_stock ? html`<span class="tag danger">Agotado${p.out_of_stock_since ? ` desde ${dateTimeLabel(p.out_of_stock_since)}` : ''}</span>`
-    : html`<span class="tag ok">Disponible</span>`}
-            ${!p.active ? html`<span class="tag">Oculto</span>` : ''}
-            ${p.status === 'pendiente' ? html`<span class="tag warn">Por confirmar</span>` : ''}
-          </p>
+          <p class="muted">${p.group ? p.group.name : 'Sin grupo'}</p>
+          ${p.out_of_stock ? html`<span class="tag danger">Agotado</span>` : ''}
+          <button type="button" class="btn small ghost" data-stock>
+            ${p.out_of_stock ? 'Marcar disponible' : 'Marcar agotado'}</button>
         </div>
       </header>
 
-      <div class="bt-actions">
-        <button type="button" class="btn ${p.out_of_stock ? 'primary' : 'ghost danger'}" data-stock>
-          ${p.out_of_stock ? 'Marcar disponible' : 'Marcar agotado'}</button>
-        <button type="button" class="btn ghost" data-per-case>
-          ${raw(icon('pencil', { size: 16 }))} ${p.per_case ? `${fmt(p.per_case)} por caja` : 'Botellas por caja: sin definir'}</button>
-      </div>
+      ${periodControls()}
 
-      ${periodControls(r)}
+      <section class="bt-total" aria-label="Botellas repuestas">
+        <p class="bt-range">${rangeLabel(r)}</p>
+        <p class="bt-big"><b>${fmt(r.bottles)}</b> ${r.bottles === 1 ? 'botella' : 'botellas'}</p>
+        <div class="bt-cases">
+          ${cases ? html`<span>${cases}</span>` : ''}
+          <button type="button" class="link" data-per-case>${p.per_case
+    ? html`${plural(p.per_case, 'botella', 'botellas')} por caja ${raw(icon('pencil', { size: 14 }))}`
+    : 'Indicar botellas por caja'}</button>
+        </div>
+        <ul class="bt-bars">${bars.map((b) => html`
+          <li class="bar-${b.id}">
+            <span class="bar-tag bar-${b.id}">${b.name}</span>
+            <span class="bt-barline"><i style="width:${((r.byBar?.[b.id] || 0) / top) * 100}%"></i></span>
+            <b>${fmt(r.byBar?.[b.id] || 0)}</b>
+          </li>`)}</ul>
+      </section>
 
-      <div class="kpis">
-        <div class="kpi main"><span>${basisTitle(r.basis)}</span><b>${fmt(r.bottles)}</b>
-          <small>${r.previousRange ? html`${diffMarkup(r.diff)} frente a ${r.previousRange.label.toLowerCase()} (${fmt(r.previous)})` : ''}</small></div>
-        ${r.cases ? html`<div class="kpi"><span>En cajas de ${fmt(p.per_case)}</span><b class="kpi-text">${casesLabel(r.cases) || '0'}</b></div>` : ''}
-        ${multiBar ? state.bars.map((b) => html`
-          <div class="kpi bar-${b.id}"><span>${b.name}</span><b>${fmt(r.byBar?.[b.id] || 0)}</b></div>`) : ''}
-        ${r.stockout_nights ? html`<div class="kpi alert"><span>Noches agotado</span><b>${fmt(r.stockout_nights)}</b></div>` : ''}
-        ${r.unserved ? html`<div class="kpi"><span>Pedidas sin llegar</span><b>${fmt(r.unserved)}</b></div>` : ''}
-      </div>
+      <h3 class="section-title">Por semana</h3>
+      ${r.weeks.length > 1 ? html`<div class="chart-box" id="bt-chart"></div>`
+    : html`<p class="empty bt-empty">${r.weeks.length ? 'Solo hay una semana con reposiciones. La evolución aparecerá con las siguientes.' : 'Aún no se ha repuesto nunca.'}</p>`}
 
-      ${r.weeks.length ? html`
-        <h3 class="section-title">Por semana</h3>
-        <div class="chart-box" id="bt-chart"></div>` : ''}
-
-      <div class="inf-list-head">
-        <h3 class="section-title">Reposiciones</h3>
-        <button type="button" class="btn small ghost" data-add-manual>${raw(icon('plus', { size: 16 }))} Añadir olvidada</button>
-      </div>
-      ${r.deliveries.length ? html`<ul class="bt-dels">${r.deliveries.map((d) => html`
-        <li class="${d.qty === 0 ? 'void' : ''}">
-          <span class="bt-del-text">
-            <b>${dateLabel(d.business_date)} · ${timeLabel(d.delivered_at)}</b>
-            <small><span class="bar-tag bar-${d.bar_id}">${barName(d.bar_id)}</span>
-              ${d.corrected ? html` <span class="tag">editada</span>` : ''}</small>
-          </span>
-          <span class="bt-del-qty">${fmt(d.qty)}</span>
-          <button type="button" class="icon-btn" data-correct="${d.id}" aria-label="Corregir reposición del ${dateLabel(d.business_date)} a las ${timeLabel(d.delivered_at)}">${raw(icon('pencil', { size: 18 }))}</button>
-        </li>`)}</ul>` : html`<p class="empty">Sin reposiciones en este periodo.</p>`}
-
-      ${r.stockouts.length ? html`
-        <h3 class="section-title">Agotado</h3>
-        <ul class="bt-cuts">${r.stockouts.map((s) => html`
-          <li>
-            <span><b>${dateTimeLabel(s.started_at)}</b></span>
-            <span class="muted">→</span>
-            <span>${s.ended_at ? html`<b>${dateTimeLabel(s.ended_at)}</b>`
-    : html`<span class="tag danger">Sigue agotado</span>`}</span>
-            <small class="muted">${plural(s.nights, 'noche', 'noches')}</small>
+      <details class="bt-more" id="bt-dels" ${open ? 'open' : ''}>
+        <summary>${raw(icon('right', { size: 18 }))} Reposiciones de este periodo · ${fmt(r.deliveries.length)}</summary>
+        ${r.deliveries.length ? html`<ul class="bt-dels">${r.deliveries.map((d) => html`
+          <li class="${d.qty === 0 ? 'void' : ''}">
+            <span class="bt-del-text">
+              <b>${dateLabel(d.business_date)} · ${timeLabel(d.delivered_at)}</b>
+              <small><span class="bar-tag bar-${d.bar_id}">${barName(d.bar_id)}</span>
+                ${d.corrected ? html` <span class="tag">editada</span>` : ''}</small>
+            </span>
+            <span class="bt-del-qty">${fmt(d.qty)}</span>
+            <button type="button" class="icon-btn" data-correct="${d.id}" aria-label="Corregir reposición del ${dateLabel(d.business_date)} a las ${timeLabel(d.delivered_at)}">${raw(icon('pencil', { size: 18 }))}</button>
           </li>`)}</ul>` : ''}
+        <button type="button" class="btn ghost" data-add-manual>${raw(icon('plus', { size: 16 }))} Añadir una olvidada</button>
+      </details>
     </div>`;
 }
 
@@ -203,7 +179,7 @@ async function editPerCase(p) {
     <p class="muted small">${p.name}</p>
     <label class="field"><span>Botellas por caja</span>
       <input name="per_case" type="number" min="1" max="10000" step="1" inputmode="numeric"
-        value="${p.per_case ?? ''}" placeholder="Sin confirmar" autofocus></label>`);
+        value="${p.per_case ?? ''}" placeholder="Por ejemplo, 6" autofocus></label>`);
   if (!data) return false;
   const v = data.per_case.trim();
   const perCase = v === '' ? null : Number(v);
@@ -240,11 +216,11 @@ async function correct(r, delId, products) {
 }
 
 async function addManual(r, products) {
-  const night = filters.period === 'custom' ? r.range.to : (r.date ?? filters.date ?? state.date);
+  const night = r.range.to > state.date ? state.date : r.range.to;
   const data = await formDialog('Añadir reposición olvidada', html`
-    <label class="field"><span>Noche</span><input name="date" type="date" value="${night > state.date ? state.date : night}" max="${state.date}" required></label>
+    <label class="field"><span>Noche</span><input name="date" type="date" value="${night}" max="${state.date}" required></label>
     <label class="field"><span>Botella</span><select name="product_id">${productOptions(products, r.product.id)}</select></label>
-    <label class="field"><span>Barra</span><select name="bar_id">${barOptions(filters.bar ? Number(filters.bar) : state.bars[0]?.id)}</select></label>
+    <label class="field"><span>Barra</span><select name="bar_id">${barOptions(state.bars[0]?.id)}</select></label>
     <label class="field"><span>Botellas</span><input name="qty" type="number" min="1" max="999" inputmode="numeric" value="1" required></label>
     <label class="field"><span>Motivo</span><input name="reason" maxlength="300" required placeholder="Ej.: no se anotó durante la noche"></label>`);
   if (!data) return false;

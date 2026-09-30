@@ -1071,11 +1071,37 @@ function customRangeLabel(from, to) {
   return `Del ${shortDate(from)}${crossYear ? ` ${year(from)}` : ''} al ${shortDate(to)}${crossYear ? ` ${year(to)}` : ''}`;
 }
 
+// Noches con actividad real: alguna petición o alguna reposición hecha.
+const ACTIVE_SESSION = `(EXISTS (SELECT 1 FROM request_lines l WHERE l.session_id = s.id)
+  OR EXISTS (SELECT 1 FROM deliveries d WHERE d.session_id = s.id AND d.qty > 0))`;
+
+/** Viernes del bloque viernes-domingo que contiene la fecha (o el anterior si cae entre semana). */
+const fridayOf = (ymd) => addDays(ymd, -((weekday(ymd) + 2) % 7));
+
+/**
+ * «Último finde»: el último bloque de viernes a domingo, hasta `ref`, en el que
+ * hubo actividad. Si nunca la hubo, el último bloque de viernes a domingo.
+ */
+async function lastWeekendRange(db, ref) {
+  const dates = await db.all(`SELECT s.business_date FROM sessions s
+    WHERE s.business_date <= ? AND ${ACTIVE_SESSION}
+    ORDER BY s.business_date DESC LIMIT 400`, ref);
+  const hit = dates.find((d) => [5, 6, 0].includes(weekday(d.business_date)));
+  const from = fridayOf(hit?.business_date ?? ref);
+  const to = addDays(from, 2);
+  const start = from.slice(0, 7) === to.slice(0, 7) ? String(Number(from.slice(8))) : shortDate(from);
+  return { from, to, label: `Finde del ${start} al ${shortDate(to)}` };
+}
+
 async function informePeriod(db, { period = 'week', date, from, to, bar_id } = {}, now) {
-  if (!['night', 'week', 'month', 'custom'].includes(period)) throw bad('Periodo no válido.');
+  if (!['night', 'weekend', 'week', 'month', 'custom'].includes(period)) throw bad('Periodo no válido.');
   let range;
   let ref;
-  if (period === 'custom') {
+  if (period === 'weekend') {
+    if (date !== undefined && !isYmd(date)) throw bad('Fecha no válida.');
+    range = await lastWeekendRange(db, date ?? await currentDate(db, now));
+    ref = range.to;
+  } else if (period === 'custom') {
     if (!isYmd(from) || !isYmd(to)) throw bad('Fecha no válida.');
     if (from > to) throw bad('Revisa las fechas: el inicio es posterior al final.');
     const days = daysBetween(from, to) + 1;
@@ -1099,6 +1125,9 @@ async function informePeriod(db, { period = 'week', date, from, to, bar_id } = {
   if (period === 'night') {
     const prev = await db.get('SELECT business_date FROM sessions WHERE business_date < ? ORDER BY business_date DESC LIMIT 1', ref);
     previousRange = prev ? periodRange('night', prev.business_date) : null;
+  } else if (period === 'weekend') {
+    const start = addDays(range.from, -7);
+    previousRange = { from: start, to: addDays(start, 2), label: `Finde del ${shortDate(start)}` };
   } else if (period === 'custom') {
     const end = addDays(from, -1);
     const start = addDays(end, -(daysBetween(from, to)));
@@ -1239,24 +1268,18 @@ export async function informeBotella(db, id, params = {}, { now } = {}) {
     WHERE d.product_id = ? AND s.business_date BETWEEN ? AND ? ${data.bar_id ? 'AND d.bar_id = ?' : ''}
     ORDER BY d.delivered_at DESC, d.id DESC LIMIT 500`,
   p.id, data.range.from, data.range.to, ...(data.bar_id ? [data.bar_id] : []));
-  // La gráfica toma semanas completas (lunes-domingo), incluso si el filtro
-  // empieza o termina a mitad de semana. Solo aparecen semanas con actividad
-  // real del local; una semana activa sin esta botella conserva su punto a cero.
-  const graphFrom = weekStart(data.range.from);
-  const graphTo = addDays(weekStart(data.range.to), 6);
-  const [activeDates, weeklyDeliveries] = await Promise.all([
-    db.all(`SELECT s.business_date FROM sessions s
-      WHERE s.business_date BETWEEN ? AND ?
-        AND (EXISTS (SELECT 1 FROM request_lines l WHERE l.session_id = s.id)
-          OR EXISTS (SELECT 1 FROM deliveries d WHERE d.session_id = s.id AND d.qty > 0))
-      ORDER BY s.business_date`, graphFrom, graphTo),
-    db.all(`SELECT s.business_date, d.bar_id, SUM(d.qty)::int AS qty
+  // La gráfica enseña todo el histórico de la botella, sin depender del periodo
+  // elegido: semanas completas (lunes-domingo) desde su primera reposición.
+  // Solo aparecen semanas con actividad real del local; una semana activa sin
+  // esta botella conserva su punto a cero.
+  const weeklyDeliveries = await db.all(`SELECT s.business_date, d.bar_id, SUM(d.qty)::int AS qty
       FROM deliveries d JOIN sessions s ON s.id = d.session_id
-      WHERE d.product_id = ? AND s.business_date BETWEEN ? AND ? AND d.qty > 0
-        ${data.bar_id ? 'AND d.bar_id = ?' : ''}
+      WHERE d.product_id = ? AND d.qty > 0 ${data.bar_id ? 'AND d.bar_id = ?' : ''}
       GROUP BY s.business_date, d.bar_id ORDER BY s.business_date`,
-    p.id, graphFrom, graphTo, ...(data.bar_id ? [data.bar_id] : [])),
-  ]);
+  p.id, ...(data.bar_id ? [data.bar_id] : []));
+  const activeDates = weeklyDeliveries.length ? await db.all(`SELECT s.business_date FROM sessions s
+      WHERE s.business_date >= ? AND ${ACTIVE_SESSION}
+      ORDER BY s.business_date`, weekStart(weeklyDeliveries[0].business_date)) : [];
   const byWeek = new Map();
   for (const d of weeklyDeliveries) {
     const start = weekStart(d.business_date);

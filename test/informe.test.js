@@ -270,3 +270,42 @@ test('filtros inválidos, migración idempotente y acceso de personal al estado 
     assert.equal((await response.json()).out_of_stock, out_of_stock ? 1 : 0);
   }
 });
+
+test('«Último finde»: último bloque de viernes a domingo con actividad', async (t) => {
+  const { db, id } = await setup(t);
+  const product = await id('Roku');
+  // Sin actividad: el último viernes-domingo hasta la fecha.
+  let r = await svc.informe(db, { period: 'weekend', date: '2026-09-30' });
+  assert.deepEqual([r.range.from, r.range.to, r.range.label], ['2026-09-25', '2026-09-27', 'Finde del 25 al 27 sep']);
+  r = await svc.informe(db, { period: 'weekend', date: '2026-11-02' });
+  assert.equal(r.range.label, 'Finde del 30 oct al 1 nov', 'finde que cruza de mes');
+  await manual(db, '2026-09-18', product, 1, 4);
+  await manual(db, '2026-09-20', product, 2, 1); // domingo: cuenta en el mismo finde
+  await manual(db, '2026-09-24', product, 1, 7); // jueves festivo: no es finde
+  r = await svc.informe(db, { period: 'weekend', date: '2026-09-30' });
+  assert.deepEqual([r.range.from, r.range.to], ['2026-09-18', '2026-09-20']);
+  assert.equal(r.totals.bottles, 5);
+  assert.deepEqual(r.totals.byBar, { 1: 4, 2: 1 });
+  // Un sábado con actividad desplaza el finde.
+  await manual(db, '2026-09-26', product, 1, 2);
+  r = await svc.informe(db, { period: 'weekend', date: '2026-09-30' });
+  assert.deepEqual([r.range.from, r.range.to, r.totals.bottles], ['2026-09-25', '2026-09-27', 2]);
+  // Consultado en pleno sábado, el finde es el que está en curso.
+  r = await svc.informe(db, { period: 'weekend', date: '2026-09-26' });
+  assert.equal(r.range.from, '2026-09-25');
+  await assert.rejects(svc.informe(db, { period: 'weekend', date: '2026-02-30' }), { status: 400 });
+});
+
+test('detalle: la gráfica enseña todo el histórico, sea cual sea el periodo', async (t) => {
+  const { db, id } = await setup(t);
+  const product = await id('Roku');
+  await manual(db, '2026-08-07', product, 1, 3);
+  await manual(db, '2026-08-08', product, 2, 2);
+  await manual(db, '2026-09-26', product, 1, 4);
+  const detail = await svc.informeBotella(db, product, { period: 'weekend', date: '2026-09-30' });
+  assert.equal(detail.bottles, 4, 'el total es solo el del finde');
+  assert.deepEqual(detail.byBar, { 1: 4 });
+  assert.deepEqual(detail.weeks.map((w) => [w.week_start, w.bottles]), [['2026-08-03', 5], ['2026-09-21', 4]]);
+  const never = await svc.informeBotella(db, await id('Larios 12'), { period: 'month', date: '2026-09-30' });
+  assert.deepEqual(never.weeks, []);
+});

@@ -15,8 +15,9 @@ test('gráfica de botella: un punto por semana activa y controles semanales acce
   ]));
   assert.equal((markup.match(/class="chart-week"/g) || []).length, 3);
   assert.match(markup, /class="week-line"/);
-  assert.match(markup, /Semana del lun 14 sep al dom 20 sep · 0 botellas/);
+  assert.match(markup, /Semana del 14 al 20 sep · 0 botellas/);
   assert.match(markup, /aria-label="Semana anterior"/);
   assert.match(markup, /aria-label="Semana siguiente"/);
+  assert.match(markup, /Semana del 28 sep al 4 oct · 5 botellas/);
   assert.doesNotMatch(markup, /Noche anterior|Noche siguiente|data-night=/);
 });
