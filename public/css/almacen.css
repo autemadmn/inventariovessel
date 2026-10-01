@@ -376,3 +376,7 @@
 @media (prefers-reduced-motion: reduce) {
   .alm, .cnt-bar i { transition: none; }
 }
+
+/* Botellas por caja, editable desde el detalle */
+.alm-stock .alm-percase { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-top: 2px; font-size: 0.9375rem; }
+.alm-stock .alm-percase .icon { display: inline-block; }

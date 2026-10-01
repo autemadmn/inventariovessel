@@ -103,6 +103,11 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['POST', '/api/almacen/recuentos', 'staff', ({ db, body }) => alm.saveCounts(db, body)],
     ['POST', '/api/almacen/roturas', 'staff', ({ db, body }) => alm.addBreakage(db, body)],
     ['POST', '/api/almacen/entradas', 'staff', ({ db, body }) => alm.addEntries(db, body)],
+    // Botellas por caja desde Almacén: lo puede cambiar cualquiera, como el agotado.
+    ['PUT', '/api/almacen/botella/:id/caja', 'staff', async ({ db, id, body }) => {
+      await svc.updateProduct(db, id, { per_case: body.per_case ?? null }, { by: body.by });
+      return alm.almacenBotella(db, id, { store: body.store_id });
+    }],
     ['GET', '/api/almacen/descuadres', 'manager', ({ db, url }) => control.descuadres(db, q(url))],
     ['GET', '/api/almacen/historial', 'manager', ({ db, url }) => control.historial(db, q(url))],
     ['POST', '/api/almacen/movimientos/:id/anular', 'manager', ({ db, id, body }) => control.voidMove(db, id, body)],

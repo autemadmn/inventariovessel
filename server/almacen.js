@@ -32,18 +32,30 @@ export async function storeOf(db, id) {
   return store;
 }
 
-// Una consulta para todas las botellas del almacén. El desempate del recuento
-// usa id, y las fechas de movimientos/reposiciones se comparan estrictamente.
+// Una consulta para todas las botellas del almacén. El punto de partida de cada
+// botella es su último recuento; si nunca se ha contado pero ha entrado algo en
+// este almacén (mercancía o viaje), se parte de 0 justo antes de esa primera
+// entrada. El desempate del recuento usa id, y las fechas se comparan estrictamente.
 export async function stockRows(db, store, at = nowIso()) {
-  return db.all(`WITH latest AS (
+  return db.all(`WITH last_count AS (
       SELECT DISTINCT ON (product_id) id, product_id, qty, counted_at, counted_by
       FROM stock_counts WHERE store_id = ? AND counted_at <= ?
       ORDER BY product_id, counted_at DESC, id DESC
+    ), first_in AS (
+      SELECT product_id, MIN(created_at) AS first_at FROM stock_moves
+      WHERE to_store_id = ? AND voided = 0 AND created_at <= ?
+      GROUP BY product_id
+    ), latest AS (
+      SELECT id, product_id, qty, counted_at, counted_by FROM last_count
+      UNION ALL
+      SELECT NULL::int, f.product_id, 0, f.first_at, NULL FROM first_in f
+      WHERE NOT EXISTS (SELECT 1 FROM last_count lc WHERE lc.product_id = f.product_id)
     ), moves AS (
       SELECT c.product_id,
         SUM(CASE WHEN m.to_store_id = ? THEN m.qty ELSE -m.qty END)::int AS delta
       FROM latest c JOIN stock_moves m ON m.product_id = c.product_id
-        AND m.voided = 0 AND m.created_at > c.counted_at AND m.created_at <= ?
+        AND m.voided = 0 AND m.created_at <= ?
+        AND (m.created_at > c.counted_at OR (c.id IS NULL AND m.created_at = c.counted_at))
         AND (m.to_store_id = ? OR m.from_store_id = ?)
       GROUP BY c.product_id
     ), deliveries_after AS (
@@ -52,12 +64,12 @@ export async function stockRows(db, store, at = nowIso()) {
         AND d.qty > 0 AND d.delivered_at > c.counted_at AND d.delivered_at <= ?
       GROUP BY c.product_id
     )
-    SELECT c.product_id, c.qty AS count_qty, c.counted_at, c.counted_by,
+    SELECT c.product_id, c.id AS count_id, c.qty AS count_qty, c.counted_at, c.counted_by,
       (c.qty + COALESCE(m.delta, 0) - CASE WHEN ? = 'local'
         THEN COALESCE(d.qty, 0) ELSE 0 END)::int AS stock
     FROM latest c LEFT JOIN moves m USING (product_id)
     LEFT JOIN deliveries_after d USING (product_id)`,
-  store.id, at, store.id, at, store.id, store.id, at, store.kind);
+  store.id, at, store.id, at, store.id, at, store.id, store.id, at, store.kind);
 }
 
 export async function liveStock(db, { now } = {}) {
@@ -118,7 +130,7 @@ function presentation(p, row, weekly, tripWeeks, hasConsumption, stockTotal = nu
     state, review: controlled && stock < 0,
     section: !controlled ? 'sin_contar' : state === 'no_queda' ? 'no_queda'
       : state === 'queda_poco' ? 'queda_poco' : 'resto',
-    last_count_at: row?.counted_at ?? null,
+    last_count_at: row?.count_id ? row.counted_at : null,
   };
 }
 

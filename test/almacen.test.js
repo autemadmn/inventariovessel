@@ -205,3 +205,47 @@ test('API de personal, validación y copia de seguridad con ida y vuelta', async
   assert.equal((await other.get('SELECT count(*)::int AS n FROM stores')).n, 2);
   await checkSchema(other);
 });
+
+test('mercancía de una botella sin contar: cuenta desde la llegada y descuenta lo repuesto después', async (t) => {
+  const { db, id } = await setup(t);
+  const a = await id('roku');
+  await delivery(db, a, 5, -60); // antes de que llegue nada: no cuenta
+  await alm.addEntries(db, { store_id: 1, items: [{ product_id: a, qty: 12 }], by: 'Ana' }, { now: new Date(iso(-30)) });
+  let row = (await alm.stockRows(db, { id: 1, kind: 'local' }, iso(0))).find((r) => r.product_id === a);
+  assert.equal(row.stock, 12, 'la entrada se ve aunque nunca se haya contado');
+  assert.equal(row.count_id, null);
+  await delivery(db, a, 3, 10);
+  row = (await alm.stockRows(db, { id: 1, kind: 'local' }, iso(20))).find((r) => r.product_id === a);
+  assert.equal(row.stock, 9);
+  const view = await alm.almacen(db, { store: 1 }, { now: new Date(iso(20)) });
+  const item = view.products.find((p) => p.product_id === a);
+  assert.equal(item.controlled, true);
+  assert.equal(item.stock, 9);
+  assert.equal(item.last_count_at, null, 'no se inventa un recuento');
+  assert.equal((await alm.liveStock(db, { now: new Date(iso(20)) }))[a], 9);
+  // El primer recuento ya tiene valor esperado: el descuadre se puede ver.
+  await count(db, a, 8, 30);
+  const c = await db.get('SELECT expected FROM stock_counts WHERE product_id = ? ORDER BY id DESC LIMIT 1', a);
+  assert.equal(c.expected, 9);
+  // En Out Vessel no aparece: la entrada fue al local.
+  assert.equal((await alm.stockRows(db, { id: 2, kind: 'central' }, iso(40))).some((r) => r.product_id === a), false);
+});
+
+test('botellas por caja desde Almacén, con acceso de personal', async (t) => {
+  const { db, id } = await setup(t);
+  const a = await id('roku');
+  const handler = createHandler({ getDb: async () => db,
+    env: { STAFF_CODE: 'staff', MANAGER_PIN: 'manager' }, log: { error: () => {} } });
+  const put = (body, headers) => handler(new Request(`https://example.test/api/almacen/botella/${a}/caja`, {
+    method: 'PUT', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) }));
+  assert.equal((await put({ per_case: 6 }, {})).status, 401);
+  const res = await put({ per_case: 6, store_id: 2, by: 'Ana' }, { 'x-access-code': 'staff' });
+  assert.equal(res.status, 200);
+  const view = await res.json();
+  assert.equal(view.product.per_case, 6);
+  assert.equal(view.store.id, 2);
+  assert.equal((await db.get('SELECT per_case FROM products WHERE id = ?', a)).per_case, 6);
+  assert.equal((await put({ per_case: 0 }, { 'x-access-code': 'staff' })).status, 400);
+  assert.equal((await put({ per_case: null }, { 'x-access-code': 'staff' })).status, 200);
+  assert.equal((await db.get('SELECT per_case FROM products WHERE id = ?', a)).per_case, null);
+});
