@@ -12,6 +12,7 @@ import {
 import { icon } from '../icons.js';
 import { renderViaje, apuntar } from './viaje.js';
 import { renderEntrada } from './entrada.js';
+import { renderControl } from './control.js';
 
 export const back = () => html`
   <a class="inf-back" href="#/almacen">${raw(icon('left', { size: 18 }))} Almacén</a>`;
@@ -21,6 +22,7 @@ export function renderAlmacen(root, rest = []) {
   if (rest[0] === 'contar') return renderContar(root);
   if (rest[0] === 'viaje') return renderViaje(root);
   if (rest[0] === 'entrada') return renderEntrada(root);
+  if (rest[0] === 'control') return renderControl(root);
   return renderLista(root);
 }
 
@@ -108,6 +110,7 @@ function renderLista(root) {
           <input type="search" id="alm-q" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
       </div>
       <div id="alm-list" class="alm-body" aria-live="polite"><p class="empty">Cargando…</p></div>
+      <a class="alm-control" href="#/almacen/control">${raw(icon('lock', { size: 16 }))} Historial y descuadres</a>
     </section>`);
 
   const el = $('#alm', root);

@@ -3,6 +3,7 @@
 import * as svc from './services.js';
 import * as alm from './almacen.js';
 import * as viaje from './viaje.js';
+import * as control from './control.js';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -102,6 +103,9 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['POST', '/api/almacen/recuentos', 'staff', ({ db, body }) => alm.saveCounts(db, body)],
     ['POST', '/api/almacen/roturas', 'staff', ({ db, body }) => alm.addBreakage(db, body)],
     ['POST', '/api/almacen/entradas', 'staff', ({ db, body }) => alm.addEntries(db, body)],
+    ['GET', '/api/almacen/descuadres', 'manager', ({ db, url }) => control.descuadres(db, q(url))],
+    ['GET', '/api/almacen/historial', 'manager', ({ db, url }) => control.historial(db, q(url))],
+    ['POST', '/api/almacen/movimientos/:id/anular', 'manager', ({ db, id, body }) => control.voidMove(db, id, body)],
     ['GET', '/api/almacen/viaje', 'staff', ({ db }) => viaje.tripView(db)],
     ['POST', '/api/almacen/viaje/lineas', 'staff', ({ db, body }) => viaje.addTripLine(db, body)],
     ['POST', '/api/almacen/viaje/sugerido', 'staff', ({ db, body }) => viaje.addSuggested(db, body)],

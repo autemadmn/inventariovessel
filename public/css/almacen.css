@@ -284,6 +284,82 @@
 /* Marca de «elegida»: la cantidad ya se ve arriba, en cajas + sueltas. */
 .card .count.ent-check { display: grid; place-items: center; width: 28px; padding: 0; }
 
+/* ------------------------------------------------------------ Fase 3: historial y descuadres */
+
+/* Enlace discreto al final de la lista: el encargado sabe dónde está; el resto no lo necesita. */
+.alm-control {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; align-self: center;
+  min-height: 44px; margin-top: 28px; padding: 0 14px; border-radius: 10px;
+  color: var(--muted); font-size: 0.875rem; font-weight: 500; text-decoration: none;
+}
+.alm-control:hover { color: var(--text); background: var(--surface-2); }
+
+.ctl .inf-period { margin-top: 8px; }
+.ctl.is-loading .ctl-body { opacity: 0.55; }
+.ctl-body { transition: opacity 0.2s var(--ease); }
+.ctl-range { margin: 12px 0 0; color: var(--muted); font-size: 0.9375rem; }
+.ctl-range::first-letter { text-transform: uppercase; }
+.ctl .section-title:first-child { margin-top: 20px; }
+
+/* Lo que falta en cada almacén, en grande. */
+.ctl-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.ctl-total {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 14px 14px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.ctl-total > span { color: var(--muted); font-size: 0.875rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctl-total p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; margin: 0; line-height: 1.1; }
+.ctl-total p b { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.ctl-total p small { color: var(--muted); font-size: 0.875rem; font-weight: 500; }
+.ctl-total.bad { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+.ctl-total.bad p b, .ctl-total.bad p small:first-child { color: var(--danger); }
+.ctl-total .ctl-ok { align-items: center; gap: 6px; min-height: 2.5rem; color: var(--ok); font-size: 1.125rem; font-weight: 600; }
+
+/* Descuadres: misma lista visual que Informes; las faltas en rojo, las sobras neutras. */
+.ctl-row .inf-name { gap: 4px; }
+.ctl-meta { color: var(--muted); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.ctl-diff { gap: 2px; }
+.ctl-diff > small { color: var(--muted); font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.ctl-diff > .ctl-bottles { color: var(--muted); font-size: 0.8125rem; font-weight: 500; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.ctl-row.bad .ctl-diff > small:first-child,.ctl-row.bad .alm-qty b { color: var(--danger); }
+.ctl-empty { margin: 0; padding: 20px 16px; border-radius: var(--radius); background: var(--surface-2); color: var(--muted); font-size: 0.9375rem; text-align: center; }
+
+/* Historial: un bloque por evento, sus botellas debajo. */
+.ctl-events { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; }
+.ctl-ev { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.ctl-ev-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px 10px 12px; }
+.ctl-ev-head .bt-del-text b { font-weight: 600; }
+.ctl-ev-head .bt-del-text small { overflow-wrap: anywhere; }
+.ctl-note { font-style: italic; }
+.ctl-ev.viaje .alm-h-ico, .ctl-ev.entrada .alm-h-ico { background: var(--ok-soft); color: var(--ok); }
+.ctl-ev.rotura .alm-h-ico { background: var(--danger-soft); color: var(--danger); }
+.ctl-ev.recuento .alm-h-ico { background: var(--accent-soft); color: var(--accent); }
+
+.ctl-lines { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.ctl-line { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 6px 8px 6px 14px; }
+.ctl-line + .ctl-line { border-top: 1px solid var(--line); }
+.thumb.ctl-img { width: 32px; aspect-ratio: 3 / 4; flex: none; }
+.ctl-line-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ctl-line-text b { font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
+.ctl-line-qty { font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ctl-ev.rotura .ctl-line-qty { color: var(--danger); }
+.ctl-ev.viaje .ctl-line-qty, .ctl-ev.entrada .ctl-line-qty { color: var(--ok); }
+.ctl-void-btn { flex: none; min-height: 44px; min-width: 76px; }
+.ctl-void-btn:hover { color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); background: var(--danger-soft); }
+
+/* Anulado: queda a la vista, apagado y tachado, con el motivo. */
+.ctl-line.void .thumb { opacity: 0.4; filter: grayscale(1); }
+.ctl-line.void b { color: var(--muted); }
+.ctl-line.void .ctl-line-qty { color: var(--faint) !important; text-decoration: line-through; }
+.ctl-void { color: var(--danger); font-size: 0.8125rem; font-weight: 500; overflow-wrap: anywhere; }
+
+.ctl-tag { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 0.8125rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ctl-tag.bad { background: var(--danger-soft); color: var(--danger); }
+.ctl-more { margin: 12px 0 0; color: var(--muted); font-size: 0.875rem; text-align: center; }
+
+.ctl-dlg-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ctl-dlg-what small { color: var(--muted); font-size: 0.875rem; }
+
 @media (max-width: 400px) {
   .alm-qty b { font-size: 1.5rem; }
   .alm-stock-big.alm-qty b { font-size: 2.625rem; }
