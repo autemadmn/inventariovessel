@@ -21,6 +21,8 @@ import {
   addDays, businessDate, datesBetween, daysBetween, isYmd, periodRange, previousPeriodDate, shortDate, weekday, weekStart,
 } from './dates.js';
 import { computeForecast, computePurchase } from '../public/js/shared/forecast.js';
+import { liveStock } from './almacen.js';
+import { openTripSummary } from './viaje.js';
 
 export { HttpError };
 
@@ -64,7 +66,7 @@ export async function catalogRev(db) {
 // ---------------------------------------------------------------- ajustes
 
 export async function getSettings(db) {
-  const out = { ...DEFAULT_SETTINGS };
+  const out = { trip_weeks: DEFAULT_SETTINGS.trip_weeks, ...DEFAULT_SETTINGS };
   for (const { key, value } of await db.all('SELECT key, value FROM settings')) out[key] = value;
   return out;
 }
@@ -77,6 +79,7 @@ function toPublic(s) {
     low_data_nights: Number(s.low_data_nights),
     min_nights_per_weekday: Number(s.min_nights_per_weekday),
     undo_minutes: Number(s.undo_minutes),
+    trip_weeks: Number(s.trip_weeks),
   };
 }
 
@@ -98,6 +101,11 @@ const EDITABLE_SETTINGS = {
   low_data_nights: (v) => String(posInt(v, 'Mínimo de noches')),
   min_nights_per_weekday: (v) => String(posInt(v, 'Noches por día de la semana')),
   undo_minutes: (v) => String(posInt(v, 'Minutos para deshacer', { allowZero: true })),
+  trip_weeks: (v) => {
+    const n = posInt(v, 'Semanas entre viajes');
+    if (n > 12) throw bad('Las semanas entre viajes deben ser de 1 a 12.');
+    return String(n);
+  },
   staff_code: (v) => String(v ?? '').trim(),
   manager_pin: (v) => String(v ?? '').trim(),
 };
@@ -122,12 +130,25 @@ export async function updateSettings(db, patch, { by, now } = {}) {
     }
     changed.bars = patch.bars;
   }
+  if (patch.stores !== undefined) {
+    if (!Array.isArray(patch.stores) || patch.stores.length > 20) throw bad('Almacenes no válidos.');
+    const ids = new Set();
+    for (const store of patch.stores) {
+      const id = posInt(store?.id, 'Almacén');
+      const name = typeof store?.name === 'string' ? store.name.trim() : '';
+      if (!name || name.length > 40) throw bad('El nombre del almacén debe tener entre 1 y 40 caracteres.');
+      if (ids.has(id) || !await db.get('SELECT id FROM stores WHERE id = ?', id)) throw bad('Almacén no válido.');
+      ids.add(id);
+      stmts.push(['UPDATE stores SET name = ? WHERE id = ?', name, id]);
+    }
+    changed.stores = patch.stores;
+  }
   if (stmts.length) {
     const hide = (o) => ({ ...o, staff_code: o.staff_code ? '••••' : '', manager_pin: o.manager_pin ? '••••' : '' });
     await db.tx(async (t) => {
       for (const [sql, ...args] of stmts) await t.run(sql, ...args);
       await audit(t, { actor: by, entity: 'ajustes', action: 'modificar', before: hide(before), after: hide(changed), now });
-      if (patch.bars) await bumpCatalog(t);
+      if (patch.bars || patch.stores) await bumpCatalog(t);
     });
   }
   return publicSettings(db);
@@ -608,10 +629,11 @@ export async function orderStaff(db, { ids }, { by, now } = {}) {
 export async function bootstrap(db, { managerRequired }) {
   // La revisión se lee antes que el resto: cualquier cambio posterior provoca otra recarga.
   const rev = await catalogRev(db);
-  const [bars, products, groups, staff, settings, date] = await Promise.all([
+  const [bars, products, groups, staff, settings, date, stores] = await Promise.all([
     listBars(db), listProducts(db), listGroups(db), listStaff(db), publicSettings(db), currentDate(db),
+    db.all('SELECT id, name, kind, sort FROM stores ORDER BY sort, id'),
   ]);
-  return { bars, categories: CATEGORIES, products, settings, date, managerRequired, groups, staff, catalog_rev: rev };
+  return { bars, categories: CATEGORIES, products, settings, date, managerRequired, groups, staff, stores, catalog_rev: rev };
 }
 
 // ---------------------------------------------------------------- noches
@@ -859,15 +881,21 @@ export async function undoDelivery(db, id, { by }, { now } = {}) {
 // ---------------------------------------------------------------- lista en vivo
 
 export async function liveState(db, { now } = {}) {
+  const current = now ?? new Date();
   const s = await getSettings(db);
   const settings = toPublic(s);
   const catalog_rev = Number(s.catalog_rev) || 0;
-  const date = businessDate(now ?? new Date(), s.timezone, Number(s.cutoff_hour));
+  const date = businessDate(current, s.timezone, Number(s.cutoff_hour));
   const session = await findSession(db, date);
   const out = (await db.all('SELECT id FROM products WHERE out_of_stock = 1 ORDER BY id')).map((r) => r.id);
-  if (!session) return { date, session: null, lines: [], recent: [], settings, outOfStock: out, catalog_rev };
+  const stock = await liveStock(db, { now: current });
+  const [trip, rev] = await Promise.all([
+    openTripSummary(db), db.get("SELECT COALESCE(MAX(id), 0)::int AS n FROM audit WHERE entity = 'almacen'"),
+  ]);
+  const almacen_rev = rev.n;
+  if (!session) return { date, session: null, lines: [], recent: [], settings, outOfStock: out, stock, trip, almacen_rev, catalog_rev, server_time: current.toISOString() };
   const lines = (await db.all(`${LINE_SELECT} WHERE l.session_id = ? ORDER BY l.created_at, l.id`, session.id)).map(withPending);
-  const t = (now ?? new Date()).getTime();
+  const t = current.getTime();
   const recent = (await db.all(`SELECT d.*, p.name AS product_name, p.slug FROM deliveries d
     JOIN products p ON p.id = d.product_id
     WHERE d.session_id = ? ORDER BY d.delivered_at DESC, d.id DESC LIMIT 30`, session.id))
@@ -876,7 +904,7 @@ export async function liveState(db, { now } = {}) {
       can_undo: d.source === 'lista' && !d.corrected && d.qty > 0
         && (t - new Date(d.delivered_at).getTime()) / 60000 <= settings.undo_minutes,
     }));
-  return { date, session, lines, recent, settings, outOfStock: out, catalog_rev };
+  return { date, session, lines, recent, settings, outOfStock: out, stock, trip, almacen_rev, catalog_rev, server_time: current.toISOString() };
 }
 
 // ---------------------------------------------------------------- historial y correcciones
@@ -1452,8 +1480,8 @@ export async function deletePurchase(db, id, { by, now } = {}) {
 
 // ---------------------------------------------------------------- copia de seguridad
 
-export const BACKUP_TABLES = ['settings', 'bars', 'product_groups', 'products', 'staff', 'sessions', 'request_lines',
-  'deliveries', 'stockouts', 'audit', 'purchase_lists'];
+export const BACKUP_TABLES = ['settings', 'bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines',
+  'deliveries', 'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves'];
 
 /** Copia completa de los datos en JSON (sin los códigos de acceso ni las fotos propias). */
 export async function exportData(db, { now } = {}) {

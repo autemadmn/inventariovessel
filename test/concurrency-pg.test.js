@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { pgDb } from '../server/db-pg.js';
 import { migrationFiles } from '../server/db-pglite.js';
 import * as svc from '../server/services.js';
+import * as viaje from '../server/viaje.js';
 
 const URL = process.env.TEST_DATABASE_URL;
 const NIGHT = new Date('2026-09-26T21:00:00Z');
@@ -71,4 +72,22 @@ test('concurrencia real en Postgres', { skip: !URL && 'sin TEST_DATABASE_URL' },
     assert.equal(open.length, 1);
     assert.equal(open[0].qty_pending, 2);
   }
+
+  const [first, second] = await Promise.all([
+    viaje.addTripLine(a, { product_id: roku, qty_planned: 2 }, { now: NIGHT }),
+    viaje.addTripLine(b, { product_id: skyy, qty_planned: 3 }, { now: NIGHT }),
+  ]);
+  const openTrip = await viaje.tripView(a);
+  assert.equal(openTrip.count, 2);
+  assert.equal(first.trip.id, second.trip.id);
+  for (const line of openTrip.lines) {
+    await viaje.updateTripLine(a, line.id, { checked: 1 }, { now: NIGHT });
+  }
+  const results = await Promise.allSettled([
+    viaje.finishTrip(a, { trip_id: openTrip.trip.id }, { now: NIGHT }),
+    viaje.finishTrip(b, { trip_id: openTrip.trip.id }, { now: NIGHT }),
+  ]);
+  assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+  assert.equal(results.find((r) => r.status === 'rejected').reason.status, 409);
+  assert.equal((await a.get('SELECT COUNT(*)::int AS n FROM stock_moves WHERE trip_id = ?', openTrip.trip.id)).n, 2);
 });

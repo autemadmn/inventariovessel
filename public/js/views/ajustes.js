@@ -1,15 +1,26 @@
-// Ajustes: nombres de las barras, códigos de acceso y copia de seguridad.
+// Ajustes: nombres de las barras y de los almacenes, semanas entre viajes,
+// códigos de acceso y copia de seguridad.
 import { auth, mget, mput } from '../api.js';
 import { state, loadBootstrap } from '../state.js';
 import { html, mount, toast } from '../ui.js';
 
 export async function renderAjustes(root) {
   const s = await mget('/api/settings');
+  const stores = s.stores ?? state.stores;
+  const tripWeeks = s.trip_weeks ?? state.settings.trip_weeks ?? 2;
   mount(root, html`
     <form id="settings" class="stack">
       <h3 class="section-title">Barras</h3>
       <div class="form-grid">${s.bars.map((b) => html`
         <label class="field"><span>Nombre de la barra ${b.id}</span><input name="bar_${b.id}" value="${b.name}" maxlength="40" required></label>`)}</div>
+
+      <h3 class="section-title">Almacén</h3>
+      <div class="form-grid">${stores.map((st) => html`
+        <label class="field"><span>${st.kind === 'central' ? 'Almacén grande, fuera del local' : 'Almacén del local'}</span>
+          <input name="store_${st.id}" value="${st.name}" maxlength="40" required autocomplete="off"></label>`)}
+        <label class="field"><span>Semanas entre viajes</span>
+          <input name="trip_weeks" type="number" inputmode="numeric" min="1" max="12" step="1" value="${tripWeeks}" required></label>
+      </div>
 
       <!-- La jornada (corte a las 12:00, Europe/Madrid) no se toca desde aquí: se reenvía tal cual. -->
       <input type="hidden" name="cutoff_hour" value="${s.cutoff_hour}">
@@ -56,6 +67,8 @@ export async function renderAjustes(root) {
       cutoff_hour: f.cutoff_hour,
       timezone: f.timezone,
       undo_minutes: f.undo_minutes,
+      stores: stores.map((st) => ({ id: st.id, name: f[`store_${st.id}`] })),
+      trip_weeks: Number(f.trip_weeks),
       by: state.who,
     };
     if (f.staff_code) body.staff_code = f.staff_code;

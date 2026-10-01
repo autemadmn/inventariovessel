@@ -20,8 +20,13 @@ export const DEFAULT_SETTINGS = {
   catalog_rev: '1',
 };
 
+// 0002_seed.sql se genera con Object.entries(DEFAULT_SETTINGS) y no se puede
+// modificar. El ajuste nuevo se siembra en 0004, pero sigue disponible aquí.
+Object.defineProperty(DEFAULT_SETTINGS, 'trip_weeks', { value: '2', enumerable: false });
+
 export const REQUIRED_TABLES = ['settings', 'bars', 'product_groups', 'products', 'photos', 'sessions',
-  'request_lines', 'deliveries', 'stockouts', 'audit', 'purchase_lists', 'staff'];
+  'request_lines', 'deliveries', 'stockouts', 'audit', 'purchase_lists', 'staff',
+  'stores', 'stock_counts', 'stock_moves', 'trips', 'trip_lines'];
 
 /** Comprueba que las migraciones se han aplicado. Si no, 503 con un mensaje claro. */
 export async function checkSchema(db) {

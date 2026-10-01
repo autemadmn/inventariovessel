@@ -1,6 +1,9 @@
 // Rutas de la API con Request/Response estándar: el mismo código sirve en
 // Cloudflare Workers (worker.js) y en Node (index.js).
 import * as svc from './services.js';
+import * as alm from './almacen.js';
+import * as viaje from './viaje.js';
+import * as control from './control.js';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -95,6 +98,20 @@ export function createHandler({ getDb, env = {}, log = console }) {
       return svc.bootstrap(db, { managerRequired: Boolean(manager) });
     }],
     ['GET', '/api/live', 'staff', ({ db }) => svc.liveState(db)],
+    ['GET', '/api/almacen', 'staff', ({ db, url }) => alm.almacen(db, q(url))],
+    ['GET', '/api/almacen/botella/:id', 'staff', ({ db, id, url }) => alm.almacenBotella(db, id, q(url))],
+    ['POST', '/api/almacen/recuentos', 'staff', ({ db, body }) => alm.saveCounts(db, body)],
+    ['POST', '/api/almacen/roturas', 'staff', ({ db, body }) => alm.addBreakage(db, body)],
+    ['POST', '/api/almacen/entradas', 'staff', ({ db, body }) => alm.addEntries(db, body)],
+    ['GET', '/api/almacen/descuadres', 'manager', ({ db, url }) => control.descuadres(db, q(url))],
+    ['GET', '/api/almacen/historial', 'manager', ({ db, url }) => control.historial(db, q(url))],
+    ['POST', '/api/almacen/movimientos/:id/anular', 'manager', ({ db, id, body }) => control.voidMove(db, id, body)],
+    ['GET', '/api/almacen/viaje', 'staff', ({ db }) => viaje.tripView(db)],
+    ['POST', '/api/almacen/viaje/lineas', 'staff', ({ db, body }) => viaje.addTripLine(db, body)],
+    ['POST', '/api/almacen/viaje/sugerido', 'staff', ({ db, body }) => viaje.addSuggested(db, body)],
+    ['POST', '/api/almacen/viaje/hecho', 'staff', ({ db, body }) => viaje.finishTrip(db, body)],
+    ['PUT', '/api/almacen/viaje/lineas/:id', 'staff', ({ db, id, body }) => viaje.updateTripLine(db, id, body)],
+    ['POST', '/api/almacen/viaje/lineas/:id/quitar', 'staff', ({ db, id, body }) => viaje.removeTripLine(db, id, body)],
     ['POST', '/api/requests', 'staff', ({ db, body }) => svc.createRequest(db, body)],
     ['POST', '/api/complete', 'staff', ({ db, body }) => svc.completeLines(db, body)],
     ['POST', '/api/lines/:id/deliver', 'staff', ({ db, id, body }) => svc.deliver(db, id, body)],
@@ -145,6 +162,7 @@ export function createHandler({ getDb, env = {}, log = console }) {
       return {
         ...await svc.publicSettings(db),
         bars: await svc.listBars(db),
+        stores: await db.all('SELECT id, name, kind FROM stores ORDER BY sort, id'),
         staffCodeFromEnv: Boolean(env.STAFF_CODE),
         managerPinFromEnv: Boolean(env.MANAGER_PIN),
         staffCodeSet: Boolean(staff),

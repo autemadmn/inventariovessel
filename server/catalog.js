@@ -158,6 +158,10 @@ export const HABITUAL_SLUGS = [
 export const INITIAL_GROUPS = ['Habituales', 'Resto'];
 
 export const INITIAL_STAFF = ['Carlos', 'Sergio', 'Alejandro'];
+export const INITIAL_STORES = [
+  { id: 1, name: 'In Vessel', kind: 'local', sort: 10 },
+  { id: 2, name: 'Out Vessel', kind: 'central', sort: 20 },
+];
 
 /**
  * Identificador estable de un producto (nombre del archivo de su imagen).

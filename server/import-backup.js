@@ -2,15 +2,15 @@
 // ya migrada (0001 y 0002). Sirve para copias antiguas (SQLite/D1, con
 // `habitual`, sin slugs, grupos ni personal) y para copias nuevas.
 // Sustituye todos los datos; los códigos de acceso de la base no se tocan.
-import { CATEGORIES, INITIAL_GROUPS, INITIAL_STAFF, slugify } from './catalog.js';
+import { CATEGORIES, INITIAL_GROUPS, INITIAL_STAFF, INITIAL_STORES, slugify } from './catalog.js';
 
 const DROP_SETTINGS = new Set(['schema_version', 'habitual_init', 'seeded', 'staff_code', 'manager_pin']);
 
 // Orden de inserción (padres antes que hijos). Se borra en orden inverso.
-const ORDER = ['bars', 'product_groups', 'products', 'staff', 'sessions', 'request_lines', 'deliveries',
-  'stockouts', 'audit', 'purchase_lists'];
+const ORDER = ['bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines', 'deliveries',
+  'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves'];
 
-const OPERATION_TABLES = ['sessions', 'request_lines', 'deliveries', 'purchase_lists'];
+const OPERATION_TABLES = ['sessions', 'request_lines', 'deliveries', 'purchase_lists', 'stock_counts', 'stock_moves', 'trips'];
 
 async function columnsOf(t, table) {
   return (await t.all(`SELECT column_name FROM information_schema.columns
@@ -62,7 +62,7 @@ export async function importBackup(db, data, { force = false, now = new Date() }
       for (const table of OPERATION_TABLES) {
         const { n } = await t.get(`SELECT count(*)::int AS n FROM ${table}`);
         if (n) {
-          throw new Error('La base de datos de destino ya tiene datos de operación (noches, pedidos o listas de compra). '
+          throw new Error('La base de datos de destino ya tiene datos de operación (noches, pedidos, listas de compra o almacén). '
             + 'Si quieres sustituirlos por la copia, repite con --force.');
         }
       }
@@ -99,9 +99,12 @@ export async function importBackup(db, data, { force = false, now = new Date() }
       : INITIAL_STAFF.map((name, i) => ({ id: i + 1, name, active: 1, sort: (i + 1) * 10, created_at: ts }));
 
     const rows = {
-      bars: src.bars ?? [], product_groups: groups, products, staff,
+      bars: src.bars ?? [], stores: Array.isArray(src.stores) ? src.stores : INITIAL_STORES,
+      product_groups: groups, products, staff,
       sessions: src.sessions ?? [], request_lines: src.request_lines ?? [], deliveries: src.deliveries ?? [],
       stockouts: src.stockouts ?? [], audit: src.audit ?? [], purchase_lists: src.purchase_lists ?? [],
+      trips: src.trips ?? [], trip_lines: src.trip_lines ?? [],
+      stock_counts: src.stock_counts ?? [], stock_moves: src.stock_moves ?? [],
     };
 
     await t.run('DELETE FROM photos');
@@ -109,7 +112,7 @@ export async function importBackup(db, data, { force = false, now = new Date() }
     for (const table of ORDER) await insertRows(t, table, rows[table]);
 
     // Secuencias de identidad por encima del mayor id importado.
-    for (const table of ORDER.filter((x) => x !== 'bars').concat('photos')) {
+    for (const table of ORDER.filter((x) => !['bars', 'stores'].includes(x)).concat('photos')) {
       await t.get(`SELECT setval(pg_get_serial_sequence(?, 'id'),
         COALESCE((SELECT MAX(id) FROM ${table}), 0) + 1, false)`, table);
     }

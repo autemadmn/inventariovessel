@@ -4,6 +4,7 @@ import { $, html, raw, mount, dialog, formDialog, dateLabel, silhouette } from '
 import { renderPedir } from './views/pedir.js';
 import { renderReponer } from './views/reponer.js';
 import { renderGestion } from './views/gestion.js';
+import { renderAlmacen, flushCounts } from './views/almacen.js';
 
 const main = $('#main');
 let current = null; // { name, cleanup }
@@ -11,6 +12,7 @@ let current = null; // { name, cleanup }
 const ROUTES = {
   pedir: renderPedir,
   reponer: renderReponer,
+  almacen: renderAlmacen,
   gestion: renderGestion,
 };
 
@@ -138,6 +140,7 @@ async function refreshAll() {
   try {
     await Promise.all([loadLive(), loadBootstrap()]);
     $('#offline').hidden = true;
+    flushCounts();
   } catch (err) {
     if (err instanceof ApiError && err.status === 0) $('#offline').hidden = false;
   }
@@ -158,6 +161,8 @@ async function poll() {
       await loadBootstrap();
     }
     $('#offline').hidden = true;
+    // Recuentos guardados sin conexión: salen en cuanto vuelve.
+    flushCounts();
   } catch (err) {
     if (err instanceof ApiError && err.status === 0) $('#offline').hidden = false;
   }
@@ -226,6 +231,7 @@ async function start() {
   await loadLive();
   renderHeader();
   connect();
+  flushCounts();
   await navigate();
   started = true;
   // Se pregunta una sola vez; «Ahora no» o cerrar no vuelve a molestar.

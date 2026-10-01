@@ -1,9 +1,10 @@
 // Estado compartido entre pantallas.
 import { get, store } from './api.js';
-import { imageFor, setManifest } from './ui.js';
+import { imageFor, setManifest, fmt, plural } from './ui.js';
 
 export const state = {
   bars: [],
+  stores: [],
   categories: [],
   products: [],
   groups: [],
@@ -80,7 +81,7 @@ export async function loadBootstrap() {
   const b = await get('/api/bootstrap');
   Object.assign(state, {
     bars: b.bars, categories: b.categories, products: b.products,
-    groups: b.groups || [], staff: b.staff || [], catalogRev: b.catalog_rev ?? 0,
+    groups: b.groups || [], staff: b.staff || [], stores: b.stores || [], catalogRev: b.catalog_rev ?? 0,
     settings: b.settings, date: b.date, managerRequired: b.managerRequired,
   });
   for (const p of state.products) p.image = imageFor(p.slug);
@@ -93,9 +94,20 @@ export async function loadBootstrap() {
 
 let lastLive = '';
 let reloading = null;
+let serverOffsetMs = 0;
+
+/** Hora del servidor estimada al guardar un recuento, también sin conexión. */
+export const countTime = () => new Date(Date.now() + serverOffsetMs).toISOString();
 
 export async function loadLive() {
+  const started = Date.now();
   const live = await get('/api/live');
+  const received = Date.now();
+  if (live.server_time) {
+    const serverTime = Date.parse(live.server_time);
+    if (Number.isFinite(serverTime)) serverOffsetMs = serverTime - (started + received) / 2;
+    delete live.server_time;
+  }
   // El encargado cambió el catálogo: se recarga ya, sin esperar al minuto.
   if (typeof live.catalog_rev === 'number' && live.catalog_rev !== state.catalogRev) {
     reloading ??= loadBootstrap().finally(() => { reloading = null; });
@@ -111,6 +123,43 @@ export async function loadLive() {
   const out = new Set(state.live.outOfStock || []);
   for (const p of state.products) p.out_of_stock = out.has(p.id) ? 1 : 0;
   notify('live');
+}
+
+/** Almacén del local (el que abastece las barras), según los datos. */
+export const localStore = () => state.stores.find((s) => s.kind === 'local') ?? null;
+
+/** Almacén grande, fuera del local (de donde salen los viajes en coche). */
+export const centralStore = () => state.stores.find((s) => s.kind === 'central') ?? null;
+
+export const storeById = (id) => state.stores.find((s) => s.id === Number(id)) ?? null;
+
+/** Botellas en el almacén del local, o null si esa botella no se ha contado nunca. */
+export function stockFor(productId) {
+  const v = state.live.stock?.[productId];
+  return typeof v === 'number' ? v : null;
+}
+
+/**
+ * Agotado: marcado a mano, o contado en almacén y sin botellas.
+ * Acepta un producto o una línea de la lista (con product_id).
+ */
+export function isOut(x) {
+  if (x.out_of_stock) return true;
+  const n = stockFor(x.product_id ?? x.id);
+  return n !== null && n <= 0;
+}
+
+/** { full, loose } si la botella tiene botellas por caja; si no, null. */
+export function caseParts(n, perCase) {
+  return perCase > 0 ? { full: Math.floor(n / perCase), loose: n % perCase } : null;
+}
+
+/** «3 cajas + 4», «3 cajas» o «22 botellas» (menos de una caja: «2 botellas», nunca «0 cajas + 2»). */
+export function stockText(n, perCase) {
+  const c = caseParts(n, perCase);
+  if (!c || !c.full) return plural(n, 'botella', 'botellas');
+  const full = plural(c.full, 'caja', 'cajas');
+  return c.loose ? `${full} + ${fmt(c.loose)}` : full;
 }
 
 /** Botellas pendientes de un producto en una barra en la noche actual. */
