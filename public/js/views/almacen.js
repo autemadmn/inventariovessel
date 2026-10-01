@@ -1,28 +1,53 @@
-// Almacén: lo que queda en el almacén del local y para cuánto hay, el detalle de
-// cada botella (movimientos y roturas) y el modo «Contar», una botella por
-// pantalla y a ciegas. Lo contado se guarda en el móvil y se envía en cuanto hay
-// conexión, así que cortar o salir no pierde nada.
+// Almacén: lo que queda en cada almacén y para cuánto hay, el detalle de cada
+// botella (movimientos, roturas y «Apuntar para el viaje») y el modo «Contar»,
+// una botella por pantalla y a ciegas. Lo contado se guarda en el móvil y se
+// envía en cuanto hay conexión, así que cortar o salir no pierde nada.
 import { get, post, store } from '../api.js';
 import {
-  state, subscribe, selection, productById, groupById, localStore, loadLive, caseParts, stockText, countTime,
+  state, subscribe, selection, productById, groupById, localStore, storeById, loadLive, caseParts, stockText, countTime,
 } from '../state.js';
 import {
   raw, $, html, mount, norm, thumb, toast, buzz, fmt, plural, dateLabel, dateTimeLabel, dialog, confirmDialog,
 } from '../ui.js';
 import { icon } from '../icons.js';
+import { renderViaje, apuntar } from './viaje.js';
+import { renderEntrada } from './entrada.js';
 
-const back = () => html`
+export const back = () => html`
   <a class="inf-back" href="#/almacen">${raw(icon('left', { size: 18 }))} Almacén</a>`;
 
 export function renderAlmacen(root, rest = []) {
   if (rest[0] === 'botella') return renderDetalle(root, rest[1]);
   if (rest[0] === 'contar') return renderContar(root);
+  if (rest[0] === 'viaje') return renderViaje(root);
+  if (rest[0] === 'entrada') return renderEntrada(root);
   return renderLista(root);
 }
 
-/** Vuelve a pedir datos cuando cambia el stock o el catálogo en otro móvil. */
-function onStockChange(fn) {
-  const key = () => `${state.catalogRev}|${JSON.stringify(state.live.stock ?? {})}`;
+// ------------------------------------------------------------------ almacén elegido
+
+const STORE_KEY = 'almStore';
+
+/** El almacén que se está viendo (el del local si no se ha elegido otro). */
+export function currentStore() {
+  return storeById(store.get(STORE_KEY, null)) ?? localStore() ?? state.stores[0] ?? null;
+}
+
+export function setCurrentStore(id) {
+  store.set(STORE_KEY, Number(id));
+}
+
+/** Selector «In Vessel · Out Vessel», con el estilo del periodo de Informes. Nada si solo hay uno. */
+export function storeSeg(selId, label = 'Almacén') {
+  if (state.stores.length < 2) return '';
+  return html`
+    <div class="seg inf-period alm-stores" role="group" aria-label="${label}">${state.stores.map((s) => html`
+      <button type="button" class="${s.id === selId ? 'on' : ''}" data-store="${s.id}" aria-pressed="${String(s.id === selId)}">${s.name}</button>`)}</div>`;
+}
+
+/** Vuelve a pedir datos cuando cambia el stock, el almacén o el catálogo en otro móvil. */
+export function onStockChange(fn) {
+  const key = () => `${state.catalogRev}|${state.live.almacen_rev ?? ''}|${JSON.stringify(state.live.stock ?? {})}`;
   let last = key();
   return subscribe(() => {
     const k = key();
@@ -34,10 +59,10 @@ function onStockChange(fn) {
 
 // ------------------------------------------------------------------ cantidades
 
-/** Cantidad grande: «3 cajas + 4», «0 cajas + 2» o «22 botellas». */
-function qtyHtml(n, perCase) {
+/** Cantidad grande: «3 cajas + 4», «3 cajas» o «22 botellas» (menos de una caja, en botellas). */
+export function qtyHtml(n, perCase) {
   const c = caseParts(n, perCase);
-  if (!c) return html`<b>${fmt(n)}</b> <i>${n === 1 ? 'botella' : 'botellas'}</i>`;
+  if (!c || !c.full) return html`<b>${fmt(n)}</b> <i>${n === 1 ? 'botella' : 'botellas'}</i>`;
   return html`<b>${fmt(c.full)}</b> <i>${c.full === 1 ? 'caja' : 'cajas'}</i>${c.loose ? html` <i>+</i> <b>${fmt(c.loose)}</b>` : ''}`;
 }
 
@@ -46,7 +71,21 @@ const STATE_TEXT = { no_queda: 'No queda', queda_poco: 'Queda poco' };
 function stateTags(p) {
   return html`
     ${p.state === 'queda_poco' ? html`<span class="tag warn">Queda poco</span>` : ''}
+    ${p.state === 'sobra' ? html`<span class="tag alm-sobra">Sobra</span>` : ''}
     ${p.review ? html`<span class="tag warn">Revisar</span>` : ''}`;
+}
+
+/** «Próximo viaje» con el número de líneas apuntadas (sale de /api/live). */
+function tripButton() {
+  const t = state.live.trip;
+  const n = t?.lines ?? 0;
+  const sub = !n ? 'Nada apuntado'
+    : t.checked ? `${fmt(t.checked)} de ${fmt(n)} cargadas` : plural(n, 'línea apuntada', 'líneas apuntadas');
+  return html`
+    <span class="alm-trip-ico">${raw(icon('truck', { size: 22 }))}</span>
+    <span class="alm-trip-text"><b>Próximo viaje</b><small>${sub}</small></span>
+    ${n ? html`<span class="alm-trip-n" aria-hidden="true">${fmt(n)}</span>` : ''}
+    ${raw(icon('right', { size: 20 }))}`;
 }
 
 // ------------------------------------------------------------------ lista
@@ -54,12 +93,15 @@ function stateTags(p) {
 let query = '';
 
 function renderLista(root) {
+  const cur = currentStore();
   mount(root, html`
     <section class="alm" id="alm">
-      <div class="alm-top">
-        <h1 class="alm-title" id="alm-title">${localStore()?.name ?? ''}</h1>
-        <a class="btn primary alm-count-btn" href="#/almacen/contar">
+      ${state.stores.length > 1 ? storeSeg(cur?.id) : html`<h1 class="alm-title">${cur?.name ?? ''}</h1>`}
+      <a class="alm-trip" id="alm-trip" href="#/almacen/viaje">${tripButton()}</a>
+      <div class="alm-top-actions">
+        <a class="btn primary" href="#/almacen/contar">
           ${raw(icon('clipboard-list', { size: 20 }))}${countSession() ? 'Seguir contando' : 'Contar'}</a>
+        <a class="btn ghost" href="#/almacen/entrada">${raw(icon('package-plus', { size: 20 }))} Ha llegado mercancía</a>
       </div>
       <div class="filters alm-filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
@@ -70,12 +112,12 @@ function renderLista(root) {
 
   const el = $('#alm', root);
   let r = null;
+  let storeId = cur?.id;
   let requestId = 0;
 
   const draw = () => {
     const box = $('#alm-list', el);
     if (!box || !r) return;
-    $('#alm-title', el).textContent = r.store.name;
     mount(box, listView(r));
   };
 
@@ -83,7 +125,7 @@ function renderLista(root) {
     const id = ++requestId;
     el.classList.add('is-loading');
     try {
-      const result = await get('/api/almacen');
+      const result = await get(`/api/almacen${storeId ? `?store=${storeId}` : ''}`);
       if (id !== requestId || !el.isConnected) return;
       r = result;
       draw();
@@ -96,14 +138,36 @@ function renderLista(root) {
     }
   };
 
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-store]');
+    if (!b || Number(b.dataset.store) === storeId) return;
+    storeId = Number(b.dataset.store);
+    setCurrentStore(storeId);
+    for (const x of el.querySelectorAll('[data-store]')) {
+      const on = Number(x.dataset.store) === storeId;
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-pressed', String(on));
+    }
+    buzz(8);
+    refresh();
+  });
+
   $('#alm-q', el).addEventListener('input', (e) => {
     query = e.target.value;
     draw();
   });
 
+  let lastTrip = JSON.stringify(state.live.trip ?? null);
+  const unsubTrip = subscribe(() => {
+    const t = JSON.stringify(state.live.trip ?? null);
+    if (t === lastTrip) return;
+    lastTrip = t;
+    const a = $('#alm-trip', el);
+    if (a) mount(a, tripButton());
+  });
   const unsub = onStockChange(refresh);
   refresh();
-  return () => unsub();
+  return () => { unsub(); unsubTrip(); };
 }
 
 function listView(r) {
@@ -158,7 +222,8 @@ function row(p) {
   const label = [
     p.name,
     !p.controlled ? 'sin contar' : out ? 'no queda' : stockText(p.stock, p.per_case),
-    p.duration?.label, p.state === 'queda_poco' ? 'queda poco' : '', p.review ? 'revisar' : '',
+    p.duration?.label, p.state === 'queda_poco' ? 'queda poco' : '', p.state === 'sobra' ? 'sobra' : '',
+    p.review ? 'revisar' : '',
   ].filter(Boolean).join(', ');
   return html`
     <li>
@@ -190,12 +255,13 @@ function renderDetalle(root, rawId) {
 
   let r = null;
   let requestId = 0;
+  const storeId = currentStore()?.id;
   const draw = () => mount(el, detailView(r));
 
   const refresh = async () => {
     const request = ++requestId;
     try {
-      const result = await get(`/api/almacen/botella/${id}`);
+      const result = await get(`/api/almacen/botella/${id}${storeId ? `?store=${storeId}` : ''}`);
       if (request !== requestId || !el.isConnected) return;
       r = result;
       draw();
@@ -219,7 +285,18 @@ function renderDetalle(root, rawId) {
         toast('Rotura guardada');
         await loadLive().catch(() => {});
       } else if (t.dataset.countOne !== undefined) {
-        if (await countOne(r.product)) await refresh();
+        if (await countOne(r.product, r.store.id)) await refresh();
+      } else if (t.dataset.trip !== undefined) {
+        const p = r.product;
+        const qty = await askQty({
+          title: 'Apuntar para el viaje',
+          product: p,
+          initial: r.suggested > 0 ? r.suggested : p.per_case > 0 ? p.per_case : 1,
+          hint: r.suggested > 0 ? `Sugerido: ${stockText(r.suggested, p.per_case)}` : '',
+          ok: 'Apuntar',
+        });
+        if (qty === null) return;
+        if (await apuntar(p.id, qty)) await refresh();
       }
     } catch (err) {
       toast(err.message, 'error');
@@ -242,7 +319,7 @@ function detailView(r) {
       <div class="bt-title">
         <h2>${p.name}</h2>
         <p class="muted">${[r.store.name, groupName].filter(Boolean).join(' · ')}</p>
-        ${r.state === 'queda_poco' || r.review ? html`<div class="alm-tags">${stateTags(r)}</div>` : ''}
+        ${r.state === 'queda_poco' || r.state === 'sobra' || r.review ? html`<div class="alm-tags">${stateTags(r)}</div>` : ''}
       </div>
     </header>
 
@@ -260,7 +337,12 @@ function detailView(r) {
 
     <div class="alm-actions">
       <button type="button" class="btn primary" data-count-one>${raw(icon('clipboard-list', { size: 20 }))} Contar esta botella</button>
-      <button type="button" class="btn ghost" data-broken>${raw(icon('wine-off', { size: 20 }))} Se ha roto una</button>
+      ${r.in_trip > 0 ? html`
+        <a class="btn ghost alm-in-trip" href="#/almacen/viaje">${raw(icon('truck', { size: 20 }))}
+          <span>Ya en el viaje: <b>${stockText(r.in_trip, p.per_case)}</b></span></a>`
+    : html`<button type="button" class="btn ghost" data-trip>${raw(icon('truck', { size: 20 }))} Apuntar para el viaje</button>`}
+      ${r.store.kind === 'local' ? html`
+        <button type="button" class="btn ghost" data-broken>${raw(icon('wine-off', { size: 20 }))} Se ha roto una</button>` : ''}
     </div>
 
     <h2 class="section-title">Movimientos</h2>
@@ -272,18 +354,24 @@ function detailView(r) {
 function histRow(h, storeId, perCase) {
   const by = h.by ? ` · ${h.by}` : '';
   let ico; let title; let sub; let qty; let kind = '';
+  // Las cantidades, como en toda la app: «+2 cajas», «−3 botellas».
+  const amount = (sign) => `${sign}${stockText(h.qty, perCase)}`;
   if (h.type === 'recuento') {
     // Un recuento no suma ni resta: dice cuántas había, así que va en el texto y no en la columna de ±.
-    [ico, title, sub, qty] = ['clipboard-list', `Contadas: ${stockText(h.qty, perCase)}`, `${dateTimeLabel(h.at)}${by}`, ''];
+    [ico, title, sub, qty] = ['clipboard-list', h.qty > 0 ? `Contadas: ${stockText(h.qty, perCase)}` : 'Contadas: ninguna', `${dateTimeLabel(h.at)}${by}`, ''];
     kind = 'count';
   } else if (h.type === 'reposicion') {
-    [ico, title, sub, qty] = ['list', 'Repuestas a barra', `Noche del ${dateLabel(h.date)}`, `−${fmt(h.qty)}`];
+    [ico, title, sub, qty] = ['list', 'Repuestas a barra', `Noche del ${dateLabel(h.date)}`, amount('−')];
   } else if (h.type === 'rotura') {
-    [ico, title, sub, qty] = ['wine-off', 'Rota', [h.note, `${dateTimeLabel(h.at)}${by}`].filter(Boolean).join(' · '), `−${fmt(h.qty)}`];
+    [ico, title, sub, qty] = ['wine-off', 'Rota', [h.note, `${dateTimeLabel(h.at)}${by}`].filter(Boolean).join(' · '), amount('−')];
     kind = 'broken';
+  } else if (h.type === 'entrada') {
+    [ico, title, sub, qty] = ['package-plus', 'Ha llegado mercancía', [h.note, `${dateTimeLabel(h.at)}${by}`].filter(Boolean).join(' · '), amount('+')];
+    kind = 'in';
   } else {
     const inside = h.to_store_id === storeId;
-    [ico, title, sub, qty] = ['warehouse', h.type === 'entrada' ? 'Entrada' : 'Traslado', `${dateTimeLabel(h.at)}${by}`, `${inside ? '+' : '−'}${fmt(h.qty)}`];
+    [ico, title, sub, qty] = ['truck', inside ? 'Llegó en el viaje' : 'Salió en el viaje', `${dateTimeLabel(h.at)}${by}`, amount(inside ? '+' : '−')];
+    kind = inside ? 'in' : '';
   }
   return html`
     <li class="alm-h ${kind}">
@@ -326,7 +414,7 @@ async function breakage(r) {
 }
 
 /** «Contar esta botella»: el mismo recuento a ciegas, en una hoja. */
-async function countOne(p) {
+async function countOne(p, storeId) {
   const data = await dialog({
     title: 'Contar esta botella',
     body: html`
@@ -341,34 +429,66 @@ async function countOne(p) {
     toast('Como mucho 10.000 botellas', 'error');
     return false;
   }
-  enqueue({ product_id: p.id, qty });
+  enqueue({ product_id: p.id, qty, store_id: storeId });
   buzz(20);
   const left = await flushCounts();
   toast(left ? 'Guardado. Se enviará al volver la conexión.' : 'Recuento guardado', left ? 'info' : 'ok');
   return true;
 }
 
+/**
+ * Hoja con «Cajas» y «Sueltas» (o «Botellas») rellenas con `initial`.
+ * Devuelve las botellas elegidas, o null si se cancela o no es válido.
+ */
+export async function askQty({
+  title, product, initial = 0, hint = '', ok = 'Guardar', min = 1,
+}) {
+  const p = product ?? { per_case: null };
+  const data = await dialog({
+    title,
+    body: html`
+      ${product ? html`<div class="cnt-mini">${thumb(product, 'sm')}<b>${product.name}</b></div>` : ''}
+      ${countFields(p, initial)}
+      ${hint ? html`<p class="alm-sheet-hint">${hint}</p>` : ''}`,
+    actions: [{ label: 'Cancelar', value: '' }, { label: ok, submit: true, kind: 'primary' }],
+    onMount: (dlg) => bindCountFields(dlg, () => p),
+  });
+  if (!data || typeof data !== 'object') return null;
+  const qty = countedQty(p, data);
+  if (qty === null) {
+    toast('Como mucho 10.000 botellas', 'error');
+    return null;
+  }
+  if (qty < min) {
+    toast(min === 1 ? 'Pon al menos 1 botella' : `Pon al menos ${fmt(min)} botellas`, 'error');
+    return null;
+  }
+  return qty;
+}
+
 // ------------------------------------------------------------------ campos de recuento
 
-function countField(name, label, hint = '') {
+function countField(name, label, hint = '', value = '') {
   return html`
     <div class="cnt-field">
       <label for="cnt-${name}">${label}${hint ? html` <small>${hint}</small>` : ''}</label>
       <div class="cnt-step">
         <button type="button" class="step" data-cstep="-1" data-f="${name}" aria-label="Una menos">${raw(icon('minus', { size: 22 }))}</button>
         <input id="cnt-${name}" name="${name}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5"
-          placeholder="0" autocomplete="off" enterkeyhint="done">
+          placeholder="0" autocomplete="off" enterkeyhint="done" value="${value}">
         <button type="button" class="step" data-cstep="1" data-f="${name}" aria-label="Una más">${raw(icon('plus', { size: 22 }))}</button>
       </div>
     </div>`;
 }
 
-function countFields(p) {
+/** Campos de cantidad. Sin `n` salen vacíos (recuento a ciegas). */
+function countFields(p, n = null) {
+  const c = n === null ? null : caseParts(n, p.per_case);
   return html`
     <div class="cnt-fields">
       ${p.per_case > 0
-    ? html`${countField('cases', 'Cajas', `de ${p.per_case}`)}${countField('loose', 'Sueltas')}`
-    : countField('bottles', 'Botellas')}
+    ? html`${countField('cases', 'Cajas', `de ${p.per_case}`, c ? c.full : '')}${countField('loose', 'Sueltas', '', c ? c.loose : '')}`
+    : countField('bottles', 'Botellas', '', n ?? '')}
       <p class="cnt-total" id="cnt-total" aria-live="polite"></p>
     </div>`;
 }
@@ -420,6 +540,7 @@ function bindCountFields(box, product) {
     e.preventDefault();
     next.focus();
   });
+  total();
 }
 
 // ------------------------------------------------------------------ recuentos pendientes de enviar
@@ -427,11 +548,11 @@ function bindCountFields(box, product) {
 const QUEUE = 'almCountQueue';
 const SESSION = 'almCount';
 
-function enqueue({ product_id, qty }) {
+function enqueue({ product_id, qty, store_id }) {
   const queue = store.get(QUEUE, []);
   queue.push({
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    product_id, qty, counted_at: countTime(), by: state.who,
+    product_id, qty, store_id: store_id ?? null, counted_at: countTime(), by: state.who,
   });
   store.set(QUEUE, queue);
 }
@@ -454,7 +575,9 @@ async function sendQueue() {
     if (!item || seen.has(item.key)) break; // sin almacenamiento no se repite en bucle
     seen.add(item.key);
     try {
+      // Los guardados antes de poder elegir almacén no llevan store_id: cuentan en el del local.
       await post('/api/almacen/recuentos', {
+        ...(item.store_id ? { store_id: item.store_id } : {}),
         items: [{ product_id: item.product_id, qty: item.qty }], by: item.by,
         counted_at: item.counted_at, key: item.key,
       });
@@ -473,7 +596,7 @@ async function sendQueue() {
 
 // ------------------------------------------------------------------ modo Contar
 
-/** Recuento en curso: { ids, pos, saved, label }, o null. */
+/** Recuento en curso: { ids, pos, saved, store_id }, o null. */
 function countSession() {
   const s = store.get(SESSION, null);
   return s && Array.isArray(s.ids) && s.pos < s.ids.length ? s : null;
@@ -482,11 +605,12 @@ function countSession() {
 function renderContar(root) {
   mount(root, html`<section class="alm cnt" id="cnt"></section>`);
   const el = $('#cnt', root);
+  let pickStore = currentStore()?.id ?? null;
 
   const draw = () => {
     const s = countSession();
     if (!s) {
-      mount(el, pickView());
+      mount(el, pickView(pickStore));
       return;
     }
     // Botellas retiradas del catálogo desde que empezó el recuento: se saltan.
@@ -517,12 +641,16 @@ function renderContar(root) {
     const t = e.target.closest('button');
     if (!t) return;
     const d = t.dataset;
-    if (d.pick !== undefined) {
+    if (d.store !== undefined) {
+      pickStore = Number(d.store);
+      buzz(8);
+      draw();
+    } else if (d.pick !== undefined) {
       const ids = d.pick === 'all'
         ? selection().flatMap((g) => g.products.map((p) => p.id))
         : selection().find((g) => String(g.group.id) === d.pick)?.products.map((p) => p.id) ?? [];
       if (!ids.length) return;
-      store.set(SESSION, { ids, pos: 0, saved: 0 });
+      store.set(SESSION, { ids, pos: 0, saved: 0, store_id: pickStore });
       buzz();
       draw();
       window.scrollTo(0, 0);
@@ -547,7 +675,7 @@ function renderContar(root) {
       toast('Como mucho 10.000 botellas', 'error');
       return;
     }
-    enqueue({ product_id: p.id, qty });
+    enqueue({ product_id: p.id, qty, store_id: s.store_id });
     buzz(20);
     advance(true);
   });
@@ -574,6 +702,8 @@ function renderContar(root) {
 
 async function finish(s) {
   store.set(SESSION, null);
+  // Al volver se ve el almacén que se acaba de contar.
+  if (storeById(s.store_id)) setCurrentStore(s.store_id);
   const left = await flushCounts();
   const n = s.saved;
   const text = n === 1 ? 'Contada 1 botella' : `Contadas ${fmt(n)} botellas`;
@@ -581,13 +711,16 @@ async function finish(s) {
   location.hash = '#/almacen';
 }
 
-function pickView() {
+function pickView(storeId) {
   const groups = selection();
   const total = groups.reduce((a, g) => a + g.products.length, 0);
   return html`
     ${back()}
     <h1 class="alm-title cnt-h">Contar</h1>
-    <p class="muted">¿Qué vas a contar?</p>
+    ${state.stores.length > 1 ? html`
+      <p class="muted cnt-q">¿Dónde?</p>
+      ${storeSeg(storeId, 'Almacén que se cuenta')}` : ''}
+    <p class="muted cnt-q">¿Qué vas a contar?</p>
     ${total ? html`
       <div class="cnt-pick">
         <button type="button" class="cnt-pick-btn all" data-pick="all">
@@ -601,6 +734,7 @@ function pickView() {
 
 function stepView(s, p) {
   const group = p.group_id ? groupById(p.group_id)?.name : '';
+  const where = state.stores.length > 1 ? (storeById(s.store_id) ?? localStore())?.name : '';
   const pct = Math.round((s.pos / s.ids.length) * 100);
   return html`
     <div class="cnt-top">
@@ -611,6 +745,7 @@ function stepView(s, p) {
       aria-valuemin="0" aria-valuemax="${s.ids.length}" aria-valuenow="${s.pos}"><i style="width:${pct}%"></i></div>
     <p class="cnt-pos">
       <b>${fmt(s.pos + 1)} de ${fmt(s.ids.length)}</b>${group ? html` · ${group}` : ''}
+      ${where ? html`<span class="tag info">${where}</span>` : ''}
       <span class="tag warn" id="cnt-pending" hidden></span>
     </p>
 

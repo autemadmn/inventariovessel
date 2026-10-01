@@ -128,6 +128,11 @@ export async function loadLive() {
 /** Almacén del local (el que abastece las barras), según los datos. */
 export const localStore = () => state.stores.find((s) => s.kind === 'local') ?? null;
 
+/** Almacén grande, fuera del local (de donde salen los viajes en coche). */
+export const centralStore = () => state.stores.find((s) => s.kind === 'central') ?? null;
+
+export const storeById = (id) => state.stores.find((s) => s.id === Number(id)) ?? null;
+
 /** Botellas en el almacén del local, o null si esa botella no se ha contado nunca. */
 export function stockFor(productId) {
   const v = state.live.stock?.[productId];
@@ -149,10 +154,10 @@ export function caseParts(n, perCase) {
   return perCase > 0 ? { full: Math.floor(n / perCase), loose: n % perCase } : null;
 }
 
-/** «3 cajas + 4», «3 cajas», «0 cajas + 2» o «22 botellas». */
+/** «3 cajas + 4», «3 cajas» o «22 botellas» (menos de una caja: «2 botellas», nunca «0 cajas + 2»). */
 export function stockText(n, perCase) {
   const c = caseParts(n, perCase);
-  if (!c) return plural(n, 'botella', 'botellas');
+  if (!c || !c.full) return plural(n, 'botella', 'botellas');
   const full = plural(c.full, 'caja', 'cajas');
   return c.loose ? `${full} + ${fmt(c.loose)}` : full;
 }

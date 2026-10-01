@@ -50,6 +50,8 @@ barras. «Contar» permite registrar las existencias de una botella o de un grup
 esperada. En el detalle de cada botella se ve el historial reciente y se puede anotar una rotura.
 Una botella sin recuento aparece como «Sin contar»; una cifra negativa se muestra como «No queda» y
 «Revisar». El aviso nunca impide pedir o reponer.
+El selector muestra In Vessel y Out Vessel. Se pueden registrar entradas de mercancía y preparar un viaje;
+al marcarlo como hecho, las botellas cargadas pasan de Out Vessel a In Vessel y los apuntes pendientes siguen en el próximo viaje.
 
 ### Gestión (encargado, con PIN)
 Cuatro pestañas (Informes, Selección, Personal y Catálogo) y Ajustes en el engranaje.

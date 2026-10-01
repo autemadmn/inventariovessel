@@ -85,3 +85,10 @@ BEGIN
     EXECUTE format('REVOKE ALL ON ALL SEQUENCES IN SCHEMA %I FROM anon, authenticated', current_schema());
   END IF;
 END $$;
+
+-- Fase 2: las líneas retiradas se conservan para el historial y la copia.
+ALTER TABLE trip_lines ADD COLUMN IF NOT EXISTS removed integer NOT NULL DEFAULT 0 CHECK (removed IN (0, 1));
+ALTER TABLE trip_lines ADD COLUMN IF NOT EXISTS removed_at text;
+ALTER TABLE trip_lines ADD COLUMN IF NOT EXISTS removed_by text;
+CREATE INDEX IF NOT EXISTS idx_stock_moves_trip ON stock_moves (trip_id);
+CREATE INDEX IF NOT EXISTS idx_audit_almacen ON audit (id) WHERE entity = 'almacen';

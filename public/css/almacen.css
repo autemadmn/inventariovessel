@@ -1,4 +1,4 @@
-/* Almacén: stock del almacén del local, detalle de botella y modo «Contar».
+/* Almacén: stock de cada almacén, detalle de botella, modo «Contar», próximo viaje y entradas.
    Misma lista visual que Informes (gestion.css) y los tokens de app.css (claro y oscuro). */
 
 /* Cuatro pestañas en la barra inferior: Pedir, Reponer, Almacén y Gestión. */
@@ -10,9 +10,7 @@
 .alm.is-loading .alm-body { opacity: 0.55; }
 .alm .empty { padding: 28px 16px; }
 
-.alm-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 4px; }
-.alm-title { min-width: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: anywhere; }
-.alm-count-btn { flex: none; gap: 8px; min-height: 48px; padding: 0 16px 0 14px; }
+.alm-title { min-width: 0; margin-top: 4px; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: anywhere; }
 .alm-filters { margin-top: 4px; }
 .alm-filters .search { margin-bottom: 2px; }
 
@@ -76,7 +74,7 @@
   display: grid; place-items: center; flex: none; width: 32px; height: 32px;
   border-radius: 50%; background: var(--surface-2); color: var(--muted);
 }
-.alm-hist .bt-del-qty { min-width: 2.5rem; color: var(--muted); }
+.alm-hist .bt-del-qty { min-width: 2.5rem; max-width: 48%; color: var(--muted); font-size: 1rem; white-space: nowrap; }
 .alm-hist .count .bt-del-qty { color: var(--text); }
 .alm-hist .count .alm-h-ico { background: var(--accent-soft); color: var(--accent); }
 .alm-hist .broken .bt-del-qty { color: var(--danger); }
@@ -139,6 +137,152 @@
 
 .row-text .row-left { color: var(--muted); font-weight: 400; }
 .row-text .row-left.none { color: var(--danger); font-weight: 500; }
+/* «Apuntar para el viaje» bajo la fila, alineado con el texto (foto de 44 px + huecos). */
+.row-trip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; margin: -6px 0 2px 64px; padding: 0 12px 0 10px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--accent); font-size: 0.875rem; font-weight: 600; touch-action: manipulation;
+}
+.row-trip:active { background: var(--accent-soft); }
+.row-trip:disabled { opacity: 0.5; }
+
+/* ------------------------------------------------------------ Fase 2: almacenes, viaje y entradas */
+
+/* Selector «In Vessel · Out Vessel»: mismo control que el periodo de Informes. */
+.alm-stores { margin: 4px 0 0; }
+.alm-stores button { overflow: hidden; text-overflow: ellipsis; }
+
+/* Próximo viaje: siempre arriba, se lee de un vistazo. */
+.alm-trip {
+  display: flex; align-items: center; gap: 12px; min-height: 64px; margin-top: 12px; padding: 8px 12px 8px 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  color: var(--text); text-decoration: none; touch-action: manipulation;
+}
+.alm-trip:hover { background: var(--surface-2); }
+.alm-trip:active { transform: scale(0.99); }
+.alm-trip > .icon { color: var(--faint); }
+.alm-trip-ico {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px;
+  border-radius: 12px; background: var(--accent-soft); color: var(--accent);
+}
+.alm-trip-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.alm-trip-text b { font-size: 1.0625rem; font-weight: 600; }
+.alm-trip-text small { color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.alm-trip-n {
+  flex: none; min-width: 32px; height: 32px; padding: 0 9px; border-radius: 16px;
+  background: var(--accent); color: var(--accent-ink);
+  font-size: 1rem; font-weight: 700; line-height: 32px; text-align: center; font-variant-numeric: tabular-nums;
+}
+
+.alm-top-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.alm-top-actions .btn { min-height: 52px; gap: 8px; padding: 0 12px; line-height: 1.2; }
+
+/* «Sobra»: gris, sin alarma. */
+.tag.alm-sobra { background: var(--surface-2); color: var(--muted); }
+.alm-row.sobra .alm-qty b { color: var(--muted); }
+
+/* Detalle: lo que ya está apuntado. */
+.alm-in-trip { justify-content: center; }
+.alm-in-trip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alm-in-trip b { font-weight: 700; }
+.alm-actions .btn:only-child { grid-column: 1 / -1; }
+.alm-hist .in .bt-del-qty { color: var(--ok); }
+.alm-hist .in .alm-h-ico { background: var(--ok-soft); color: var(--ok); }
+.alm-sheet-hint { margin: 0; color: var(--accent); font-size: 0.9375rem; font-weight: 500; text-align: center; }
+
+.cnt-q { margin: 14px 0 0; }
+.cnt .alm-stores + .cnt-q { margin-top: 18px; }
+
+/* ------------------------------------------------------------ Próximo viaje */
+
+.trip-head { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.trip-route { display: flex; align-items: center; gap: 4px; margin: 0; color: var(--muted); font-size: 0.9375rem; font-weight: 500; }
+.trip-route .icon { color: var(--faint); }
+
+.trip-progress { margin-top: 14px; }
+.trip-progress p { margin: 0; color: var(--muted); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.trip-progress b { color: var(--text); font-size: 1.25rem; font-weight: 700; }
+.trip-progress .cnt-bar i { background: var(--ok); }
+
+.trip-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.trip-tools .btn { min-height: 48px; gap: 6px; padding: 0 10px; line-height: 1.2; }
+
+.trip-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; padding: 0; }
+.trip-line {
+  padding: 8px 8px 10px 10px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+.trip-line.on { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); background: color-mix(in srgb, var(--ok) 6%, var(--surface)); }
+.trip-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.thumb.trip-img { width: 48px; aspect-ratio: 3 / 4; flex: none; }
+.trip-note-ico {
+  display: grid; place-items: center; flex: none; width: 48px; height: 48px;
+  border-radius: var(--radius-sm); background: var(--surface-2); color: var(--muted);
+}
+.trip-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.trip-name b { font-size: 1.0625rem; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.trip-name small { color: var(--muted); font-size: 0.8125rem; }
+.trip-none { color: var(--warn); font-weight: 500; }
+.trip-rm { flex: none; min-width: 44px; min-height: 44px; }
+.trip-rm:hover { color: var(--danger); background: var(--danger-soft); }
+
+.trip-ctrl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.trip-qty { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.trip-qty .step { flex: none; }
+.trip-qty-val {
+  min-width: 0; min-height: 44px; padding: 0 6px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--text); justify-content: center; touch-action: manipulation;
+}
+.trip-qty-val:active { background: var(--surface-2); }
+.trip-qty-val.alm-qty { flex-wrap: nowrap; white-space: nowrap; gap: 0 3px; }
+.trip-qty-val.alm-qty b { font-size: 1.5rem; }
+.trip-noqty { color: var(--faint); font-size: 0.875rem; padding-left: 4px; }
+
+/* «Cargado»: casilla grande, se acierta con el pulgar cargando cajas. */
+.trip-check {
+  flex: none; display: inline-flex; align-items: center; gap: 8px;
+  min-height: 52px; padding: 0 16px 0 10px; border-radius: 12px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--text);
+  font-size: 1rem; font-weight: 600; touch-action: manipulation;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+.trip-box {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
+  border: 2px solid var(--line-strong); color: transparent;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.trip-check:active { transform: scale(0.97); }
+.trip-check.on { border-color: var(--ok); background: var(--ok); color: var(--surface); }
+.trip-check.on .trip-box { border-color: transparent; background: color-mix(in srgb, var(--surface) 22%, transparent); color: var(--surface); }
+.trip-line.on .trip-name b { color: var(--muted); }
+
+.trip-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 28px; padding: 28px 16px; text-align: center; color: var(--faint); }
+.trip-empty p { margin: 0; }
+.trip-empty b { color: var(--text); font-size: 1.0625rem; font-weight: 600; }
+
+/* «Viaje hecho» y «Guardar»: pegados abajo, encima de la barra de navegación. */
+.trip-foot {
+  position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); z-index: 5;
+  margin: 16px -16px -32px; padding: 12px 16px 16px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 18px);
+}
+.trip-foot:empty { display: none; }
+.trip-foot .btn.big { gap: 8px; box-shadow: var(--shadow-2); }
+.trip-foot-hint { margin: 8px 0 0; color: var(--muted); font-size: 0.875rem; text-align: center; }
+
+/* ------------------------------------------------------------ Ha llegado mercancía */
+
+.ent-h { margin-top: 4px; }
+.ent-hint { margin: 16px 0 4px; padding: 14px 16px; border-radius: var(--radius); background: var(--surface-2); color: var(--muted); text-align: center; }
+.ent-list { margin-bottom: 4px; }
+.ent-item { display: flex; align-items: center; padding-right: 6px; }
+.ent-row { flex: 1 1 auto; min-width: 0; min-height: 76px; border: 0; background: none; font: inherit; text-align: left; }
+.ent-row .alm-qty b { font-size: 1.5rem; }
+.ent-filters { margin-top: 12px; }
+#ent-grid { margin-top: 4px; }
+/* Marca de «elegida»: la cantidad ya se ve arriba, en cajas + sueltas. */
+.card .count.ent-check { display: grid; place-items: center; width: 28px; padding: 0; }
 
 @media (max-width: 400px) {
   .alm-qty b { font-size: 1.5rem; }

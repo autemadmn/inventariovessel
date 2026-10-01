@@ -9,6 +9,7 @@ import {
   raw, $, html, mount, thumb, toast, buzz, bottles, confirmDialog, dialog, norm,
 } from '../ui.js';
 import { icon } from '../icons.js';
+import { apuntar } from './viaje.js';
 
 let filter = store.get('reponerFilter', 'all');
 // Ajustes locales de «esta vez se lleva menos»: { lineId: botellas }.
@@ -41,6 +42,7 @@ function leftHtml(l) {
 
 function rowHtml(l) {
   const n = toDeliver(l);
+  const left = stockFor(l.product_id);
   return html`
     <li>
       <button type="button" class="row ${isOut(l) ? 'out' : ''} ${n < l.qty_pending ? 'adjusted' : ''}" data-line="${l.id}">
@@ -52,6 +54,9 @@ function rowHtml(l) {
         </span>
         <span class="row-qty">x${n}</span>
       </button>
+      ${left !== null && left <= 0 ? html`
+        <button type="button" class="row-trip" data-trip="${l.product_id}">
+          ${raw(icon('truck', { size: 18 }))} Apuntar para el viaje</button>` : ''}
     </li>`;
 }
 
@@ -97,6 +102,13 @@ async function onClick(e) {
       filter = d.filter;
       store.set('reponerFilter', filter);
       mount($('#reponer'), view());
+    } else if (d.trip) {
+      t.disabled = true;
+      try {
+        await apuntar(Number(d.trip));
+      } finally {
+        t.disabled = false;
+      }
     } else if (d.line) {
       await rowMenu(state.live.lines.find((l) => l.id === Number(d.line)));
     } else if (d.done !== undefined) {
