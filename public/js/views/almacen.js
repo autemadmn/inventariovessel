@@ -2,12 +2,12 @@
 // botella (movimientos, roturas y «Apuntar para el viaje») y el modo «Contar»,
 // una botella por pantalla y a ciegas. Lo contado se guarda en el móvil y se
 // envía en cuanto hay conexión, así que cortar o salir no pierde nada.
-import { get, post, store } from '../api.js';
+import { get, post, put, store } from '../api.js';
 import {
   state, subscribe, selection, productById, groupById, localStore, storeById, loadLive, caseParts, stockText, countTime,
 } from '../state.js';
 import {
-  raw, $, html, mount, norm, thumb, toast, buzz, fmt, plural, dateLabel, dateTimeLabel, dialog, confirmDialog,
+  raw, $, html, mount, norm, thumb, toast, buzz, fmt, plural, dateLabel, dateTimeLabel, dialog, confirmDialog, formDialog,
 } from '../ui.js';
 import { icon } from '../icons.js';
 import { renderViaje, apuntar } from './viaje.js';
@@ -289,6 +289,12 @@ function renderDetalle(root, rawId) {
         await loadLive().catch(() => {});
       } else if (t.dataset.countOne !== undefined) {
         if (await countOne(r.product, r.store.id)) await refresh();
+      } else if (t.dataset.perCase !== undefined) {
+        const res = await editPerCase(r);
+        if (!res) return;
+        r = res;
+        draw();
+        toast('Guardado');
       } else if (t.dataset.trip !== undefined) {
         const p = r.product;
         const qty = await askQty({
@@ -335,6 +341,9 @@ function detailView(r) {
       : html`
         <p class="alm-stock-big alm-qty">${qtyHtml(r.stock, p.per_case)}</p>
         ${r.duration ? html`<p class="alm-stock-sub">${r.duration.label}</p>` : ''}`}
+      <button type="button" class="link alm-percase" data-per-case>${p.per_case
+    ? html`${plural(p.per_case, 'botella', 'botellas')} por caja ${raw(icon('pencil', { size: 14 }))}`
+    : 'Indicar botellas por caja'}</button>
       ${r.last_count ? html`<p class="alm-stock-meta">Contado ${dateTimeLabel(r.last_count.counted_at)}${r.last_count.counted_by ? ` · ${r.last_count.counted_by}` : ''}</p>` : ''}
     </div>
 
@@ -417,6 +426,24 @@ async function breakage(r) {
 }
 
 /** «Contar esta botella»: el mismo recuento a ciegas, en una hoja. */
+/** Botellas por caja, desde el detalle de Almacén. Cualquiera puede cambiarlo, como el agotado. */
+async function editPerCase(r) {
+  const p = r.product;
+  const data = await formDialog('Botellas por caja', html`
+    <p class="muted small">${p.name}</p>
+    <label class="field"><span>Botellas por caja</span>
+      <input name="per_case" type="number" min="1" max="10000" step="1" inputmode="numeric"
+        value="${p.per_case ?? ''}" placeholder="Por ejemplo, 6" autofocus></label>`);
+  if (!data) return null;
+  const v = String(data.per_case ?? '').trim();
+  const perCase = v === '' ? null : Number(v);
+  if (perCase === (p.per_case ?? null)) return null;
+  const res = await put(`/api/almacen/botella/${p.id}/caja`, { per_case: perCase, store_id: r.store.id, by: state.who });
+  const local = productById(p.id);
+  if (local) local.per_case = perCase;
+  return res;
+}
+
 async function countOne(p, storeId) {
   const data = await dialog({
     title: 'Contar esta botella',
