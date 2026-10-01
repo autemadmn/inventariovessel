@@ -285,7 +285,8 @@ export async function suggestions(db, { now } = {}) {
   const result = new Map();
   for (const p of products) {
     const weekly = usage.weekly.get(p.id) ?? 0;
-    if (weekly <= 0) continue;
+    // Sin recuento en el almacén del local no se sabe lo que hay: no se inventa una sugerencia.
+    if (weekly <= 0 || !inside.has(p.id)) continue;
     const pointed = inTrip.get(p.id) ?? 0;
     const missing = weekly * (Number(s.trip_weeks) + 1) - Math.max(0, inside.get(p.id) ?? 0) - pointed;
     if (missing <= 0) continue;

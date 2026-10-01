@@ -49,7 +49,7 @@ function rowHtml(l) {
         ${thumb(l, 'mini')}
         <span class="row-text">
           <b>${l.product_name}</b>
-          <small>${isOut(l) ? html`<span class="danger">Agotado en almacén · </span>` : ''}Faltan ${l.qty_pending}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${n}</span>` : ''}</small>
+          <small>${isOut(l) && !(left !== null && left <= 0) ? html`<span class="danger">Agotado en almacén · </span>` : ''}Faltan ${l.qty_pending}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${n}</span>` : ''}</small>
           ${leftHtml(l)}
         </span>
         <span class="row-qty">x${n}</span>

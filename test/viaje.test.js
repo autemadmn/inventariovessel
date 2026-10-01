@@ -37,6 +37,8 @@ test('sugerencias: cajas, tope, descuento, retirada y semanas con actividad', as
   await weekly(db, a);
   await weekly(db, b, 1);
   assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 12);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), undefined, 'sin recuento en el local no se sugiere');
+  await count(db, b, 0);
   assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 3);
   await count(db, a, 20, 2);
   await viaje.addTripLine(db, { product_id: a, qty_planned: 6 }, { now: NOW });
