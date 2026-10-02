@@ -30,18 +30,19 @@ La pestaña «Viajes» y las necesidades de pedido son de la **fase 2** (`fase-2
 | --- | --- | --- | --- | --- |
 | `alm-alcohol` | Almacén alcohol | almacén | 3 | alcohol fuerte |
 | `nevera-vino` | Nevera de vino | nevera | 3 (dentro del almacén de alcohol) | vino |
-| `alm-cerveza` | Almacén cerveza y refrescos | almacén | 2 (las **dos** zonas marcadas con 2 abren este mismo punto) | cerveza caliente, refrescos |
+| `alm-cerveza` | Almacén cerveza y refrescos | almacén | 2 (la sala grande «Almacén cerveza + refrescos», a la derecha, encima del pasillo hacia el VIP) | cerveza caliente, refrescos |
 | `neveras-cerveza` | Neveras de cerveza | nevera | 1 (8 neveras en 4 parejas; un único punto) | cerveza fría |
-| `neveras-especial` | Neveras cerveza especial | nevera | 4 (ver nota) | cerveza especial |
+| `neveras-especial` | Neveras cerveza especial | nevera | 4 (las dos neveras que el plano marca, por error, con un «2» pequeño; ver nota) | cerveza especial |
 | `chupiteria` | Nevera chupitería | nevera | 5 (cuadrado negro) | alguna cerveza y alcohol de chupito |
 | `barra-1` | Barra 1 | barra | Barra 1 | de todo; enlazada con la barra 1 de Pedir/Reponer |
 | `barra-2` | Barra 2 | barra | Barra 2 | de todo; enlazada con la barra 2 de Pedir/Reponer |
 | `barra-vip` | Barra VIP | barra | dentro de la zona VIP | de todo; **no** sale en Pedir ni Reponer |
 
-**Nota sobre el punto 4.** La leyenda del plano lo describe, pero el número no aparece dibujado.
-Colócalo provisionalmente en los dos cuadrados pequeños que hay junto a la puerta, bajo la «Zona
-descanso» y a la izquierda de la columna de neveras. Debe poder moverse cambiando una sola línea del
-archivo de datos del mapa. Avisa de ello en el informe final.
+**Nota sobre el punto 4 (confirmado por el usuario).** El plano tiene una errata. Las dos neveras
+pequeñas marcadas con un «2» arriba, junto a la puerta, a la izquierda de la columna de neveras y
+encima de la «Zona descanso», son en realidad el **punto 4** (Neveras cerveza especial). El único
+**punto 2** es la sala grande «Almacén cerveza + refrescos». La posición de cada punto vive en el
+archivo de datos del mapa, para poder ajustarla cambiando una línea.
 
 Los nombres de los puntos se pueden renombrar desde Ajustes (engranaje), igual que las barras. Los
 puntos no se crean ni se borran desde la app en esta fase: el mapa es fijo.

@@ -325,7 +325,7 @@ Eres el bloque de CORRECCIONES Y COMMIT. Recibes el informe de integración, el 
    - la rama y el commit subidos;
    - la lista de capturas;
    - LO QUE TIENE QUE HACER ÉL, paso a paso: ejecutar la migración nueva en Supabase antes de publicar, revisar las capturas y abrir la pull request cuando quiera;
-   - cualquier dato que deba confirmar (por ejemplo, la posición del punto 4 en el mapa).
+   - cualquier dato que deba confirmar (por ejemplo, la posición de algún punto en el mapa).
 ===== FIN =====
 
 ────────────────────────────────────────

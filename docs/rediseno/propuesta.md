@@ -59,6 +59,10 @@ Puntos de almacenaje importantes:
 5. Este cuadrado negro representa la nevera de chupitería. Incluye alguna cerveza y alcoholes de
    chupito.
 
+> **Corrección del usuario:** en el plano, las dos neveras pequeñas marcadas con un «2» arriba (junto
+> a la puerta, encima de la «Zona descanso») son el punto **4**. El único punto 2 es la sala grande
+> «Almacén cerveza + refrescos».
+
 Barras: están las barras 1, 2 y VIP. Cada una de estas contiene neveras y alcoholes; una combinación
 de todo.
 
