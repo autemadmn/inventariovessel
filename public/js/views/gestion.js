@@ -8,12 +8,14 @@ import { renderSeleccion } from './seleccion.js';
 import { renderPersonal } from './personal.js';
 import { renderCatalogo } from './catalogo.js';
 import { renderAjustes } from './ajustes.js';
+import { renderControl } from './control.js';
 
 const TABS = [
   ['informes', 'Informes', renderInformes],
   ['seleccion', 'Selección', renderSeleccion],
   ['personal', 'Personal', renderPersonal],
   ['catalogo', 'Catálogo', renderCatalogo],
+  ['descuadres', 'Descuadres', (root) => renderControl(root, { gestion: true })],
 ];
 // Ajustes (barras, códigos, copia de seguridad) no es pestaña: se abre desde el engranaje.
 const ROUTES = [...TABS, ['ajustes', 'Ajustes', renderAjustes]];

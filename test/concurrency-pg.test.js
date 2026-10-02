@@ -13,6 +13,7 @@ import { pgDb } from '../server/db-pg.js';
 import { migrationFiles } from '../server/db-pglite.js';
 import * as svc from '../server/services.js';
 import * as viaje from '../server/viaje.js';
+import * as alm from '../server/almacen.js';
 
 const URL = process.env.TEST_DATABASE_URL;
 const NIGHT = new Date('2026-09-26T21:00:00Z');
@@ -90,4 +91,19 @@ test('concurrencia real en Postgres', { skip: !URL && 'sin TEST_DATABASE_URL' },
   assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
   assert.equal(results.find((r) => r.status === 'rejected').reason.status, 409);
   assert.equal((await a.get('SELECT COUNT(*)::int AS n FROM stock_moves WHERE trip_id = ?', openTrip.trip.id)).n, 2);
+
+  // Dos conexiones cuentan el mismo punto: ambos recuentos quedan guardados;
+  // el que obtiene el bloqueo después usa como expected el recuento anterior.
+  const countAt = later(1440);
+  await alm.saveCounts(a, { store_id: 4, items: [{ product_id: roku, qty: 30 }] }, { now: countAt });
+  await Promise.all([
+    alm.saveCounts(a, { store_id: 4, items: [{ product_id: roku, qty: 28 }], key: 'pg-count-a' }, { now: later(1441) }),
+    alm.saveCounts(b, { store_id: 4, items: [{ product_id: roku, qty: 26 }], key: 'pg-count-b' }, { now: later(1441) }),
+  ]);
+  const counts = await a.all('SELECT qty, expected FROM stock_counts WHERE store_id = 4 AND product_id = ? ORDER BY id', roku);
+  assert.equal(counts.length, 3);
+  assert.equal(counts[0].expected, null);
+  assert.equal(counts[1].expected, 30);
+  assert.equal(counts[2].expected, counts[1].qty);
+  assert.deepEqual(counts.slice(1).map((c) => c.qty).sort((x, y) => x - y), [26, 28]);
 });

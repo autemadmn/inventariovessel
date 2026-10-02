@@ -99,6 +99,9 @@ export function createHandler({ getDb, env = {}, log = console }) {
     }],
     ['GET', '/api/live', 'staff', ({ db }) => svc.liveState(db)],
     ['GET', '/api/almacen', 'staff', ({ db, url }) => alm.almacen(db, q(url))],
+    ['GET', '/api/almacen/puntos', 'staff', ({ db }) => alm.points(db)],
+    ['GET', '/api/almacen/punto/:id', 'staff', ({ db, id, url }) => alm.punto(db, id, q(url))],
+    ['POST', '/api/almacen/traslados', 'staff', ({ db, body }) => alm.addTransfer(db, body)],
     ['GET', '/api/almacen/botella/:id', 'staff', ({ db, id, url }) => alm.almacenBotella(db, id, q(url))],
     ['POST', '/api/almacen/recuentos', 'staff', ({ db, body }) => alm.saveCounts(db, body)],
     ['POST', '/api/almacen/roturas', 'staff', ({ db, body }) => alm.addBreakage(db, body)],
@@ -167,7 +170,7 @@ export function createHandler({ getDb, env = {}, log = console }) {
       return {
         ...await svc.publicSettings(db),
         bars: await svc.listBars(db),
-        stores: await db.all('SELECT id, name, kind FROM stores ORDER BY sort, id'),
+        stores: await db.all('SELECT * FROM stores ORDER BY sort, id'),
         staffCodeFromEnv: Boolean(env.STAFF_CODE),
         managerPinFromEnv: Boolean(env.MANAGER_PIN),
         staffCodeSet: Boolean(staff),

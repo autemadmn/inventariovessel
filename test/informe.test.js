@@ -16,9 +16,10 @@ async function setup(t) {
 }
 
 async function manual(db, date, product, bar, qty, at = NIGHT) {
+  const effective = new Date(`${date}T20:00:00Z`);
   return svc.addManualDelivery(db, {
-    date, product_id: product, bar_id: bar, qty, reason: 'Prueba', by: 'Carlos',
-  }, { now: at });
+    date, delivered_at: effective.toISOString(), product_id: product, bar_id: bar, qty, reason: 'Prueba', by: 'Carlos',
+  }, { now: new Date(Math.max(at.getTime(), effective.getTime())) });
 }
 
 test('solo cuenta lo entregado; conserva una reposición anulada y lo pendiente', async (t) => {

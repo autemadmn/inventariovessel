@@ -8,6 +8,8 @@ import * as svc from '../server/services.js';
 import * as alm from '../server/almacen.js';
 
 const NIGHT = new Date('2026-09-26T21:00:00.000Z');
+// Las pruebas del antiguo almacén In Vessel se aplican ahora a Almacén alcohol.
+const pointStock = async (db,{now}={}) => Object.fromEntries((await alm.stockRows(db,1,(now??new Date()).toISOString())).map(r=>[r.product_id,r.stock]));
 const iso = (minutes) => new Date(NIGHT.getTime() + minutes * 60000).toISOString();
 async function setup(t) {
   const db = await openPglite();
@@ -28,13 +30,14 @@ async function delivery(db, product_id, qty, minutes, date = '2026-09-26') {
 
 test('migración idempotente, almacenes, ajuste y esquema', async (t) => {
   const { db } = await setup(t);
-  assert.deepEqual((await db.all('SELECT id, name, kind FROM stores ORDER BY id')).map((x) => x.kind), ['local', 'central']);
+  assert.deepEqual((await db.all('SELECT id, name, kind FROM stores ORDER BY id')).map((x) => x.kind),
+    ['local', 'central', ...Array(8).fill('local')]);
   assert.equal((await svc.publicSettings(db)).trip_weeks, 2);
   await db.run("DELETE FROM settings WHERE key = 'trip_weeks'");
   assert.equal((await svc.publicSettings(db)).trip_weeks, 2);
   assert.equal((await alm.almacen(db)).trip_weeks, 2);
   await applyMigrations(db);
-  assert.equal((await db.get('SELECT count(*)::int AS n FROM stores')).n, 2);
+  assert.equal((await db.get('SELECT count(*)::int AS n FROM stores')).n, 10);
   await checkSchema(db);
 });
 
@@ -46,7 +49,7 @@ test('reintentar el mismo recuento no duplica la entrada ni altera el stock', as
   await delivery(db, product_id, 2, 1);
   await alm.saveCounts(db, body, { now: new Date(iso(2)) });
   assert.equal((await db.get('SELECT count(*)::int AS n FROM stock_counts WHERE product_id = ?', product_id)).n, 1);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(2)) }))[product_id], 8);
+  assert.equal((await pointStock(db, { now: new Date(iso(2)) }))[product_id], 8);
   await assert.rejects(alm.saveCounts(db, { ...body, items: [{ product_id, qty: 9 }] },
     { now: new Date(iso(3)) }), /identificador/);
 });
@@ -58,30 +61,32 @@ test('recuento, entregas corregidas y deshechas, rotura, anulación y parcial', 
   await db.run('UPDATE products SET per_case = 6 WHERE id = ?', a);
   await delivery(db, a, 5, -10);
   const first = await count(db, a, 10);
-  assert.deepEqual(first, { ok: true, saved: 1 });
+  assert.deepEqual(first, { ok: true, saved: 1,
+    results: [{ product_id: a, store_id: 1, qty: 10, expected: null, diff: null, kind: null }] });
   assert.equal((await db.get('SELECT expected FROM stock_counts WHERE product_id = ?', a)).expected, null);
-  let list = await alm.almacen(db, {}, { now: new Date(iso(1)) });
+  let list = await alm.almacen(db, { store: 1 }, { now: new Date(iso(1)) });
   assert.equal(list.products.find((x) => x.product_id === a).stock, 10);
   assert.deepEqual(list.products.find((x) => x.product_id === a).cases, { full: 1, loose: 4 });
   assert.equal(list.products.find((x) => x.product_id === b).section, 'sin_contar');
   const d = await delivery(db, a, 3, 2);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(3)) }))[a], 7);
+  assert.equal((await pointStock(db, { now: new Date(iso(3)) }))[a], 7);
   await db.run('UPDATE deliveries SET qty = 1, corrected = 1 WHERE id = ?', d.id);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(3)) }))[a], 9);
+  assert.equal((await pointStock(db, { now: new Date(iso(3)) }))[a], 9);
   await db.run('UPDATE deliveries SET product_id = ? WHERE id = ?', b, d.id);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(3)) }))[a], 10);
-  assert.ok(!Object.hasOwn(await alm.liveStock(db, { now: new Date(iso(3)) }), b));
+  assert.equal((await pointStock(db, { now: new Date(iso(3)) }))[a], 10);
+  assert.ok(!Object.hasOwn(await pointStock(db, { now: new Date(iso(3)) }), b));
   await db.run('UPDATE deliveries SET product_id = ?, qty = 0 WHERE id = ?', a, d.id);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(3)) }))[a], 10);
+  assert.equal((await pointStock(db, { now: new Date(iso(3)) }))[a], 10);
   await alm.addBreakage(db, { product_id: a, qty: 2, note: 'Se cayó', by: 'Luis' }, { now: new Date(iso(4)) });
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(5)) }))[a], 8);
+  assert.equal((await pointStock(db, { now: new Date(iso(5)) }))[a], 8);
   const broken = await db.get("SELECT id FROM stock_moves WHERE kind = 'rotura' AND product_id = ?", a);
   await db.run('UPDATE stock_moves SET voided = 1 WHERE id = ?', broken.id);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(5)) }))[a], 10);
+  assert.equal((await pointStock(db, { now: new Date(iso(5)) }))[a], 10);
   const second = await count(db, a, 7, 6);
-  assert.deepEqual(second, { ok: true, saved: 1 });
+  assert.deepEqual(second, { ok: true, saved: 1,
+    results: [{ product_id: a, store_id: 1, qty: 7, expected: 10, diff: -3, kind: 'descuadre' }] });
   assert.equal((await db.get('SELECT expected FROM stock_counts WHERE product_id = ? ORDER BY id DESC LIMIT 1', a)).expected, 10);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(7)) }))[a], 7);
+  assert.equal((await pointStock(db, { now: new Date(iso(7)) }))[a], 7);
 });
 
 test('stock negativo y agotado automático solo para controladas', async (t) => {
@@ -89,12 +94,12 @@ test('stock negativo y agotado automático solo para controladas', async (t) => 
   const a = await id('larios-12');
   const b = await id('skyy');
   await count(db, a, 1);
-  await delivery(db, a, 3, 2);
+  await alm.addBreakage(db, { product_id: a, store_id: 1, qty: 3 }, { now: new Date(iso(2)) });
   const live = await svc.liveState(db, { now: new Date(iso(3)) });
   assert.equal(live.stock[a], -2);
   assert.ok(!Object.hasOwn(live.stock, b));
   assert.deepEqual(live.outOfStock, []);
-  const list = await alm.almacen(db, {}, { now: new Date(iso(3)) });
+  const list = await alm.almacen(db, { store: 1 }, { now: new Date(iso(3)) });
   const row = list.products.find((x) => x.product_id === a);
   assert.equal(row.state, 'no_queda');
   assert.equal(row.review, true);
@@ -110,7 +115,7 @@ test('consumo por semanas activas, duración y detalle agrupado por noche', asyn
   await delivery(db, a, 2, 2, '2026-09-12');
   await delivery(db, a, 3, 3, '2026-09-26');
   await delivery(db, a, 1, 4, '2026-09-26');
-  const view = await alm.almacen(db, {}, { now: new Date(iso(5)) });
+  const view = await alm.almacen(db, { store: 1 }, { now: new Date(iso(5)) });
   assert.equal(view.has_consumption, true);
   assert.equal(view.products.find((x) => x.product_id === a).weekly, 3);
   const detail = await alm.almacenBotella(db, a, {}, { now: new Date(iso(5)) });
@@ -130,11 +135,11 @@ test('recuento diferido usa la hora del recuento; fechas fuera de margen usan el
   const a = await id('larios-12');
   await delivery(db, a, 2, -90);
   await count(db, a, 10, -120, { counted_at: iso(-120) });
-  assert.equal((await alm.liveStock(db, { now: NIGHT }))[a], 8);
+  assert.equal((await pointStock(db, { now: NIGHT }))[a], 8);
   await alm.saveCounts(db, { items: [{ product_id: a, qty: 7 }], counted_at: iso(2) }, { now: NIGHT });
-  assert.equal((await alm.liveStock(db, { now: NIGHT }))[a], 7);
+  assert.equal((await pointStock(db, { now: NIGHT }))[a], 7);
   await alm.saveCounts(db, { items: [{ product_id: a, qty: 6 }], counted_at: iso(-13 * 60) }, { now: new Date(iso(1)) });
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(1)) }))[a], 6);
+  assert.equal((await pointStock(db, { now: new Date(iso(1)) }))[a], 6);
 });
 
 test('semanas sin apertura no cuentan, límite de ocho semanas y estado de poco', async (t) => {
@@ -145,13 +150,13 @@ test('semanas sin apertura no cuentan, límite de ocho semanas y estado de poco'
     const date = new Date(Date.UTC(2026, 8, 26 - i * 7)).toISOString().slice(0, 10);
     await delivery(db, a, i === 8 ? 80 : 2, -200 - i, date);
   }
-  const view = await alm.almacen(db, {}, { now: new Date(iso(1)) });
+  const view = await alm.almacen(db, { store: 1 }, { now: new Date(iso(1)) });
   const row = view.products.find((x) => x.product_id === a);
   assert.equal(row.weekly, 2);
   assert.equal(row.stock, 10);
   assert.equal(row.duration.label, '≈ 5 semanas');
   await db.run("UPDATE settings SET value = '6' WHERE key = 'trip_weeks'");
-  assert.equal((await alm.almacen(db, {}, { now: new Date(iso(1)) })).products.find((x) => x.product_id === a).state,
+  assert.equal((await alm.almacen(db, { store: 1 }, { now: new Date(iso(1)) })).products.find((x) => x.product_id === a).state,
     'queda_poco');
 });
 
@@ -161,12 +166,12 @@ test('corregir y deshacer mediante los servicios originales actualiza el stock',
   await count(db, a, 10);
   const d = await delivery(db, a, 3, 1);
   await svc.correctDelivery(db, d.id, { qty: 1, reason: 'Apuntado de más' }, { now: new Date(iso(2)) });
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(2)) }))[a], 9);
+  assert.equal((await pointStock(db, { now: new Date(iso(2)) }))[a], 9);
   // Otra entrega no corregida conserva el deshacer desde Reponer.
   const fresh = await delivery(db, a, 2, 3);
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(4)) }))[a], 7);
+  assert.equal((await pointStock(db, { now: new Date(iso(4)) }))[a], 7);
   await svc.undoDelivery(db, fresh.id, { by: 'Ana' }, { now: new Date(iso(4)) });
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(4)) }))[a], 9);
+  assert.equal((await pointStock(db, { now: new Date(iso(4)) }))[a], 9);
 });
 
 test('API de personal, validación y copia de seguridad con ida y vuelta', async (t) => {
@@ -197,12 +202,12 @@ test('API de personal, validación y copia de seguridad con ida y vuelta', async
   const other = await openPglite();
   t.after(() => other.end());
   await importBackup(other, backup);
-  assert.deepEqual(await alm.liveStock(other), await alm.liveStock(db));
+  assert.deepEqual(await pointStock(other), await pointStock(db));
   await assert.rejects(importBackup(other, backup), /--force/);
   const older = structuredClone(backup);
   for (const table of ['stores', 'stock_counts', 'stock_moves', 'trips', 'trip_lines']) delete older.tables[table];
   await importBackup(other, older, { force: true });
-  assert.equal((await other.get('SELECT count(*)::int AS n FROM stores')).n, 2);
+  assert.equal((await other.get('SELECT count(*)::int AS n FROM stores')).n, 10);
   await checkSchema(other);
 });
 
@@ -222,7 +227,7 @@ test('mercancía de una botella sin contar: cuenta desde la llegada y descuenta 
   assert.equal(item.controlled, true);
   assert.equal(item.stock, 9);
   assert.equal(item.last_count_at, null, 'no se inventa un recuento');
-  assert.equal((await alm.liveStock(db, { now: new Date(iso(20)) }))[a], 9);
+  assert.equal((await pointStock(db, { now: new Date(iso(20)) }))[a], 9);
   // El primer recuento ya tiene valor esperado: el descuadre se puede ver.
   await count(db, a, 8, 30);
   const c = await db.get('SELECT expected FROM stock_counts WHERE product_id = ? ORDER BY id DESC LIMIT 1', a);

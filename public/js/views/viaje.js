@@ -215,7 +215,6 @@ async function finishTrip(v, apply) {
 function tripView(v, edits) {
   const lines = v.lines;
   const checked = lines.filter((l) => l.checked).length;
-  const pct = lines.length ? Math.round((checked / lines.length) * 100) : 0;
   return html`
     ${back()}
     <header class="trip-head">
@@ -227,7 +226,7 @@ function tripView(v, edits) {
       <div class="trip-progress">
         <p><b>${fmt(checked)} de ${fmt(lines.length)}</b> cargadas</p>
         <div class="cnt-bar" role="progressbar" aria-label="Cargado" aria-valuemin="0"
-          aria-valuemax="${lines.length}" aria-valuenow="${checked}"><i style="width:${pct}%"></i></div>
+          aria-valuemax="${lines.length}" aria-valuenow="${checked}"><progress value="${checked}" max="${lines.length}"></progress></div>
       </div>` : ''}
 
     <div class="trip-tools">
@@ -271,6 +270,7 @@ function lineView(l, from, edited) {
         <div class="trip-name">
           <b>${name}</b>
           ${meta.length || where ? html`<small>${meta.join(' · ')}${meta.length && where ? ' · ' : ''}${where}</small>` : ''}
+          ${l.to_store_name ? html`<small>→ ${l.to_store_name}</small>` : ''}
         </div>
         <button type="button" class="icon-btn trip-rm" data-rm data-line="${l.id}" aria-label="Quitar ${name} del viaje">${raw(icon('trash', { size: 20 }))}</button>
       </div>

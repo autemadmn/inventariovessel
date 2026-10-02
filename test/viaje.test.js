@@ -36,13 +36,13 @@ test('sugerencias: cajas, tope, descuento, retirada y semanas con actividad', as
   await count(db, a, 2);
   await weekly(db, a);
   await weekly(db, b, 1);
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 12);
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), undefined, 'sin recuento en el local no se sugiere');
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 6);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 1, 'las reposiciones recibidas aportan stock conocido aunque no haya recuento');
   await count(db, b, 0);
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 3);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 1);
   await count(db, a, 20, 2);
   await viaje.addTripLine(db, { product_id: a, qty_planned: 6 }, { now: NOW });
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 6);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), undefined);
   await count(db, a, 5, 2);
   assert.equal((await alm.suggestions(db, { now: NOW })).get(a), undefined);
   const view = await viaje.addSuggested(db, {}, { now: NOW });
@@ -62,6 +62,8 @@ test('viaje hecho traslada, conserva originales y pasa lo no cargado', async (t)
   await count(db, a, 20, 2);
   await assert.rejects(viaje.addTripLine(db, { product_id: a, qty_planned: 0 }, { now: NOW }), (e) => e.status === 400);
   const one = await viaje.addTripLine(db, { product_id: a, qty_planned: 6, by: 'Ana' }, { now: NOW });
+  assert.equal(one.to.name, 'In Vessel');
+  assert.equal(one.to.id, null);
   const two = await viaje.addTripLine(db, { product_id: b, qty_planned: 3 }, { now: NOW });
   const note = await viaje.addTripLine(db, { text: 'tónica' }, { now: NOW });
   await viaje.updateTripLine(db, one.added.id, { checked: 1 }, { now: NOW });
@@ -123,15 +125,15 @@ test('entradas, central total, ajustes, API y copia de seguridad', async (t) => 
   const out = await alm.almacen(db, { store: 2 }, { now: at(1) });
   const row = out.products.find((p) => p.product_id === a);
   assert.equal(row.stock, 14);
-  assert.equal(row.stock_total, 19);
-  assert.equal(row.duration.label, '≈ 4 meses');
+  assert.equal(row.stock_total, 21);
+  assert.equal(row.duration.label, '≈ 5 meses');
   assert.notEqual(row.state, 'queda_poco');
   const session = await db.get('SELECT id FROM sessions WHERE business_date = ?', '2026-09-26');
   await db.run(`INSERT INTO deliveries (session_id, bar_id, product_id, qty, delivered_at, source)
     VALUES (?, 1, ?, 7, ?, 'lista')`, session.id, a, at(0).toISOString());
   const afterDelivery = (await alm.almacen(db, { store: 2 }, { now: at(1) })).products.find((p) => p.product_id === a);
-  assert.equal((await alm.liveStock(db, { now: at(1) }))[a], -2);
-  assert.equal(afterDelivery.stock_total, 12);
+  assert.equal((await alm.liveStock(db, { now: at(1) }))[a], 7);
+  assert.equal(afterDelivery.stock_total, 21);
   await count(db, a, 300, 2);
   const surplus = (await alm.almacen(db, { store: 2 }, { now: at(1) })).products.find((p) => p.product_id === a);
   assert.equal(surplus.state, 'sobra');
@@ -142,7 +144,7 @@ test('entradas, central total, ajustes, API y copia de seguridad', async (t) => 
   const beforeRev = (await svc.bootstrap(db, {})).catalog_rev;
   await svc.updateSettings(db, { trip_weeks: 4, stores: [{ id: 1, name: 'Dentro' }, { id: 2, name: 'Fuera' }] });
   assert.equal((await svc.bootstrap(db, {})).catalog_rev, beforeRev + 1);
-  assert.equal((await svc.bootstrap(db, {})).stores[1].name, 'Fuera');
+  assert.equal((await svc.bootstrap(db, {})).stores.find((s) => s.id === 2).name, 'Fuera');
   await assert.rejects(svc.updateSettings(db, { trip_weeks: 0 }), (e) => e.status === 400);
   await assert.rejects(svc.updateSettings(db, { stores: [{ id: 1, name: '' }] }), (e) => e.status === 400);
   const handler = createHandler({ getDb: async () => db,
