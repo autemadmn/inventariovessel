@@ -33,7 +33,7 @@ export async function tripView(db, { now } = {}) {
   const trip = await db.get("SELECT id, status, created_at, created_by FROM trips WHERE status = 'abierto'");
   if (!trip) return { trip: null, from, to, lines: [], count: 0, checked: 0 };
   const [lines, stocks] = await Promise.all([
-    db.all(`SELECT l.id, l.product_id, l.text, p.name, p.slug, p.photo, p.per_case,
+    db.all(`SELECT l.id, l.product_id, l.text, p.name, p.slug, p.photo, p.per_case, p.category,
       l.qty_planned, l.qty_loaded, l.checked, l.source, l.created_at, l.created_by,
       dest.id AS to_store_id, dest.name AS to_store_name
       FROM trip_lines l LEFT JOIN products p ON p.id = l.product_id
@@ -46,7 +46,7 @@ export async function tripView(db, { now } = {}) {
   return { trip, from, to, lines: view, count: view.length, checked: view.filter((l) => l.checked === 1).length };
 }
 
-async function lockedOpenTrip(t, at, by) {
+export async function lockedOpenTrip(t, at, by) {
   let created = await t.get(`INSERT INTO trips (status, created_at, created_by) VALUES ('abierto', ?, ?)
     ON CONFLICT (status) WHERE status = 'abierto' DO NOTHING RETURNING id`, at, by);
   if (created) await writeAudit(t, { at, by, action: 'viaje_creado', id: created.id, after: { status: 'abierto' } });
@@ -59,6 +59,16 @@ async function lockedOpenTrip(t, at, by) {
   }
   if (!trip) throw conflict('El viaje ha cambiado. Recarga e inténtalo de nuevo.');
   return trip;
+}
+
+// El llamador tiene bloqueados el viaje y el producto. Solo se cierra el ajuste
+// vigente: conserva la cantidad, autor y fecha originales para la historia.
+export async function closeNeed(t, productId, { at, by, tripId, lineId }) {
+  const rows = await t.all(`UPDATE need_adjustments SET status = 'pedido', trip_id = ?, trip_line_id = ?,
+    closed_at = ?, closed_by = ? WHERE product_id = ? AND status = 'activo' RETURNING id`,
+  tripId, lineId, at, by, productId);
+  for (const r of rows) await writeAudit(t, { at, by, action: 'necesidades_al_pedido', id: r.id,
+    after: { product_id: productId, trip_id: tripId, trip_line_id: lineId, status: 'pedido' } });
 }
 
 export async function addTripLine(db, body = {}, { now } = {}) {
@@ -76,9 +86,13 @@ export async function addTripLine(db, body = {}, { now } = {}) {
   const result = await db.tx(async (t) => {
     const trip = await lockedOpenTrip(t, at, by);
     if (productId) {
+      await t.get('SELECT id FROM products WHERE id = ? FOR NO KEY UPDATE', productId);
       const prior = await t.get(`SELECT id FROM trip_lines WHERE trip_id = ? AND product_id = ? AND removed = 0
         ORDER BY id LIMIT 1`, trip.id, productId);
-      if (prior) return { addedId: null, already: true };
+      if (prior) {
+        await closeNeed(t, productId, { at, by, tripId: trip.id, lineId: prior.id });
+        return { addedId: null, already: true };
+      }
     }
     const suggested = productId && qty === null ? (await suggestions(t, { now })).get(productId) : null;
     const amount = productId ? qty ?? suggested ?? (Number(product.per_case) > 0 ? Number(product.per_case) : 1) : qty;
@@ -87,6 +101,7 @@ export async function addTripLine(db, body = {}, { now } = {}) {
       VALUES (?, ?, ?, ?, 'apunte', ?, ?) RETURNING id`, trip.id, productId, note, amount, at, by);
     await writeAudit(t, { at, by, action: 'viaje_linea', id: r.id,
       after: { trip_id: trip.id, product_id: productId, text: note, qty_planned: amount } });
+    if (productId) await closeNeed(t, productId, { at, by, tripId: trip.id, lineId: r.id });
     return { addedId: r.id, already: false };
   });
   const view = await tripView(db, { now });
@@ -98,6 +113,7 @@ export async function addSuggested(db, body = {}, { now } = {}) {
   const by = clean(body.by);
   const added = await db.tx(async (t) => {
     const trip = await lockedOpenTrip(t, at, by);
+    await t.all('SELECT id FROM products ORDER BY id FOR NO KEY UPDATE');
     const [suggested, products, existing] = await Promise.all([
       suggestions(t, { now }),
       t.all(`SELECT p.id, p.name, p.group_id, p.group_order, g.sort AS group_sort
@@ -105,9 +121,10 @@ export async function addSuggested(db, body = {}, { now } = {}) {
         ORDER BY CASE WHEN p.group_id IS NOT NULL AND p.active = 1
           AND p.status IN ('confirmado', 'pendiente') THEN 0 ELSE 1 END,
           g.sort NULLS LAST, p.group_order NULLS LAST, p.name, p.id`),
-      t.all('SELECT product_id FROM trip_lines WHERE trip_id = ? AND removed = 0 AND product_id IS NOT NULL', trip.id),
+      t.all('SELECT id, product_id FROM trip_lines WHERE trip_id = ? AND removed = 0 AND product_id IS NOT NULL', trip.id),
     ]);
     const present = new Set(existing.map((r) => r.product_id));
+    for (const line of existing) await closeNeed(t, line.product_id, { at, by, tripId: trip.id, lineId: line.id });
     let n = 0;
     for (const p of products) {
       const qty = suggested.get(p.id);
@@ -117,6 +134,7 @@ export async function addSuggested(db, body = {}, { now } = {}) {
         VALUES (?, ?, ?, 'sugerido', ?, ?) RETURNING id`, trip.id, p.id, qty, at, by);
       await writeAudit(t, { at, by, action: 'viaje_sugerido', id: r.id,
         after: { trip_id: trip.id, product_id: p.id, qty_planned: qty } });
+      await closeNeed(t, p.id, { at, by, tripId: trip.id, lineId: r.id });
       n++;
     }
     return n;
@@ -133,7 +151,7 @@ async function lockedLine(t, id) {
 
 export async function updateTripLine(db, id, body = {}, { now } = {}) {
   const lineId = int(id, 'Línea', 1);
-  if (body.qty_planned === undefined && body.checked === undefined) throw bad('No hay cambios.');
+  if (body.qty_planned === undefined && body.checked === undefined && body.qty_loaded === undefined) throw bad('No hay cambios.');
   const at = atOf(now);
   const by = clean(body.by);
   await db.tx(async (t) => {
@@ -142,11 +160,15 @@ export async function updateTripLine(db, id, body = {}, { now } = {}) {
     const qty = body.qty_planned === undefined ? line.qty_planned
       : body.qty_planned === null ? null : int(body.qty_planned, 'Cantidad', 1);
     if (body.checked !== undefined && body.checked !== 0 && body.checked !== 1) throw bad('Cargado no válido.');
-    const checked = body.checked ?? line.checked;
-    await t.run('UPDATE trip_lines SET qty_planned = ?, checked = ?, qty_loaded = ? WHERE id = ?',
-      qty, checked, checked ? qty : null, lineId);
+    if (body.qty_loaded !== undefined && line.product_id === null) throw bad('Una nota no lleva cantidad.');
+    if (body.qty_loaded !== undefined && body.checked === 0) throw bad('Cargado no válido.');
+    const loaded = body.qty_loaded === undefined ? undefined : int(body.qty_loaded, 'Cantidad', 1);
+    const checked = loaded !== undefined ? 1 : (body.checked ?? line.checked);
+    const qtyLoaded = checked ? (loaded ?? (body.qty_planned !== undefined ? qty : (line.qty_loaded ?? qty))) : null;
+    await t.run('UPDATE trip_lines SET qty_planned = ?, checked = ?, qty_loaded = ? WHERE id = ? AND removed = 0',
+      qty, checked, qtyLoaded, lineId);
     await writeAudit(t, { at, by, action: 'viaje_editar', id: lineId,
-      after: { qty_planned: qty, checked, qty_loaded: checked ? qty : null } });
+      after: { qty_planned: qty, checked, qty_loaded: qtyLoaded } });
   });
   return tripView(db, { now });
 }

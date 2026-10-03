@@ -15,7 +15,7 @@ export function renderMapa(root) {
     <div id="map-body"><p class="empty">Cargando…</p></div>
     <div class="alm-actions"><a class="btn ghost" href="#/almacen/in/lista">Ver todo In Vessel en lista</a>
     <a class="btn ghost" href="#/almacen/entrada">${raw(icon('package-plus'))} Ha llegado mercancía</a></div>
-    <a class="alm-trip" id="map-trip" href="#/almacen/viaje">${tripButton()}</a>
+    <a class="alm-trip" id="map-trip" href="#/viajes/pedido">${tripButton()}</a>
     <a class="alm-control" href="#/almacen/control">${raw(icon('lock', {size:16}))} Historial y descuadres</a></section>`);
   const el = root.querySelector('#alm-map');
   bindSideNavigation(el);

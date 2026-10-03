@@ -5,6 +5,7 @@ import { HttpError } from './errors.js';
 import { DEFAULT_SETTINGS } from './schema.js';
 import { SHELF_ORDER } from './catalog.js';
 import { quantity as posInt, operationKey, stockOperation } from './stock-operation.js';
+import { needFor } from './necesidades.js';
 
 const bad = (message) => new HttpError(400, message);
 // Mismos límites y limpieza que services.js.
@@ -270,7 +271,7 @@ export async function almacenBotella(db, id, params = {}, { now } = {}) {
           controlled: true, stock: Number(r.stock), last_count_at: r.count_id ? r.counted_at : null }; }) } : {}),
     ...view, suggested, in_trip: Number(inTrip.qty), last_count: counts[0] ? { qty: counts[0].qty,
       counted_at: counts[0].counted_at, counted_by: counts[0].counted_by } : null,
-    history,
+    history, need: await needFor(db, id, store, { now }),
   };
 }
 
@@ -459,36 +460,43 @@ export async function addTransfer(db, body = {}, { now } = {}) {
   return almacenBotella(db, productId, { store: fromId }, { now });
 }
 
-export async function suggestions(db, { now } = {}) {
-  const [local, central] = await Promise.all([
-    storeOf(db), db.get("SELECT id, name, kind, sort FROM stores WHERE kind = 'central' ORDER BY sort, id LIMIT 1"),
-  ]);
+export async function recommendationData(db, { now } = {}) {
+  const central = await db.get("SELECT id, name, kind, sort FROM stores WHERE kind = 'central' ORDER BY sort, id LIMIT 1");
   const [localRows, centralRows, usage, s, pointed, products] = await Promise.all([
-    stockRows(db, local, nowIso(now)), central ? stockRows(db, central, nowIso(now)) : [],
+    stockRows(db, 'in', nowIso(now)), central ? stockRows(db, central, nowIso(now)) : [],
     consumption(db, now), settings(db),
     db.all(`SELECT l.product_id, COALESCE(SUM(l.qty_planned), 0)::int AS qty FROM trip_lines l
       JOIN trips t ON t.id = l.trip_id WHERE t.status = 'abierto' AND l.removed = 0
       AND l.product_id IS NOT NULL GROUP BY l.product_id`),
-    db.all('SELECT id, per_case FROM products'),
+    db.all(`SELECT p.id, p.per_case, ${MAIN_STORE_SQL} AS main_store_id FROM products p`),
   ]);
-  if (!usage.has_consumption) return new Map();
-  const inside = new Map([...stockByProduct(localRows)].map(([id, r]) => [id, r.stock]));
+  const inside = new Map(localRows.map((r) => [`${r.store_id}:${r.product_id}`, r]));
   const outside = new Map(centralRows.map((r) => [r.product_id, Number(r.stock)]));
   const inTrip = new Map(pointed.map((r) => [r.product_id, Number(r.qty)]));
   const result = new Map();
   for (const p of products) {
     const weekly = usage.weekly.get(p.id) ?? 0;
-    // Sin recuento en el almacén del local no se sabe lo que hay: no se inventa una sugerencia.
-    if (weekly <= 0 || !inside.has(p.id)) continue;
+    const row = inside.get(`${p.main_store_id}:${p.id}`);
+    const counted = row?.count_id != null;
+    const stock = counted ? Number(row.stock) : null;
+    const out = outside.get(p.id) ?? null;
     const pointed = inTrip.get(p.id) ?? 0;
-    const missing = weekly * (Number(s.trip_weeks) + 1) - Math.max(0, inside.get(p.id) ?? 0) - pointed;
-    if (missing <= 0) continue;
-    const size = Number(p.per_case) > 0 ? Number(p.per_case) : 1;
-    const rounded = Math.ceil(missing / size) * size;
-    const qty = outside.has(p.id) ? Math.min(rounded, Math.max(0, outside.get(p.id) - pointed)) : rounded;
-    if (qty > 0) result.set(p.id, qty);
+    let bottles = null;
+    // Sin recuento en el punto principal o sin consumo no se inventa una recomendación.
+    if (usage.has_consumption && weekly > 0 && counted) {
+      const missing = weekly * (Number(s.trip_weeks) + 1) - Math.max(0, stock) - pointed;
+      const size = Number(p.per_case) > 0 ? Number(p.per_case) : 1;
+      const rounded = missing > 0 ? Math.ceil(missing / size) * size : 0;
+      bottles = out !== null ? Math.min(rounded, Math.max(0, out - pointed)) : rounded;
+    }
+    result.set(p.id, { bottles, weekly, stock, out, main_store_id: p.main_store_id, counted });
   }
-  return result;
+  return { products: result, has_consumption: usage.has_consumption, trip_weeks: Number(s.trip_weeks) };
+}
+
+export async function suggestions(db, { now } = {}) {
+  const data = await recommendationData(db, { now });
+  return new Map([...data.products].filter(([, r]) => r.bottles > 0).map(([id, r]) => [id, r.bottles]));
 }
 
 export async function addEntries(db, body = {}, { now } = {}) {
