@@ -384,26 +384,52 @@
 
 /* Puntos de In Vessel: plano SVG y alternativa en lista. */
 .alm-map { max-width: 720px; margin-inline: auto; }
-.vessel-map { display: block; width: 100%; height: auto; max-width: 480px; margin: 8px auto; overflow: visible; }
-.map-outline { fill: var(--bg); stroke: var(--line-strong); stroke-width: 4; }
-.map-context { fill: var(--surface-2); stroke: var(--line); stroke-width: 2; pointer-events: none; }
-.vessel-map text { stroke: none; fill: var(--text); font-size: 26px; font-weight: 600; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
-.map-context .map-shape { opacity: .8; }
-.map-context text { fill: var(--muted); }
-.map-note p { margin: 6px 0; }
-.map-point { fill: var(--surface); stroke: var(--muted); stroke-width: 2; }
-.map-almacen { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
-.map-barra { fill: var(--surface-2); stroke-width: 3; }
-.map-barra-1 { stroke: var(--bar1); }
-.map-barra-2 { stroke: var(--bar2); }
-.map-barra-vip { stroke: var(--muted); }
-.map-hit { fill: transparent; stroke: none; pointer-events: all; }
-.map-point.sin_contar .map-shape { stroke-dasharray: 6 4; }
-.map-point.sin_contar text { fill: var(--muted); }
+.map-card { margin: 12px 0 6px; padding: 14px 6px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); }
+.vessel-map { display: block; width: 100%; max-width: 440px; height: auto; margin: 0 auto; overflow: visible; }
+.vessel-map text { font-family: inherit; dominant-baseline: central; pointer-events: none; stroke: none; }
+/* Contexto: el local casi no pesa; la zona de personal lleva el rayado del plano. */
+.map-building { fill: var(--surface); }
+.map-staff { fill: var(--surface-2); }
+.map-hatch-area { fill: url(#map-hatch); }
+.map-hatch-line { stroke: var(--line-strong); stroke-width: 1.5; }
+.map-staff-edge { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-linejoin: round; }
+.map-walls { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.map-edge { fill: none; stroke: var(--line-strong); stroke-width: 3.5; stroke-linejoin: round; }
+.map-zone { fill: var(--faint); font-size: 30px; font-weight: 600; letter-spacing: 0.24em; }
+/* Puntos: almacenes protagonistas; neveras y barras, secundarios. */
+.map-point { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.map-hit { fill: transparent; stroke: none; pointer-events: all; transition: fill 160ms var(--ease); }
+.map-body, .map-unit { transition: fill 160ms var(--ease), stroke 160ms var(--ease); }
+.map-label { fill: var(--text); font-size: 22px; font-weight: 650; }
+.map-label.small { font-size: 20px; font-weight: 600; }
+.map-sub { fill: var(--muted); font-size: 19px; font-weight: 500; }
+.kind-almacen .map-body { fill: color-mix(in srgb, var(--accent) 14%, var(--surface)); stroke: var(--accent); stroke-width: 2.5; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.12)); }
+.kind-almacen .map-label { font-size: 25px; font-weight: 700; }
+.kind-nevera .map-unit { fill: var(--surface); stroke: color-mix(in srgb, var(--text) 55%, transparent); stroke-width: 2; }
+.kind-nevera .map-unit.solid { fill: var(--text); stroke: var(--text); }
+.kind-barra { --bar: var(--muted); }
+.map-barra-1 { --bar: var(--bar1); }
+.map-barra-2 { --bar: var(--bar2); }
+.kind-barra .map-body { fill: color-mix(in srgb, var(--bar) 14%, var(--surface)); stroke: var(--bar); stroke-width: 2.5; }
+.map-point:hover .map-hit { fill: color-mix(in srgb, var(--text) 5%, transparent); }
+.map-point:hover.kind-almacen .map-body { fill: color-mix(in srgb, var(--accent) 24%, var(--surface)); }
+.map-point:hover.kind-barra .map-body { fill: color-mix(in srgb, var(--bar) 26%, var(--surface)); }
+.map-point:hover .map-unit:not(.solid) { stroke: var(--text); }
+.map-point:active .map-hit { fill: color-mix(in srgb, var(--accent) 12%, transparent); }
 .map-point:focus-visible { outline: none; }
-.map-point:focus-visible .map-shape, .map-point:focus-visible .map-hit { stroke: var(--accent); stroke-width: 5.4; stroke-dasharray: none; }
-.map-alert circle { fill: var(--warn); stroke: none; }
-.map-alert text { fill: var(--surface); font-size: 20px; }
+.map-point:focus-visible .map-hit { stroke: var(--accent); stroke-width: 4; }
+.map-point.descuadre .map-sub { fill: var(--warn); font-weight: 650; }
+.map-alert circle { fill: var(--warn); }
+.map-alert text { fill: var(--surface); font-size: 18px; font-weight: 800; text-anchor: middle; }
+.map-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 12px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.8125rem; }
+.map-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.map-legend .sw { width: 16px; height: 11px; border: 1.5px solid; border-radius: 3px; }
+.sw-almacen { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border-color: var(--accent); }
+.sw-nevera { background: var(--surface); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
+.sw-barra { background: color-mix(in srgb, var(--bar1) 14%, var(--surface)); border-color: var(--bar1); }
+.sw-staff { background: repeating-linear-gradient(45deg, var(--line-strong) 0 1.5px, var(--surface-2) 1.5px 5px); border-color: var(--line-strong); }
+.sw-alert { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--warn); color: var(--surface); font-size: 11px; font-weight: 800; }
+.map-note { margin: 4px 0 18px; color: var(--muted); font-size: 0.8125rem; text-align: center; }
 .point-list { list-style: none; margin: 8px 0 16px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .point-list li + li { border-top: 1px solid var(--line); }
 .point-list a, .point-list button { display: flex; width: 100%; min-height: 56px; align-items: center; gap: 12px; padding: 12px; border: 0; background: none; color: var(--text); text-align: left; text-decoration: none; }
