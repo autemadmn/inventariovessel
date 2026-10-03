@@ -14,10 +14,12 @@ export async function renderAjustes(root) {
       <div class="form-grid">${s.bars.map((b) => html`
         <label class="field"><span>Nombre de la barra ${b.id}</span><input name="bar_${b.id}" value="${b.name}" maxlength="40" required></label>`)}</div>
 
-      <h3 class="section-title">Almacén</h3>
-      <div class="form-grid">${stores.map((st) => html`
-        <label class="field"><span>${st.kind === 'central' ? 'Almacén grande, fuera del local' : 'Almacén del local'}</span>
-          <input name="store_${st.id}" value="${st.name}" maxlength="40" required autocomplete="off"></label>`)}
+      <h3 class="section-title">Puntos de In Vessel</h3>
+      <div class="form-grid">${stores.filter((st) => st.in_vessel === 1 && !st.bar_id).map((st) => html`
+        <label class="field"><span>${st.name}</span><input name="store_${st.id}" value="${st.name}" maxlength="40" required autocomplete="off"></label>`)}</div>
+      <h3 class="section-title">Out Vessel</h3>
+      <div class="form-grid">${stores.filter((st) => st.kind === 'central').map((st) => html`
+        <label class="field"><span>Almacén de fuera</span><input name="store_${st.id}" value="${st.name}" maxlength="40" required autocomplete="off"></label>`)}
         <label class="field"><span>Semanas entre viajes</span>
           <input name="trip_weeks" type="number" inputmode="numeric" min="1" max="12" step="1" value="${tripWeeks}" required></label>
       </div>
@@ -67,7 +69,7 @@ export async function renderAjustes(root) {
       cutoff_hour: f.cutoff_hour,
       timezone: f.timezone,
       undo_minutes: f.undo_minutes,
-      stores: stores.map((st) => ({ id: st.id, name: f[`store_${st.id}`] })),
+      stores: stores.filter((st) => !st.bar_id).map((st) => ({ id: st.id, name: f[`store_${st.id}`] })),
       trip_weeks: Number(f.trip_weeks),
       by: state.who,
     };

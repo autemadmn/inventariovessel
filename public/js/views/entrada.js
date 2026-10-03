@@ -1,7 +1,7 @@
 // «Ha llegado mercancía»: se tocan las botellas que han llegado, se pone
 // cuánto en cajas y sueltas y se guarda como entrada en el almacén elegido.
 // Lo elegido se guarda en el móvil hasta que se envía.
-import { post, store } from '../api.js';
+import { postStock, store } from '../api.js';
 import {
   state, selection, productById, storeById, loadLive, stockText,
 } from '../state.js';
@@ -17,7 +17,7 @@ const DRAFT = 'almEntrada'; // { store_id, items: [[product_id, botellas]] }
 
 export function renderEntrada(root) {
   const draft = store.get(DRAFT, null);
-  let storeId = storeById(draft?.store_id)?.id ?? currentStore()?.id ?? null;
+  let storeId = draft?.store_id === 'out' || storeById(draft?.store_id)?.kind === 'central' ? 'out' : draft?.store_id === 'in' ? 'in' : currentStore()?.key ?? 'in';
   const items = new Map((draft?.items ?? []).filter(([id, n]) => productById(id) && n > 0));
   let q = '';
   let saving = false;
@@ -29,6 +29,7 @@ export function renderEntrada(root) {
       ${back()}
       <h1 class="alm-title ent-h">Ha llegado mercancía</h1>
       ${state.stores.length > 1 ? html`<p class="muted cnt-q">¿Dónde ha llegado?</p>${storeSeg(storeId, 'Almacén donde llega')}` : ''}
+      <p class="muted small" id="ent-main-note" ${storeId === 'out' ? html`hidden` : ''}>Cada botella entra en su punto principal.</p>
       <div id="ent-chosen"></div>
       <div class="filters alm-filters ent-filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
@@ -83,7 +84,7 @@ export function renderEntrada(root) {
   };
 
   const drawFoot = () => {
-    const where = storeById(storeId)?.name ?? '';
+    const where = storeId === 'in' ? 'In Vessel' : 'Out Vessel';
     mount($('#ent-foot', el), items.size ? html`
       <button type="button" class="btn primary big" data-save ${saving ? raw('disabled') : ''}>
         ${raw(icon('package-plus', { size: 20 }))} Guardar lo que ha llegado</button>
@@ -103,15 +104,16 @@ export function renderEntrada(root) {
     if (!t || saving) return;
     const d = t.dataset;
     if (d.store) {
-      storeId = Number(d.store);
+      storeId = d.store;
       for (const x of el.querySelectorAll('[data-store]')) {
-        const on = Number(x.dataset.store) === storeId;
+        const on = x.dataset.store === storeId;
         x.classList.toggle('on', on);
         x.setAttribute('aria-pressed', String(on));
       }
       buzz(8);
       save();
       drawFoot();
+      $('#ent-main-note', el).hidden = storeId !== 'in';
     } else if (d.pick) {
       const p = productById(d.pick);
       if (!p) return;
@@ -147,7 +149,7 @@ export function renderEntrada(root) {
       ? stockText(firstQty, productById(firstId)?.per_case)
       : `${fmt(items.size)} botellas distintas`;
     try {
-      await post('/api/almacen/entradas', {
+      await postStock('/api/almacen/entradas', {
         store_id: storeId,
         items: [...items].map(([product_id, qty]) => ({ product_id, qty })),
         by: state.who,
@@ -156,7 +158,7 @@ export function renderEntrada(root) {
       store.set(DRAFT, null);
       setCurrentStore(storeId);
       buzz(30);
-      toast(`Guardado: ${what} en ${storeById(storeId)?.name ?? 'el almacén'}`);
+      toast(`Guardado: ${what} en ${storeId === 'in' ? 'In Vessel' : 'Out Vessel'}`);
       loadLive().catch(() => {});
       location.hash = '#/almacen';
     } catch (err) {

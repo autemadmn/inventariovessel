@@ -45,16 +45,26 @@ Salen las botellas de la **selección**, agrupadas y en el orden que decide el e
   vuelve a marcar como disponible.
 
 ### Almacén (todo el personal)
-Muestra las botellas de In Vessel y cuánto queda según los recuentos, las roturas y lo repuesto a las
-barras. «Contar» permite registrar las existencias de una botella o de un grupo sin mostrar la cifra
-esperada. En el detalle de cada botella se ve el historial reciente y se puede anotar una rotura.
-Una botella sin recuento aparece como «Sin contar»; una cifra negativa se muestra como «No queda» y
-«Revisar». El aviso nunca impide pedir o reponer.
-El selector muestra In Vessel y Out Vessel. Se pueden registrar entradas de mercancía y preparar un viaje;
-al marcarlo como hecho, las botellas cargadas pasan de Out Vessel a In Vessel y los apuntes pendientes siguen en el próximo viaje.
+El selector mantiene «In Vessel · Out Vessel»: In Vessel abre un mapa con nueve puntos y Out Vessel
+sigue siendo una lista única. Cada punto abre su estantería, con categorías, fotos y los modos «Contar»
+(a ciegas) y «Consultar» (stock teórico); también se puede ver la suma de todo In Vessel en una lista.
+Reponer saca del punto principal del producto y lleva a su barra, el viaje llega al punto principal,
+y las roturas y «Mover a…» quedan registradas en su punto. Al contar un almacén, la diferencia es un
+descuadre; en barras y neveras se muestra como «Consumo desde el último recuento».
+
+### Viajes (todo el personal)
+**Necesidades** muestra los agotados y una estimación en cajas según el consumo y el stock del punto
+principal. Las cantidades se pueden ajustar y todos los móviles ven el mismo cambio. Sin datos no se
+inventa una estimación; si faltan las botellas por caja, se trabaja en botellas.
+**Añadir al pedido** pasa las cantidades mayores que cero al Pedido, sin duplicar líneas.
+
+**Pedido** es la lista para recoger en Out Vessel: marca lo cargado y ajusta la cantidad real si hace
+falta. **Hecho** registra la llegada al punto principal de cada producto; lo que no se ha marcado pasa
+al siguiente pedido.
 
 ### Gestión (encargado, con PIN)
-Cuatro pestañas (Informes, Selección, Personal y Catálogo) y Ajustes en el engranaje.
+Cinco secciones (Informes, Selección, Personal, Catálogo y Descuadres) y Ajustes en el engranaje.
+La barra inferior tiene cinco pestañas. Viajes reúne Necesidades y Pedido.
 
 - **Informes** (se abre por defecto): qué alcohol se ha repuesto. Arriba, «Último finde · Este mes · Mes
   pasado»; debajo, los grupos de la selección en su orden (y «Otras» si alguna botella sin grupo se movió).
@@ -73,6 +83,7 @@ Cuatro pestañas (Informes, Selección, Personal y Catálogo) y Ajustes en el en
 - **Catálogo**: ver las botellas, añadir una y editarla: foto (desde la cámara del móvil), nombre, grupo,
   botellas por caja, agotado y activo. Categoría, estado, capacidad y nota quedan en «Más datos». También se
   resuelven aquí las botellas sin identificar.
+- **Descuadres**: diferencias de los almacenes, con filtro y totales por punto, e historial de movimientos. Barras y neveras muestran consumo, sin entrar en los descuadres.
 - **Ajustes** (engranaje): nombres de las barras, códigos de acceso y copia de seguridad. La jornada (corte a
   las 12:00, hora de Madrid) no se cambia desde la app.
 
@@ -100,7 +111,7 @@ Solo botellas de las estanterías de las fotos (la nevera queda fuera). Es provi
 
 ## Fuera de esta versión
 
-Productos de la nevera, registro de copas individuales, operativa de la VIP e integración con Ágora.
+Registro de copas individuales, VIP en Pedir/Reponer, ventas e integración con Ágora.
 
 ## Publicarla en Cloudflare (recomendado)
 
@@ -150,7 +161,7 @@ Calcula media hora. Hazlo con el local cerrado.
    crearse.
 2. **Crea las tablas.** En el panel del proyecto: **SQL Editor → New query**. Ejecuta primero
    `CREATE SCHEMA IF NOT EXISTS vessel_reposicion;`. Después, antes del contenido de cada archivo
-   `supabase/migrations/0001_schema.sql`, `0002_seed.sql`, `0003_informe.sql` y `0004_almacen.sql`, añade en la misma consulta
+   `supabase/migrations/0001_schema.sql`, `0002_seed.sql`, `0003_informe.sql`, `0004_almacen.sql`, `0005_puntos.sql` y `0006_necesidades.sql`, añade en la misma consulta
    `SET search_path TO vessel_reposicion;` y pulsa **Run**. Así las tablas quedan en el esquema que
    usa el Worker (`DATABASE_SCHEMA` en `wrangler.jsonc`). Las migraciones se pueden repetir sin duplicar datos.
 3. **Copia la dirección de conexión.** Botón **Connect** (arriba) → **Connection string** →
@@ -202,6 +213,23 @@ al importar la copia). La URI `DATABASE_URL` debe usar el usuario propio mediant
 El usuario debe tener `USAGE` y `CREATE` en su esquema y ser propietario de sus tablas, sin permisos
 sobre las tablas de la otra app.
 
+## Actualizar Supabase a la fase 1 (puntos de In Vessel)
+
+1. **Antes de publicar `main`**, abre el proyecto de Supabase y entra en **SQL Editor → New query**.
+2. Pega `SET search_path TO vessel_reposicion;` y, debajo, todo el contenido de
+   [supabase/migrations/0005_puntos.sql](supabase/migrations/0005_puntos.sql).
+3. Pulsa **Run**. Usa la versión de `0005_puntos.sql` incluida en esta rama, también si ya ejecutaste una versión anterior de la fase: añade la protección contra reintentos y el orden de eventos. Se puede repetir sin duplicar nada: la historia de In Vessel queda en «Almacén alcohol».
+4. Si se olvida este paso, la app muestra **«Faltan las migraciones de Supabase.»**.
+
+## Actualizar Supabase a la fase 2 (Viajes)
+
+1. **Antes de publicar `main`**, abre el proyecto de Supabase y entra en **SQL Editor → New query**.
+2. Pega `SET search_path TO vessel_reposicion;` y, debajo, todo el contenido de
+   [supabase/migrations/0006_necesidades.sql](supabase/migrations/0006_necesidades.sql).
+3. Pulsa **Run**. Se puede repetir sin duplicar nada: añade el historial de ajustes de Necesidades,
+   sin cambiar los productos ni los puntos de In Vessel.
+4. Si se olvida este paso, la app muestra **«Faltan las migraciones de Supabase.»**.
+
 ## Probarla en local
 
 Requisitos: **Node.js 22.16 o superior**.
@@ -244,6 +272,8 @@ server/
   handler.js    rutas de la API y control de acceso (Request/Response estándar)
   services.js   lógica: solicitudes, entregas, selección, personal, informes, previsión, compras
   almacen.js    recuentos, roturas, existencias y consumo semanal
+  necesidades.js  ticket, agotados y ajustes compartidos del próximo viaje
+  viaje.js      pedido Out → In Vessel y cantidades realmente cargadas
   schema.js     ajustes por defecto y comprobación de que las migraciones están aplicadas
   db-pg.js      acceso a Postgres/Supabase (postgres.js)
   db-pglite.js  acceso a PGlite (local y pruebas; aplica las migraciones al abrir)
@@ -256,6 +286,8 @@ supabase/migrations/
   0002_seed.sql    datos iniciales (generado por scripts/db/build-seed.mjs)
   0003_informe.sql validación de botellas por caja
   0004_almacen.sql almacenes, recuentos, movimientos y viajes
+  0005_puntos.sql  puntos de In Vessel, punto principal y origen de reposiciones
+  0006_necesidades.sql  ajustes de Necesidades y su historial al pasar al Pedido
 scripts/db/     build-seed.mjs e import-backup.mjs
 public/         interfaz (HTML, CSS y JavaScript sin compilación)
   js/shared/forecast.js  cálculo de previsión y compra conservado para la API

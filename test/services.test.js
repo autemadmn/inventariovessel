@@ -290,7 +290,8 @@ test('deshacer y corregir conservan constancia del cambio', async (t) => {
   const log = await svc.listAudit(db, { entity: 'reposicion' });
   const corr = log.find((a) => a.action === 'corregir');
   assert.equal(corr.reason, 'Era para la barra 2');
-  assert.deepEqual(corr.before, { botellas: 2, barra: 1, producto: 'Brugal Añejo' });
+  assert.deepEqual(corr.before, { botellas: 2, barra: 1, producto: 'Brugal Añejo', from_store_id: 1 });
+  assert.equal(corr.after.from_store_id, 1);
   assert.ok(log.some((a) => a.action === 'deshacer'));
 });
 
@@ -610,7 +611,7 @@ test('import: ida y vuelta idéntica y no pisa datos de operación sin --force',
   assert.equal(r.legacy, false);
   for (const table of svc.BACKUP_TABLES.filter((x) => x !== 'settings')) {
     assert.equal(r.counts[table], data.tables[table].length, table);
-    assert.equal((await db.all(`SELECT id FROM ${table}`)).length, data.tables[table].length, table);
+    assert.equal((await db.all(`SELECT ${table === 'stock_operations' ? 'key' : 'id'} FROM ${table}`)).length, data.tables[table].length, table);
   }
   const strip = ({ catalog_rev, ...rest }) => rest;
   assert.deepEqual(strip(await svc.liveState(db, { now: later(3) })), strip(await svc.liveState(src, { now: later(3) })));

@@ -29,24 +29,36 @@ export async function descuadres(db, params = {}, { now } = {}) {
   const s = await settings(db);
   // Una consulta agregada obtiene todas las botellas discrepantes y los totales por almacén.
   const rows = await db.all(`SELECT c.id AS count_id, c.store_id, st.name AS store_name,
+      COALESCE(st.map_key, 'out') AS store_key,
       c.product_id, p.name, p.slug, p.photo, p.category, p.per_case,
       c.qty, c.expected, (c.qty - c.expected)::int AS diff, c.counted_at, c.counted_by
     FROM stock_counts c
     JOIN stores st ON st.id = c.store_id
     JOIN products p ON p.id = c.product_id
-    WHERE c.expected IS NOT NULL AND c.qty <> c.expected
+    WHERE c.expected IS NOT NULL AND c.qty <> c.expected AND (st.point_type = 'almacen' OR st.kind = 'central')
     ORDER BY c.counted_at DESC, c.id DESC`);
   const filtered = rows.filter((r) => inRange(r.counted_at, info.range, s)).map((r) => ({
     ...r, qty: Number(r.qty), expected: Number(r.expected), diff: Number(r.diff),
     per_case: r.per_case === null ? null : Number(r.per_case),
   }));
-  const stores = await db.all('SELECT id, name FROM stores ORDER BY sort, id');
+  const stores = await db.all(`SELECT id, name, COALESCE(map_key, 'out') AS key FROM stores
+    WHERE point_type = 'almacen' OR kind = 'central' ORDER BY sort, id`);
+  const store = params.store === undefined || params.store === '' ? null : Number(params.store);
+  if (store !== null && !stores.some((s) => s.id === store)) throw invalid('Punto no válido.');
   const missing = new Map();
+  const extra = new Map();
+  const count = new Map();
   for (const r of filtered) if (r.diff < 0) missing.set(r.store_id, (missing.get(r.store_id) ?? 0) + Math.abs(r.diff));
+  for (const r of filtered) {
+    if (r.diff > 0) extra.set(r.store_id, (extra.get(r.store_id) ?? 0) + r.diff);
+    count.set(r.store_id, (count.get(r.store_id) ?? 0) + 1);
+  }
   return {
-    ...info,
-    totals: stores.map((store) => ({ store_id: store.id, store_name: store.name, missing: missing.get(store.id) ?? 0 })),
-    items: filtered,
+    ...info, store,
+    points: stores.map((s) => ({ store_id: s.id, key: s.key, name: s.name })),
+    totals: stores.map((s) => ({ store_id: s.id, store_name: s.name, key: s.key,
+      missing: missing.get(s.id) ?? 0, extra: extra.get(s.id) ?? 0, count: count.get(s.id) ?? 0 })),
+    items: filtered.filter((r) => store === null || r.store_id === store),
   };
 }
 
@@ -86,7 +98,7 @@ export async function historial(db, params = {}, { now } = {}) {
       storeId = m.to_store_id; storeName = m.to_store_name; fromId = m.from_store_id; fromName = m.from_store_name;
       key = eventKey(type, [m.trip_id]);
     } else if (m.kind === 'traslado') {
-      type = 'viaje'; at = m.created_at; by = m.created_by;
+      type = 'traslado'; at = m.created_at; by = m.created_by;
       storeId = m.to_store_id; storeName = m.to_store_name; fromId = m.from_store_id; fromName = m.from_store_name;
       key = eventKey(type, ['move', m.move_id]);
     } else if (m.kind === 'entrada') {
@@ -102,6 +114,7 @@ export async function historial(db, params = {}, { now } = {}) {
       from_store_id: fromId, from_store_name: fromName, note: m.note ?? null }, {
       move_id: m.move_id, product_id: m.product_id, name: m.name, slug: m.slug, photo: m.photo,
       category: m.category, per_case: m.per_case === null ? null : Number(m.per_case), qty: Number(m.qty),
+      to_store_id: m.to_store_id, to_store_name: m.to_store_name,
       voided: Number(m.voided), voided_at: m.voided_at, voided_by: m.voided_by, void_reason: m.void_reason,
     });
   }
@@ -125,8 +138,10 @@ export async function historial(db, params = {}, { now } = {}) {
       qty, expected, diff: expected === null ? null : qty - expected });
   }
   for (const [key, group] of countGroups) groups.set(key, group);
-  let events = [...groups.values()].map((e) => ({ ...e, lines: e.lines.sort((a, b) =>
-    (a.move_id ?? a.count_id) - (b.move_id ?? b.count_id)) }))
+  let events = [...groups.values()].map((e) => ({ ...e,
+    ...(e.type === 'viaje' && new Set(e.lines.map((l) => l.to_store_id)).size > 1
+      ? { store_id: null, store_name: 'In Vessel' } : {}),
+    lines: e.lines.sort((a, b) => (a.move_id ?? a.count_id) - (b.move_id ?? b.count_id)) }))
     .sort((a, b) => b.at.localeCompare(a.at) || b.key.localeCompare(a.key));
   const truncated = events.length > 200;
   events = events.slice(0, 200);
@@ -144,7 +159,10 @@ export async function voidMove(db, id, body = {}, { now } = {}) {
     const move = await t.get('SELECT * FROM stock_moves WHERE id = ? FOR UPDATE', moveId);
     if (!move) throw new HttpError(404, 'Movimiento no encontrado.');
     if (Number(move.voided)) throw new HttpError(409, 'Este movimiento ya está anulado.');
-    await t.run(`UPDATE stock_moves SET voided = 1, voided_at = ?, voided_by = ?, void_reason = ? WHERE id = ?`,
+    await t.get('SELECT id FROM products WHERE id = ? FOR KEY SHARE', move.product_id);
+    const ids = [move.from_store_id, move.to_store_id].filter((id) => id !== null).sort((a, b) => a - b);
+    await t.all(`SELECT id FROM stores WHERE id IN (${ids.map(() => '?').join(', ')}) ORDER BY id FOR UPDATE`, ...ids);
+    await t.run(`UPDATE stock_moves SET voided = 1, voided_at = ?, voided_by = ?, void_reason = ? WHERE id = ? AND voided = 0`,
       at, by, reason, moveId);
     const after = { kind: move.kind, product_id: move.product_id, from_store_id: move.from_store_id,
       to_store_id: move.to_store_id, qty: Number(move.qty), trip_id: move.trip_id, voided: 1 };

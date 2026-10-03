@@ -4,7 +4,7 @@
 //   node scripts/db/import-backup.mjs copia.json --pglite data/pglite [--force]
 //
 // Con DATABASE_URL escribe en ese Postgres (Supabase), que debe tener ya las
-// migraciones 0001 y 0002. Con --pglite escribe en una base local de PGlite
+// migraciones 0001 a 0006. Con --pglite escribe en una base local de PGlite
 // (la crea si no existe). Sustituye todos los datos de la base de destino.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

@@ -1,4 +1,5 @@
 /* Gestión: Informes, detalle de botella, Selección, Personal y Catálogo. Usa los tokens de app.css (claro y oscuro). */
+.cat-list .btn.small { min-height: 44px; }
 
 /* ------------------------------------------------------------ Selección */
 

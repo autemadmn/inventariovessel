@@ -45,11 +45,14 @@ test('descuadres conservan expected, calculan diferencia y totales por almacén'
   assert.equal(result.items[0].diff, -2);
   assert.equal(result.totals.find((x) => x.store_id === 1).missing, 2);
   assert.equal(result.totals.find((x) => x.store_id === 2).missing, 0);
+  assert.deepEqual(result.totals.map((x) => x.store_id), [1, 4, 2]);
+  assert.equal(result.items[0].store_name, 'Almacén alcohol');
   await count(db, product.id, 8, 1);
   const withSurplus = await control.descuadres(db, {}, { now: new Date(at(2)) });
   assert.equal(withSurplus.items.length, 2);
   assert.equal(withSurplus.items.find((x) => x.diff > 0).diff, 3);
   assert.equal(withSurplus.totals.find((x) => x.store_id === 1).missing, 2);
+  assert.equal(withSurplus.totals.find((x) => x.store_id === 1).extra, 3);
   assert.equal((await db.get('SELECT expected FROM stock_counts WHERE store_id = 1 ORDER BY id DESC LIMIT 1')).expected, 5);
 });
 

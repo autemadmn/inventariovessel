@@ -1,16 +1,16 @@
 // Importa la copia JSON que exporta la app (/api/backup) en una base Postgres
-// ya migrada (0001 y 0002). Sirve para copias antiguas (SQLite/D1, con
+// ya migrada (0001 a 0006). Sirve para copias antiguas (SQLite/D1, con
 // `habitual`, sin slugs, grupos ni personal) y para copias nuevas.
 // Sustituye todos los datos; los códigos de acceso de la base no se tocan.
-import { CATEGORIES, INITIAL_GROUPS, INITIAL_STAFF, INITIAL_STORES, slugify } from './catalog.js';
+import { CATEGORIES, INITIAL_GROUPS, INITIAL_STAFF, INITIAL_STORES, defaultMainKey, slugify } from './catalog.js';
 
 const DROP_SETTINGS = new Set(['schema_version', 'habitual_init', 'seeded', 'staff_code', 'manager_pin']);
 
 // Orden de inserción (padres antes que hijos). Se borra en orden inverso.
 const ORDER = ['bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines', 'deliveries',
-  'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves'];
+  'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'need_adjustments', 'stock_counts', 'stock_moves', 'stock_operations'];
 
-const OPERATION_TABLES = ['sessions', 'request_lines', 'deliveries', 'purchase_lists', 'stock_counts', 'stock_moves', 'trips'];
+const OPERATION_TABLES = ['sessions', 'request_lines', 'deliveries', 'purchase_lists', 'stock_counts', 'stock_moves', 'trips', 'need_adjustments'];
 
 async function columnsOf(t, table) {
   return (await t.all(`SELECT column_name FROM information_schema.columns
@@ -69,6 +69,11 @@ export async function importBackup(db, data, { force = false, now = new Date() }
     }
     const ts = now.toISOString();
     const legacy = !Array.isArray(src.product_groups);
+    const legacyPoints = !Array.isArray(src.stores) || src.stores.some((s) => s.map_key === undefined);
+    const stores = legacyPoints ? INITIAL_STORES.map((s) => ({ ...s,
+      name: s.id === 2 ? src.stores?.find((old) => old.id === 2)?.name ?? s.name
+        : s.bar_id ? (src.bars?.find((b) => b.id === s.bar_id)?.name ?? s.name).slice(0, 40) : s.name,
+    })) : src.stores;
 
     // Productos: slug (de la copia, de la ruta de su imagen o del nombre) y fotos propias.
     let photosCleared = 0;
@@ -89,7 +94,9 @@ export async function importBackup(db, data, { force = false, now = new Date() }
       }
       const g = legacy ? groupOf.get(p.id) ?? { group_id: null, group_order: null } : {};
       const { habitual, habitual_order, ...rest } = p;
-      return { ...rest, slug, photo, ...g };
+      return { ...rest, slug, photo, ...g,
+        ...(legacyPoints && p.main_store_id == null
+          ? { main_store_id: stores.find((s) => s.map_key === defaultMainKey(p.category)).id } : {}) };
     });
 
     const groups = legacy
@@ -99,12 +106,16 @@ export async function importBackup(db, data, { force = false, now = new Date() }
       : INITIAL_STAFF.map((name, i) => ({ id: i + 1, name, active: 1, sort: (i + 1) * 10, created_at: ts }));
 
     const rows = {
-      bars: src.bars ?? [], stores: Array.isArray(src.stores) ? src.stores : INITIAL_STORES,
+      bars: src.bars ?? [], stores,
       product_groups: groups, products, staff,
-      sessions: src.sessions ?? [], request_lines: src.request_lines ?? [], deliveries: src.deliveries ?? [],
+      sessions: src.sessions ?? [], request_lines: src.request_lines ?? [],
+      deliveries: (src.deliveries ?? []).map(({ from_store_id, ...d }) => ({ ...d,
+        ...(!legacyPoints ? { from_store_id } : {}), event_order: d.event_order ?? 0 })),
       stockouts: src.stockouts ?? [], audit: src.audit ?? [], purchase_lists: src.purchase_lists ?? [],
-      trips: src.trips ?? [], trip_lines: src.trip_lines ?? [],
-      stock_counts: src.stock_counts ?? [], stock_moves: src.stock_moves ?? [],
+      trips: src.trips ?? [], trip_lines: src.trip_lines ?? [], need_adjustments: src.need_adjustments ?? [],
+      stock_counts: (src.stock_counts ?? []).map(c=>({...c,event_order:c.event_order ?? 0})),
+      stock_moves: (src.stock_moves ?? []).map(m=>({...m,event_order:m.event_order ?? 0})),
+      stock_operations: src.stock_operations ?? [],
     };
 
     await t.run('DELETE FROM photos');
@@ -112,15 +123,33 @@ export async function importBackup(db, data, { force = false, now = new Date() }
     for (const table of ORDER) await insertRows(t, table, rows[table]);
 
     // Secuencias de identidad por encima del mayor id importado.
-    for (const table of ORDER.filter((x) => !['bars', 'stores'].includes(x)).concat('photos')) {
+    for (const table of ORDER.filter((x) => !['bars', 'stores', 'stock_operations'].includes(x)).concat('photos')) {
       await t.get(`SELECT setval(pg_get_serial_sequence(?, 'id'),
         COALESCE((SELECT MAX(id) FROM ${table}), 0) + 1, false)`, table);
     }
+    await t.get(`SELECT setval('stock_event_order', GREATEST(
+      (SELECT last_value FROM stock_event_order),
+      COALESCE((SELECT MAX(event_order) FROM stock_counts), 0),
+      COALESCE((SELECT MAX(event_order) FROM stock_moves), 0),
+      COALESCE((SELECT MAX(event_order) FROM deliveries), 0)) + 1, false)`);
 
+    const normalized = [];
     for (const { key, value } of src.settings ?? []) {
       if (DROP_SETTINGS.has(key) || key === 'catalog_rev') continue;
+      if (['timezone', 'cutoff_hour'].includes(key)) {
+        const fixed = key === 'timezone' ? 'Europe/Madrid' : '12';
+        if (String(value) !== fixed) normalized.push({ key, before: value, after: fixed });
+        continue;
+      }
       await t.run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value', key, value);
     }
+    for (const [key, value] of [['timezone', 'Europe/Madrid'], ['cutoff_hour', '12']]) {
+      await t.run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value', key, value);
+    }
+    if (normalized.length) await t.run(`INSERT INTO audit (at, entity, action, before, after, reason)
+      VALUES (?, 'ajustes', 'normalizar jornada importada', ?, ?, ?)`, ts,
+    JSON.stringify(normalized.map(({key,before}) => ({key,value:before}))),
+    JSON.stringify(normalized.map(({key,after}) => ({key,value:after}))), 'Madrid y corte a las 12:00 obligatorios.');
     await t.run("INSERT INTO settings (key, value) VALUES ('seeded', '1') ON CONFLICT (key) DO NOTHING");
     // Los móviles abiertos recargan el catálogo.
     await t.run(`INSERT INTO settings (key, value) VALUES ('catalog_rev', '1')

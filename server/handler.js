@@ -3,6 +3,7 @@
 import * as svc from './services.js';
 import * as alm from './almacen.js';
 import * as viaje from './viaje.js';
+import * as nec from './necesidades.js';
 import * as control from './control.js';
 
 const SECURITY_HEADERS = {
@@ -99,6 +100,9 @@ export function createHandler({ getDb, env = {}, log = console }) {
     }],
     ['GET', '/api/live', 'staff', ({ db }) => svc.liveState(db)],
     ['GET', '/api/almacen', 'staff', ({ db, url }) => alm.almacen(db, q(url))],
+    ['GET', '/api/almacen/puntos', 'staff', ({ db }) => alm.points(db)],
+    ['GET', '/api/almacen/punto/:id', 'staff', ({ db, id, url }) => alm.punto(db, id, q(url))],
+    ['POST', '/api/almacen/traslados', 'staff', ({ db, body }) => alm.addTransfer(db, body)],
     ['GET', '/api/almacen/botella/:id', 'staff', ({ db, id, url }) => alm.almacenBotella(db, id, q(url))],
     ['POST', '/api/almacen/recuentos', 'staff', ({ db, body }) => alm.saveCounts(db, body)],
     ['POST', '/api/almacen/roturas', 'staff', ({ db, body }) => alm.addBreakage(db, body)],
@@ -111,6 +115,15 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['GET', '/api/almacen/descuadres', 'manager', ({ db, url }) => control.descuadres(db, q(url))],
     ['GET', '/api/almacen/historial', 'manager', ({ db, url }) => control.historial(db, q(url))],
     ['POST', '/api/almacen/movimientos/:id/anular', 'manager', ({ db, id, body }) => control.voidMove(db, id, body)],
+    ['GET', '/api/viajes/necesidades', 'staff', ({ db }) => nec.necesidades(db)],
+    ['PUT', '/api/viajes/necesidades/:id', 'staff', ({ db, id, body }) => nec.setNeed(db, id, body)],
+    ['POST', '/api/viajes/necesidades/:id/incluir', 'staff', ({ db, id, body }) => nec.includeNeed(db, id, body)],
+    ['POST', '/api/viajes/necesidades/pedido', 'staff', ({ db, body }) => nec.needsToTrip(db, body)],
+    ['GET', '/api/viajes/pedido', 'staff', ({ db }) => viaje.tripView(db)],
+    ['POST', '/api/viajes/pedido/lineas', 'staff', ({ db, body }) => viaje.addTripLine(db, body)],
+    ['PUT', '/api/viajes/pedido/lineas/:id', 'staff', ({ db, id, body }) => viaje.updateTripLine(db, id, body)],
+    ['POST', '/api/viajes/pedido/lineas/:id/quitar', 'staff', ({ db, id, body }) => viaje.removeTripLine(db, id, body)],
+    ['POST', '/api/viajes/pedido/hecho', 'staff', ({ db, body }) => viaje.finishTrip(db, body)],
     ['GET', '/api/almacen/viaje', 'staff', ({ db }) => viaje.tripView(db)],
     ['POST', '/api/almacen/viaje/lineas', 'staff', ({ db, body }) => viaje.addTripLine(db, body)],
     ['POST', '/api/almacen/viaje/sugerido', 'staff', ({ db, body }) => viaje.addSuggested(db, body)],
@@ -167,7 +180,7 @@ export function createHandler({ getDb, env = {}, log = console }) {
       return {
         ...await svc.publicSettings(db),
         bars: await svc.listBars(db),
-        stores: await db.all('SELECT id, name, kind FROM stores ORDER BY sort, id'),
+        stores: await db.all('SELECT * FROM stores ORDER BY sort, id'),
         staffCodeFromEnv: Boolean(env.STAFF_CODE),
         managerPinFromEnv: Boolean(env.MANAGER_PIN),
         staffCodeSet: Boolean(staff),
