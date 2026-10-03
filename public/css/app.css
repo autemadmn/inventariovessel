@@ -327,7 +327,7 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
 .card-main .thumb { border-radius: var(--radius-sm); }
 .card.in-cart .card-main { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); box-shadow: inset 0 0 0 1px var(--accent); }
 .card-name {
-  padding: 0 4px; font-size: 0.8125rem; font-weight: 500; line-height: 1.25; overflow-wrap: break-word; hyphens: auto;
+  padding: 0 4px; font-size: 0.78125rem; font-weight: 500; line-height: 1.25; letter-spacing: -0.005em; overflow-wrap: break-word; hyphens: auto;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .card-main .tag { align-self: flex-start; margin-left: 4px; max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis; font-size: 0.6875rem; }
@@ -566,7 +566,9 @@ select.mini { width: auto; text-align: left; }
 .cat-list li > div:nth-child(2) { flex: 1; min-width: 0; }
 .cat-list li > div:nth-child(2) b { font-weight: 500; margin-right: 4px; }
 .cat-list li.inactive { opacity: 0.55; }
-.cat-list .btns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.cat-list .btns { display: flex; flex: none; justify-content: flex-end; gap: 6px; }
+.cat-photo { min-width: 40px; padding: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .cat-list.unid li { flex-wrap: wrap; }
 .cat-list.unid .btns { flex-basis: 100%; }
 .cat-list.unid .btns .btn { flex: 1; }

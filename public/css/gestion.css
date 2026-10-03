@@ -118,11 +118,18 @@ body.sel-dragging { user-select: none; -webkit-user-select: none; cursor: grabbi
 
 /* ------------------------------------------------------------ Pestañas: Ajustes en el engranaje */
 
-.tabs a.tabs-gear {
-  display: inline-grid; place-items: center; min-width: 44px; margin-left: auto; padding: 0;
+.tabs-bar { display: flex; align-items: stretch; margin: -4px -16px 16px; padding-right: 8px; border-bottom: 1px solid var(--line); }
+.tabs-bar .tabs { flex: 1; min-width: 0; margin: 0; border-bottom: 0; }
+.tabs.more-right { mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+.tabs.more-left { mask-image: linear-gradient(to right, transparent, #000 32px); }
+.tabs.more-left.more-right { mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+.tabs-gear {
+  display: inline-grid; place-items: center; flex: none; min-width: 44px; min-height: 44px;
+  border-bottom: 2px solid transparent; color: var(--muted);
 }
-.tabs a.tabs-gear.on { color: var(--accent); }
-@media (max-width: 500px) { .tabs { gap: 12px; } }
+.tabs-gear:hover { color: var(--text); }
+.tabs-gear.on { color: var(--accent); border-bottom-color: var(--accent); }
+@media (max-width: 500px) { .tabs { gap: 16px; } }
 
 /* ------------------------------------------------------------ Informes */
 

@@ -51,9 +51,9 @@ export function applyPeriodClick(d) {
   return true;
 }
 
-/** «5 cajas + 2», «3 cajas» o «0 cajas + 4». Vacío si no hay botellas por caja. */
+/** «5 cajas + 2», «3 cajas» o, si no llega a una caja, vacío (la cifra grande ya dice las botellas). */
 export function casesLabel(c) {
-  if (!c) return '';
+  if (!c || !c.full) return '';
   const full = plural(c.full, 'caja', 'cajas');
   return c.loose ? `${full} + ${fmt(c.loose)}` : full;
 }

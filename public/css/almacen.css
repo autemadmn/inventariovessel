@@ -254,8 +254,8 @@
   transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 .trip-check:active { transform: scale(0.97); }
-.trip-check.on { border-color: var(--ok); background: var(--ok); color: var(--surface); }
-.trip-check.on .trip-box { border-color: transparent; background: color-mix(in srgb, var(--surface) 22%, transparent); color: var(--surface); }
+.trip-check.on { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.trip-check.on .trip-box { border-color: transparent; background: var(--ok); color: var(--surface); }
 .trip-line.on .trip-name b { color: var(--muted); }
 
 .trip-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 28px; padding: 28px 16px; text-align: center; color: var(--faint); }
@@ -466,11 +466,13 @@
 .shelf-tabs { gap: 4px; margin: 0 0 12px; }
 .shelf-tabs button { flex: none; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--muted); background: var(--surface); font-weight: 500; font-size: 0.875rem; }
 .shelf-tabs button[aria-selected="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-.shelf-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(104px,1fr)); grid-auto-rows: 150px; column-gap: 8px; row-gap: 14px; padding-bottom: 6px; background: repeating-linear-gradient(to bottom,transparent 0,transparent 150px,var(--line-strong) 150px,var(--line-strong) 156px,transparent 156px,transparent 164px); }
+.shelf-grid { --row: 150px; display: grid; grid-template-columns: repeat(auto-fill,minmax(104px,1fr)); grid-auto-rows: var(--row); column-gap: 8px; row-gap: 14px; padding-bottom: 6px; background: repeating-linear-gradient(to bottom,transparent 0,transparent var(--row),var(--line-strong) var(--row),var(--line-strong) calc(var(--row) + 6px),transparent calc(var(--row) + 6px),transparent calc(var(--row) + 14px)); }
+/* En «Contar» no hay cifras: tarjetas más bajas, caben más botellas por pantalla. */
+.shelf-grid[data-mode="contar"] { --row: 132px; }
 .shelf-card { scroll-margin-bottom: calc(var(--shelf-panel-height) + var(--nav-h) + 16px); scroll-margin-top: 120px; position: relative; display: flex; align-items: center; flex-direction: column; justify-content: flex-start; gap: 4px; min-width: 0; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); }
 .shelf-card.selected { border: 2px solid var(--accent); padding: 3px; }
 .thumb.shelf-img { width: 54px; height: 72px; flex: none; }
-.shelf-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; hyphens: auto; font-size: 0.8125rem; font-weight: 500; line-height: 1.2; }
+.shelf-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: break-word; hyphens: auto; font-size: 0.8125rem; font-weight: 500; line-height: 1.2; }
 .shelf-card .tag, .shelf-card small, .shelf-stock { font-size: 0.75rem; max-width: 100%; overflow-wrap: anywhere; white-space: normal; line-height: 1.15; }
 .shelf-card small { color: var(--muted); }
 .shelf-stock { font-weight: 600; }

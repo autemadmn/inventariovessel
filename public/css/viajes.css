@@ -34,7 +34,7 @@
 .agotado-label { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: .75rem; }
 .agotado-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
 .agotado-card b { font-size: .875rem; line-height: 1.3; font-weight: 600; }
-.agotado-card b, .need-name > b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.agotado-card b, .need-name > b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; hyphens: auto; }
 .agotado-card small { font-size: .75rem; font-weight: 500; color: var(--muted); margin-top: auto; }
 .agotados-list { list-style: none; padding: 0; margin: 16px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .agotados-list li { display: grid; grid-template-columns: 44px minmax(0, 1fr) 112px; align-items: center; gap: 8px; min-height: 72px; padding: 12px; }
@@ -116,8 +116,8 @@
 .trip .trip-requested.alm-qty i { font-size: .9375rem; }
 .trip .trip-ctrl { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
 .trip .trip-check { min-height: 56px; justify-content: center; }
-.trip .trip-check.on { color: var(--bg); }
-.trip .trip-check.on .trip-box { color: var(--bg); }
+.trip .trip-check.on { color: var(--ok); }
+.trip .trip-check.on .trip-box { color: var(--surface); }
 .trip-amount { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .trip-amount > small { align-self: center; color: var(--muted); font-size: .8125rem; }
 .trip .trip-qty { flex: 1; justify-content: flex-end; }
