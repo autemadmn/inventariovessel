@@ -10,7 +10,8 @@ import {
   raw, $, html, mount, norm, thumb, toast, buzz, fmt, plural, dateLabel, dateTimeLabel, dialog, confirmDialog, formDialog,
 } from '../ui.js';
 import { icon } from '../icons.js';
-import { renderViaje, apuntar } from './viaje.js';
+import { apuntar } from './viaje.js';
+import { createNeedEditor, needControl, needHint, noCaseWarning } from './viajes.js';
 import { renderEntrada } from './entrada.js';
 import { renderControl } from './control.js';
 import { renderMapa } from './mapa.js';
@@ -30,7 +31,6 @@ export function renderAlmacen(root, rest = []) {
     return renderDetalle(root, rest[1], 'in');
   }
   if (rest[0] === 'contar') return renderContar(root, rest[1]);
-  if (rest[0] === 'viaje') return renderViaje(root);
   if (rest[0] === 'entrada') return renderEntrada(root);
   if (rest[0] === 'control') return renderControl(root);
   if (rest[0] === 'out') {
@@ -128,7 +128,7 @@ function renderLista(root, scope) {
   mount(root, html`
     <section class="alm" id="alm">
       ${scope === 'in' ? html`<a class="inf-back" href="#/almacen/in">${raw(icon('left',{size:18}))} In Vessel</a><h1 class="alm-title">Todo In Vessel</h1>` : storeSeg('out')}
-      <a class="alm-trip" id="alm-trip" href="#/almacen/viaje">${tripButton()}</a>
+      <a class="alm-trip" id="alm-trip" href="#/viajes/pedido">${tripButton()}</a>
       <div class="alm-top-actions">
         <a class="btn primary" href="${scope === 'out' ? '#/almacen/contar/out' : '#/almacen/contar'}">
           ${raw(icon('clipboard-list', { size: 20 }))}${countSession() ? 'Seguir contando' : 'Contar'}</a>
@@ -275,13 +275,22 @@ function renderDetalle(root, rawId, storeId) {
 
   let r = null;
   let requestId = 0;
-  const draw = () => mount(el, detailView(r));
+  const draw = () => {
+    if (!el.isConnected || !r) return;
+    const focused = document.activeElement;
+    const step = el.contains(focused) ? focused.dataset.needStep : undefined;
+    const edit = el.contains(focused) ? focused.dataset.needEdit : undefined;
+    mount(el, detailView(r));
+    if (step !== undefined || edit !== undefined) {
+      el.querySelector(step !== undefined ? `[data-need-step="${step}"]` : '[data-need-edit]')?.focus({ preventScroll: true });
+    }
+  };
 
   const refresh = async () => {
     const request = ++requestId;
     try {
       const result = await get(`/api/almacen/botella/${id}${storeId ? `?store=${storeId}` : ''}`);
-      if (request !== requestId || !el.isConnected) return;
+      if (request !== requestId || !el.isConnected || needEditor.pending) return;
       r = result;
       draw();
     } catch (err) {
@@ -291,10 +300,22 @@ function renderDetalle(root, rawId, storeId) {
     }
   };
 
+  const needEditor = createNeedEditor({
+    lineOf: () => r?.need, draw,
+    saved: (line, pending) => {
+      r.need = pending === undefined ? line : { ...line, qty: pending, adjusted: pending !== (line.recommended ?? 0) };
+      draw();
+    }, conflict: refresh,
+  });
   el.addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t || !r) return;
     try {
+      if (t.dataset.needStep !== undefined || t.dataset.needEdit !== undefined) {
+        await needEditor.handle(t);
+        return;
+      }
+      if (!await needEditor.flushAll()) return;
       if (t.dataset.broken !== undefined) {
         const res = await breakage(r);
         if (!res) return;
@@ -319,7 +340,7 @@ function renderDetalle(root, rawId, storeId) {
         const qty = await askQty({
           title: 'Apuntar para el viaje',
           product: p,
-          initial: r.suggested > 0 ? r.suggested : p.per_case > 0 ? p.per_case : 1,
+          initial: r.need?.qty > 0 ? r.need.qty * (r.need.unit === 'cajas' ? p.per_case : 1) : r.suggested > 0 ? r.suggested : p.per_case > 0 ? p.per_case : 1,
           hint: r.suggested > 0 ? `Sugerido: ${stockText(r.suggested, p.per_case)}` : '',
           ok: 'Apuntar',
         });
@@ -327,13 +348,16 @@ function renderDetalle(root, rawId, storeId) {
         if (await apuntar(p.id, qty)) await refresh();
       }
     } catch (err) {
-      toast(err.message, 'error');
+      toast(err.message, err.status === 409 ? 'info' : 'error');
+      if (err.status === 409) refresh();
     }
   });
 
   const unsub = onStockChange(refresh);
   refresh();
-  return () => unsub();
+  const online = async () => { if (await needEditor.flushAll()) refresh(); };
+  window.addEventListener('online', online);
+  return () => { unsub(); requestId++; window.removeEventListener('online', online); return needEditor.cleanup(); };
 }
 
 function detailView(r) {
@@ -369,11 +393,12 @@ function detailView(r) {
     ${countResultView(r.result)}
     ${r.store.key === 'in' ? html`<h2 class="section-title">Por punto</h2><ul class="point-list">${(r.by_point ?? []).map((s) => html`<li><a href="#/almacen/in/${s.key}/botella/${p.id}"><span><b>${s.name}</b><small>${s.controlled ? stockText(s.stock,p.per_case) : 'Sin contar'}</small></span>${raw(icon('right'))}</a></li>`)}</ul>` : ''}
 
+    ${r.need ? html`<section class="detail-need" aria-label="Próximo viaje"><div class="detail-need-main"><div><h2>Próximo viaje</h2>${needHint(r.need)}</div>${needControl(r.need)}</div>${r.need.unit === 'botellas' ? noCaseWarning() : ''}</section>` : ''}
     <div class="alm-actions">
       ${r.store.key !== 'in' ? html`<button type="button" class="btn primary" data-count-one>${raw(icon('clipboard-list', { size: 20 }))} Contar esta botella</button>` : ''}
       ${r.store.type ? html`<button type="button" class="btn ghost" data-move>${raw(icon('arrow-left-right'))} Mover a…</button>` : ''}
       ${r.in_trip > 0 ? html`
-        <a class="btn ghost alm-in-trip" href="#/almacen/viaje">${raw(icon('truck', { size: 20 }))}
+        <a class="btn ghost alm-in-trip" href="#/viajes/pedido">${raw(icon('truck', { size: 20 }))}
           <span>Ya en el viaje: <b>${stockText(r.in_trip, p.per_case)}</b></span></a>`
     : html`<button type="button" class="btn ghost" data-trip>${raw(icon('truck', { size: 20 }))} Apuntar para el viaje</button>`}
       ${r.store.type ? html`
@@ -528,22 +553,22 @@ async function countOne(p, storeId) {
  * Devuelve las botellas elegidas, o null si se cancela o no es válido.
  */
 export async function askQty({
-  title, product, initial = 0, hint = '', ok = 'Guardar', min = 1,
+  title, product, initial = 0, hint = '', ok = 'Guardar', min = 1, max = 10000, unit = null,
 }) {
-  const p = product ?? { per_case: null };
+  const p = unit ? { per_case: null } : product ?? { per_case: null };
   const data = await dialog({
     title,
     body: html`
       ${product ? html`<div class="cnt-mini">${thumb(product, 'sm')}<b>${product.name}</b></div>` : ''}
-      ${countFields(p, initial)}
+      ${unit ? html`<div class="cnt-fields">${countField('bottles', unit, '', initial)}</div>` : countFields(p, initial)}
       ${hint ? html`<p class="alm-sheet-hint">${hint}</p>` : ''}`,
     actions: [{ label: 'Cancelar', value: '' }, { label: ok, submit: true, kind: 'primary' }],
     onMount: (dlg) => bindCountFields(dlg, () => p),
   });
   if (!data || typeof data !== 'object') return null;
   const qty = countedQty(p, data);
-  if (qty === null) {
-    toast('Como mucho 10.000 botellas', 'error');
+  if (qty === null || qty > max) {
+    toast(`Como mucho ${fmt(max)} ${unit ? unit.toLowerCase() : 'botellas'}`, 'error');
     return null;
   }
   if (qty < min) {

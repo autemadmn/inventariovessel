@@ -14,6 +14,14 @@ import { migrationFiles } from '../server/db-pglite.js';
 import * as svc from '../server/services.js';
 import * as viaje from '../server/viaje.js';
 import * as alm from '../server/almacen.js';
+import * as nec from '../server/necesidades.js';
+
+// Simula un móvil que acaba de leer la unidad del producto.
+async function setNeed(db, id, body, options) {
+  const p = await db.get('SELECT per_case FROM products WHERE id = ?', id);
+  return nec.setNeed(db, id, { unit: p?.per_case ? 'cajas' : 'botellas',
+    per_case: p?.per_case ?? null, ...body }, options);
+}
 
 const URL = process.env.TEST_DATABASE_URL;
 const NIGHT = new Date('2026-09-26T21:00:00Z');
@@ -106,4 +114,23 @@ test('concurrencia real en Postgres', { skip: !URL && 'sin TEST_DATABASE_URL' },
   assert.equal(counts[1].expected, 30);
   assert.equal(counts[2].expected, counts[1].qty);
   assert.deepEqual(counts.slice(1).map((c) => c.qty).sort((x, y) => x - y), [26, 28]);
+
+  // Dos móviles pasan el mismo ticket al pedido con claves independientes.
+  // Las necesidades manuales no dependen del consumo de las rondas anteriores.
+  await setNeed(a, roku, { qty: 2, by: 'Ana' }, { now: later(1442) });
+  await setNeed(a, skyy, { qty: 3, by: 'Ana' }, { now: later(1442) });
+  const tickets = await Promise.all([
+    nec.needsToTrip(a, { key: 'pg-ticket-a', by: 'Ana' }, { now: later(1443) }),
+    nec.needsToTrip(b, { key: 'pg-ticket-b', by: 'Luis' }, { now: later(1443) }),
+  ]);
+  assert.equal(tickets.reduce((n, r) => n + r.added, 0), 2);
+  assert.equal(tickets[0].trip_id, tickets[1].trip_id);
+  const pedido = await viaje.tripView(a, { now: later(1443) });
+  assert.equal(pedido.count, 2);
+  assert.equal(new Set(pedido.lines.map((l) => l.product_id)).size, 2);
+  assert.equal((await a.get("SELECT COUNT(*)::int AS n FROM need_adjustments WHERE status = 'activo'")).n, 0);
+  const replay = await nec.needsToTrip(b, { key: 'pg-ticket-a', by: 'Ana' }, { now: later(1444) });
+  assert.deepEqual(replay.lines, tickets[0].lines);
+  assert.equal(replay.added, tickets[0].added);
+  assert.equal((await viaje.tripView(a)).count, 2);
 });

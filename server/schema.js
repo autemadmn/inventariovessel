@@ -26,7 +26,7 @@ Object.defineProperty(DEFAULT_SETTINGS, 'trip_weeks', { value: '2', enumerable: 
 
 export const REQUIRED_TABLES = ['settings', 'bars', 'product_groups', 'products', 'photos', 'sessions',
   'request_lines', 'deliveries', 'stockouts', 'audit', 'purchase_lists', 'staff',
-  'stores', 'stock_counts', 'stock_moves', 'trips', 'trip_lines', 'stock_operations'];
+  'stores', 'stock_counts', 'stock_moves', 'trips', 'trip_lines', 'stock_operations', 'need_adjustments'];
 
 /** Comprueba que las migraciones se han aplicado. Si no, 503 con un mensaje claro. */
 export async function checkSchema(db) {

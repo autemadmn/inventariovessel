@@ -1,5 +1,5 @@
 // Importa la copia JSON que exporta la app (/api/backup) en una base Postgres
-// ya migrada (0001 a 0005). Sirve para copias antiguas (SQLite/D1, con
+// ya migrada (0001 a 0006). Sirve para copias antiguas (SQLite/D1, con
 // `habitual`, sin slugs, grupos ni personal) y para copias nuevas.
 // Sustituye todos los datos; los códigos de acceso de la base no se tocan.
 import { CATEGORIES, INITIAL_GROUPS, INITIAL_STAFF, INITIAL_STORES, defaultMainKey, slugify } from './catalog.js';
@@ -8,9 +8,9 @@ const DROP_SETTINGS = new Set(['schema_version', 'habitual_init', 'seeded', 'sta
 
 // Orden de inserción (padres antes que hijos). Se borra en orden inverso.
 const ORDER = ['bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines', 'deliveries',
-  'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves', 'stock_operations'];
+  'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'need_adjustments', 'stock_counts', 'stock_moves', 'stock_operations'];
 
-const OPERATION_TABLES = ['sessions', 'request_lines', 'deliveries', 'purchase_lists', 'stock_counts', 'stock_moves', 'trips'];
+const OPERATION_TABLES = ['sessions', 'request_lines', 'deliveries', 'purchase_lists', 'stock_counts', 'stock_moves', 'trips', 'need_adjustments'];
 
 async function columnsOf(t, table) {
   return (await t.all(`SELECT column_name FROM information_schema.columns
@@ -112,7 +112,7 @@ export async function importBackup(db, data, { force = false, now = new Date() }
       deliveries: (src.deliveries ?? []).map(({ from_store_id, ...d }) => ({ ...d,
         ...(!legacyPoints ? { from_store_id } : {}), event_order: d.event_order ?? 0 })),
       stockouts: src.stockouts ?? [], audit: src.audit ?? [], purchase_lists: src.purchase_lists ?? [],
-      trips: src.trips ?? [], trip_lines: src.trip_lines ?? [],
+      trips: src.trips ?? [], trip_lines: src.trip_lines ?? [], need_adjustments: src.need_adjustments ?? [],
       stock_counts: (src.stock_counts ?? []).map(c=>({...c,event_order:c.event_order ?? 0})),
       stock_moves: (src.stock_moves ?? []).map(m=>({...m,event_order:m.event_order ?? 0})),
       stock_operations: src.stock_operations ?? [],

@@ -1545,7 +1545,7 @@ export async function deletePurchase(db, id, { by, now } = {}) {
 // ---------------------------------------------------------------- copia de seguridad
 
 export const BACKUP_TABLES = ['settings', 'bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines',
-  'deliveries', 'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves', 'stock_operations'];
+  'deliveries', 'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves', 'stock_operations', 'need_adjustments'];
 
 /** Copia completa de los datos en JSON (sin los códigos de acceso ni las fotos propias). */
 export async function exportData(db, { now } = {}) {

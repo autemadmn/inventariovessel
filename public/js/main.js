@@ -5,14 +5,17 @@ import { renderPedir } from './views/pedir.js';
 import { renderReponer } from './views/reponer.js';
 import { renderGestion } from './views/gestion.js';
 import { renderAlmacen, flushCounts } from './views/almacen.js';
+import { renderViajes } from './views/viajes.js';
 
 const main = $('#main');
 let current = null; // { name, cleanup }
+let navigationId = 0;
 
 const ROUTES = {
   pedir: renderPedir,
   reponer: renderReponer,
   almacen: renderAlmacen,
+  viajes: renderViajes,
   gestion: renderGestion,
 };
 
@@ -22,8 +25,15 @@ function route() {
 }
 
 async function navigate() {
-  const { name, rest } = route();
-  current?.cleanup?.();
+  const navigation = ++navigationId;
+  let { name, rest } = route();
+  if (name === 'almacen' && rest[0] === 'viaje') {
+    history.replaceState(null, '', '#/viajes/pedido');
+    name = 'viajes';
+    rest = ['pedido'];
+  }
+  await current?.cleanup?.();
+  if (navigation !== navigationId) return;
   for (const a of document.querySelectorAll('.nav a')) a.classList.toggle('active', a.dataset.route === name);
   document.body.dataset.view = name;
   current = { name, cleanup: await ROUTES[name](main, rest) };

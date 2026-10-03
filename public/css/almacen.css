@@ -1,8 +1,8 @@
 /* Almacén: stock de cada almacén, detalle de botella, modo «Contar», próximo viaje y entradas.
    Misma lista visual que Informes (gestion.css) y los tokens de app.css (claro y oscuro). */
 
-/* Cuatro pestañas en la barra inferior: Pedir, Reponer, Almacén y Gestión. */
-.nav { grid-template-columns: repeat(4, minmax(0, 150px)); }
+/* Pedir, Reponer, Almacén, Viajes y Gestión. */
+.nav { grid-template-columns: repeat(5, minmax(0, 120px)); }
 
 /* ------------------------------------------------------------ lista */
 

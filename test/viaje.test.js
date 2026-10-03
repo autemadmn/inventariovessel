@@ -36,13 +36,14 @@ test('sugerencias: cajas, tope, descuento, retirada y semanas con actividad', as
   await count(db, a, 2);
   await weekly(db, a);
   await weekly(db, b, 1);
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 6);
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 1, 'las reposiciones recibidas aportan stock conocido aunque no haya recuento');
+  // fase-2.md: solo cuenta el recuento del punto principal, nunca el stock de las barras.
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 12);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), undefined);
   await count(db, b, 0);
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 1);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(b), 3);
   await count(db, a, 20, 2);
   await viaje.addTripLine(db, { product_id: a, qty_planned: 6 }, { now: NOW });
-  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), undefined);
+  assert.equal((await alm.suggestions(db, { now: NOW })).get(a), 6, 'el pedido descuenta 6, quedan 3 × 3 − 2 − 6 botellas por cubrir');
   await count(db, a, 5, 2);
   assert.equal((await alm.suggestions(db, { now: NOW })).get(a), undefined);
   const view = await viaje.addSuggested(db, {}, { now: NOW });
@@ -112,6 +113,40 @@ test('viaje abierto único, edición, retirada y viaje sin cargados', async (t) 
   const done = await viaje.finishTrip(db, { trip_id: two.trip.id }, { now: NOW });
   assert.equal(done.next_trip_id, null);
   assert.equal(await viaje.openTripSummary(db), null);
+});
+
+test('cantidad cargada editable: marca, conserva lo real y llega al principal; notas sin cantidad', async (t) => {
+  const { db, product } = await setup(t);
+  const a = await product('larios-12'), b = await product('skyy');
+  await db.run('UPDATE products SET main_store_id = 4 WHERE id = ?', a);
+  await count(db, a, 0, 4);
+  const planned = await viaje.addTripLine(db, { product_id: a, qty_planned: 18 }, { now: NOW });
+  assert.equal(planned.added.category, 'ginebra');
+  await viaje.addTripLine(db, { product_id: b, qty_planned: 3 }, { now: NOW });
+  const note = await viaje.addTripLine(db, { text: 'algo más' }, { now: NOW });
+  assert.equal(note.added.category, null);
+  for (const qty_loaded of [0, -1, 1.5, null, 10001]) {
+    await assert.rejects(viaje.updateTripLine(db, planned.added.id, { qty_loaded }, { now: NOW }), (e) => e.status === 400);
+  }
+  await assert.rejects(viaje.updateTripLine(db, note.added.id, { qty_loaded: 1 }, { now: NOW }),
+    (e) => e.status === 400 && e.message === 'Una nota no lleva cantidad.');
+  await assert.rejects(viaje.updateTripLine(db, planned.added.id, { qty_loaded: 10, checked: 0 }, { now: NOW }),
+    (e) => e.status === 400 && e.message === 'Cargado no válido.');
+  await assert.rejects(viaje.updateTripLine(db, planned.added.id, {}, { now: NOW }),
+    (e) => e.status === 400 && e.message === 'No hay cambios.');
+  const loaded = await viaje.updateTripLine(db, planned.added.id, { qty_loaded: 10, by: 'Ana' }, { now: NOW });
+  const row = loaded.lines.find((l) => l.id === planned.added.id);
+  assert.deepEqual([row.checked, row.qty_loaded, row.qty_planned], [1, 10, 18]);
+  const kept = await viaje.updateTripLine(db, row.id, { checked: 1 }, { now: NOW });
+  assert.equal(kept.lines.find((l) => l.id === row.id).qty_loaded, 10, 'remarcar conserva la carga real');
+  const audit = await db.get("SELECT after FROM audit WHERE action = 'viaje_editar' ORDER BY id DESC LIMIT 1");
+  assert.equal(JSON.parse(audit.after).qty_loaded, 10);
+  const done = await viaje.finishTrip(db, { trip_id: planned.trip.id }, { now: at(1) });
+  assert.equal(done.carried, 2, 'solo pasan las líneas sin marcar, nunca la diferencia de carga');
+  const move = await db.get('SELECT qty, to_store_id FROM stock_moves WHERE trip_id = ?', planned.trip.id);
+  assert.deepEqual(move, { qty: 10, to_store_id: 4 });
+  await assert.rejects(viaje.finishTrip(db, { trip_id: planned.trip.id }, { now: at(2) }), (e) => e.status === 409);
+  await assert.rejects(viaje.updateTripLine(db, row.id, { qty_loaded: 9 }, { now: at(2) }), (e) => e.status === 409);
 });
 
 test('entradas, central total, ajustes, API y copia de seguridad', async (t) => {
