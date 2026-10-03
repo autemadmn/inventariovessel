@@ -52,6 +52,7 @@ export function renderEstanteria(root, point) {
     if (!cats.some(([id]) => id === category)) category = cats[0]?.[0] ?? null;
     mount(el.querySelector('.shelf-tabs'), html`${cats.map(([id,name]) => html`<button type="button" role="tab" id="shelf-tab-${id}" aria-controls="shelf-grid" aria-selected="${String(category===id)}" tabindex="${category===id ? 0 : -1}" data-cat="${id}">${name}</button>`)}`);
     const grid = el.querySelector('#shelf-grid');
+    grid.dataset.mode = mode;
     if (category) grid.setAttribute('aria-labelledby', `shelf-tab-${category}`);
     else grid.removeAttribute('aria-labelledby');
     const empty = point.map_key === 'chupiteria' ? 'Añade con el botón de abajo las botellas que guardas aquí, o da de alta cervezas en Gestión › Catálogo.'

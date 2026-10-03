@@ -7,8 +7,9 @@ import {
 } from '../api.js';
 import { state, loadBootstrap, inVesselPoints, pointByKey } from '../state.js';
 import {
-  html, mount, thumb, toast, formDialog, resizeImage, norm,
+  html, raw, mount, thumb, toast, formDialog, resizeImage, norm,
 } from '../ui.js';
+import { icon } from '../icons.js';
 
 let q = '';
 
@@ -53,7 +54,7 @@ export async function renderCatalogo(root) {
     p.per_case ? `${p.per_case} por caja` : ''].filter(Boolean).join(' · ')}</small>
               </div>
               <div class="btns">
-                <label class="btn small ${p.photo ? 'ghost' : ''}">${p.photo ? 'Cambiar foto' : 'Foto'}
+                <label class="btn small ghost cat-photo" title="${p.photo ? 'Cambiar foto' : 'Añadir foto'}">${raw(icon('camera', { size: 18 }))}<span class="sr-only">${p.photo ? 'Cambiar foto' : 'Añadir foto'}</span>
                   <input type="file" accept="image/*" capture="environment" data-photo="${p.id}" hidden></label>
                 <button type="button" class="btn small ghost" data-edit="${p.id}">Editar</button>
               </div>

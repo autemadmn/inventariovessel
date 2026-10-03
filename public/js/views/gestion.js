@@ -50,14 +50,22 @@ export async function renderGestion(root, [tab, ...rest]) {
   const current = ROUTES.find((t) => t[0] === tab) ?? TABS[0];
   mount(root, html`
     <section class="gestion">
-      <nav class="tabs" aria-label="Secciones de Gestión">${TABS.map(([id, label]) => html`
+      <div class="tabs-bar"><nav class="tabs" aria-label="Secciones de Gestión">${TABS.map(([id, label]) => html`
         <a href="#/gestion/${id}" class="${id === current[0] ? 'on' : ''}" ${id === current[0] ? raw('aria-current="page"') : ''}>${label}</a>`)}
-        <a href="#/gestion/ajustes" class="tabs-gear ${current[0] === 'ajustes' ? 'on' : ''}" ${current[0] === 'ajustes' ? raw('aria-current="page"') : ''} aria-label="Ajustes" title="Ajustes">${raw(icon('settings'))}</a>
       </nav>
+        <a href="#/gestion/ajustes" class="tabs-gear ${current[0] === 'ajustes' ? 'on' : ''}" ${current[0] === 'ajustes' ? raw('aria-current="page"') : ''} aria-label="Ajustes" title="Ajustes">${raw(icon('settings'))}</a></div>
       <div id="tab"></div>
     </section>`);
   // Si las pestañas no caben, se deja la activa a la vista.
+  const tabs = $('.tabs');
   $('.tabs a.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  // Fundido en el borde que tiene más pestañas fuera de la vista.
+  const edges = () => {
+    tabs.classList.toggle('more-left', tabs.scrollLeft > 2);
+    tabs.classList.toggle('more-right', tabs.scrollLeft + tabs.clientWidth < tabs.scrollWidth - 2);
+  };
+  tabs.addEventListener('scroll', edges, { passive: true });
+  edges();
   try {
     return await current[2]($('#tab'), rest);
   } catch (err) {
