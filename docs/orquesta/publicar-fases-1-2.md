@@ -18,9 +18,24 @@ Si en «dueno» sale siempre el mismo nombre, sigue. Si no, para.
 ## 2 · Supabase: migraciones 0005 y 0006 juntas
 
 New query, pega todo esto y pulsa **Run**. Va entero o no va: si algo falla, no cambia nada.
+Al principio se hace pasar por el dueño de las tablas (el usuario de la app), porque el editor de
+Supabase entra con otro usuario y sin eso da «must be owner of table stores».
 
 ```sql
 BEGIN;
+-- Actúa como el dueño de las tablas de la app (el usuario de Cloudflare).
+DO $$
+DECLARE dueno text;
+BEGIN
+  SELECT tableowner INTO dueno FROM pg_tables WHERE schemaname = 'vessel_reposicion' AND tablename = 'stores';
+  IF dueno IS NULL THEN RAISE EXCEPTION 'No encuentro la tabla vessel_reposicion.stores'; END IF;
+  IF dueno <> current_user THEN
+    IF NOT pg_has_role(current_user, dueno, 'USAGE') THEN
+      EXECUTE format('GRANT %I TO %I', dueno, current_user);
+    END IF;
+    EXECUTE format('SET LOCAL ROLE %I', dueno);
+  END IF;
+END $$;
 SET LOCAL search_path TO vessel_reposicion;
 
 -- Fase 1: puntos de In Vessel. Idempotente; no borra datos ni historia.
