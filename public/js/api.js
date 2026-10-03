@@ -62,6 +62,21 @@ export const post = (path, body, opts = {}) => api(path, { ...opts, method: 'POS
 export const put = (path, body, opts = {}) => api(path, { ...opts, method: 'PUT', body });
 export const del = (path, opts = {}) => api(path, { ...opts, method: 'DELETE' });
 
+// Conserva la clave si se pierde la respuesta; volver a guardar los mismos
+// datos desde este dispositivo reintenta la operación original.
+export async function postStock(path, body) {
+  const slot = `stockRetry:${path}`;
+  const payload = JSON.stringify(body);
+  let pending = store.get(slot);
+  if (!pending || pending.payload !== payload) {
+    pending = { payload, key: crypto.randomUUID() };
+    store.set(slot, pending);
+  }
+  const result = await post(path, { ...body, key: pending.key });
+  store.set(slot, null);
+  return result;
+}
+
 // Atajos para la zona de gestión (envían el PIN).
 export const mget = (path) => api(path, { manager: true });
 export const mpost = (path, body) => api(path, { manager: true, method: 'POST', body });

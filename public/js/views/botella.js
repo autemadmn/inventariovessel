@@ -219,13 +219,15 @@ async function addManual(r, products) {
   const night = r.range.to > state.date ? state.date : r.range.to;
   const data = await formDialog('Añadir reposición olvidada', html`
     <label class="field"><span>Noche</span><input name="date" type="date" value="${night}" max="${state.date}" required></label>
+    <label class="field"><span>Fecha y hora efectiva (hora de este dispositivo)</span><input name="delivered_at" type="datetime-local" required></label>
+    <p class="muted small">La hora debe corresponder a la noche elegida, con el corte de las 12:00 en Madrid.</p>
     <label class="field"><span>Botella</span><select name="product_id">${productOptions(products, r.product.id)}</select></label>
     <label class="field"><span>Barra</span><select name="bar_id">${barOptions(state.bars[0]?.id)}</select></label>
     <label class="field"><span>Botellas</span><input name="qty" type="number" min="1" max="999" inputmode="numeric" value="1" required></label>
     <label class="field"><span>Motivo</span><input name="reason" maxlength="300" required placeholder="Ej.: no se anotó durante la noche"></label>`);
   if (!data) return false;
   await mpost('/api/deliveries', {
-    ...data, qty: Number(data.qty), bar_id: Number(data.bar_id), product_id: Number(data.product_id), by: state.who,
+    ...data, delivered_at: new Date(data.delivered_at).toISOString(), qty: Number(data.qty), bar_id: Number(data.bar_id), product_id: Number(data.product_id), by: state.who,
   });
   toast('Reposición añadida');
   return true;

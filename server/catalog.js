@@ -8,6 +8,9 @@ export const CATEGORIES = [
   { id: 'whisky', name: 'Whiskies' },
   { id: 'ron', name: 'Rones' },
   { id: 'tequila', name: 'Tequila' },
+  { id: 'cerveza', name: 'Cervezas' },
+  { id: 'refresco', name: 'Refrescos' },
+  { id: 'vino', name: 'Vinos' },
   { id: 'otros', name: 'Otros / sin clasificar' },
 ];
 
@@ -159,9 +162,22 @@ export const INITIAL_GROUPS = ['Habituales', 'Resto'];
 
 export const INITIAL_STAFF = ['Carlos', 'Sergio', 'Alejandro'];
 export const INITIAL_STORES = [
-  { id: 1, name: 'In Vessel', kind: 'local', sort: 10 },
-  { id: 2, name: 'Out Vessel', kind: 'central', sort: 20 },
+  { id: 1, name: 'Almacén alcohol', kind: 'local', sort: 10, point_type: 'almacen', map_key: 'alm-alcohol', bar_id: null, in_vessel: 1 },
+  { id: 3, name: 'Nevera de vino', kind: 'local', sort: 11, point_type: 'nevera', map_key: 'nevera-vino', bar_id: null, in_vessel: 1 },
+  { id: 4, name: 'Almacén cerveza y refrescos', kind: 'local', sort: 12, point_type: 'almacen', map_key: 'alm-cerveza', bar_id: null, in_vessel: 1 },
+  { id: 5, name: 'Neveras de cerveza', kind: 'local', sort: 13, point_type: 'nevera', map_key: 'neveras-cerveza', bar_id: null, in_vessel: 1 },
+  { id: 6, name: 'Neveras cerveza especial', kind: 'local', sort: 14, point_type: 'nevera', map_key: 'neveras-especial', bar_id: null, in_vessel: 1 },
+  { id: 7, name: 'Nevera chupitería', kind: 'local', sort: 15, point_type: 'nevera', map_key: 'chupiteria', bar_id: null, in_vessel: 1 },
+  { id: 8, name: 'Barra 1', kind: 'local', sort: 16, point_type: 'barra', map_key: 'barra-1', bar_id: 1, in_vessel: 1 },
+  { id: 9, name: 'Barra 2', kind: 'local', sort: 17, point_type: 'barra', map_key: 'barra-2', bar_id: 2, in_vessel: 1 },
+  { id: 10, name: 'Barra VIP', kind: 'local', sort: 18, point_type: 'barra', map_key: 'barra-vip', bar_id: null, in_vessel: 1 },
+  { id: 2, name: 'Out Vessel', kind: 'central', sort: 20, point_type: null, map_key: null, bar_id: null, in_vessel: 0 },
 ];
+export const POINT_KEYS = INITIAL_STORES.filter((s) => s.in_vessel).map((s) => s.map_key);
+export const SHELF_ORDER = ['ginebra', 'ron', 'vodka', 'whisky', 'tequila', 'cerveza', 'refresco', 'vino', 'otros'];
+export function defaultMainKey(category) {
+  return ['cerveza', 'refresco'].includes(category) ? 'alm-cerveza' : category === 'vino' ? 'nevera-vino' : 'alm-alcohol';
+}
 
 /**
  * Identificador estable de un producto (nombre del archivo de su imagen).

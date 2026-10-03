@@ -131,6 +131,11 @@ export const localStore = () => state.stores.find((s) => s.kind === 'local') ?? 
 /** Almacén grande, fuera del local (de donde salen los viajes en coche). */
 export const centralStore = () => state.stores.find((s) => s.kind === 'central') ?? null;
 
+export const outStore = centralStore;
+export const inVesselPoints = () => state.stores.filter((s) => s.in_vessel === 1).sort((a, b) => a.sort - b.sort);
+export const pointByKey = (key) => inVesselPoints().find((s) => s.map_key === key) ?? null;
+export const POINT_TYPE_LABEL = { almacen: 'Almacén', nevera: 'Nevera', barra: 'Barra' };
+
 export const storeById = (id) => state.stores.find((s) => s.id === Number(id)) ?? null;
 
 /** Botellas en el almacén del local, o null si esa botella no se ha contado nunca. */

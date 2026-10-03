@@ -10,19 +10,21 @@
 //
 // Orden global de bloqueos (nunca al revés, para evitar interbloqueos):
 // sessions → request_lines (id asc.) → deliveries → product_groups (id asc.)
-// → products (id asc.) → staff → settings (catalog_rev, siempre al final).
+// → products (id asc.) → bars (id asc.) → stores (id asc.) → staff
+// → settings (catalog_rev, siempre al final).
 //
 // Dentro de db.tx(async (t) => …) se usa SOLO `t`: usar `db` bloquearía.
 
-import { CATEGORIES, slugify } from './catalog.js';
+import { CATEGORIES, defaultMainKey, slugify } from './catalog.js';
 import { DEFAULT_SETTINGS } from './schema.js';
 import { HttpError } from './errors.js';
 import {
   addDays, businessDate, datesBetween, daysBetween, isYmd, periodRange, previousPeriodDate, shortDate, weekday, weekStart,
 } from './dates.js';
 import { computeForecast, computePurchase } from '../public/js/shared/forecast.js';
-import { liveStock } from './almacen.js';
+import { liveStock, MAIN_STORE_SQL, mainStoreId } from './almacen.js';
 import { openTripSummary } from './viaje.js';
+import { quantity as posInt } from './stock-operation.js';
 
 export { HttpError };
 
@@ -33,14 +35,6 @@ const nowIso = (now) => (now ?? new Date()).toISOString();
 const clean = (s, max = 80) => (typeof s === 'string' ? s.trim().slice(0, max) : '') || null;
 const sum = (list, f) => list.reduce((a, x) => a + f(x), 0);
 const marks = (list) => list.map(() => '?').join(', ');
-
-function posInt(v, what, { allowZero = false } = {}) {
-  const n = Number(v);
-  if (!Number.isInteger(n) || n < (allowZero ? 0 : 1) || n > 10000) {
-    throw bad(`${what}: debe ser un número entero${allowZero ? '' : ' mayor que 0'}.`);
-  }
-  return n;
-}
 
 export function audit(t, { actor, entity, entityId, action, before, after, reason, now }) {
   return t.run(`INSERT INTO audit (at, actor, entity, entity_id, action, before, after, reason)
@@ -68,7 +62,7 @@ export async function catalogRev(db) {
 export async function getSettings(db) {
   const out = { trip_weeks: DEFAULT_SETTINGS.trip_weeks, ...DEFAULT_SETTINGS };
   for (const { key, value } of await db.all('SELECT key, value FROM settings')) out[key] = value;
-  return out;
+  return { ...out, timezone: 'Europe/Madrid', cutoff_hour: '12' };
 }
 
 function toPublic(s) {
@@ -88,15 +82,6 @@ export async function publicSettings(db) {
 }
 
 const EDITABLE_SETTINGS = {
-  timezone: (v) => {
-    try {
-      new Intl.DateTimeFormat('es', { timeZone: v });
-    } catch {
-      throw bad('Zona horaria no válida.');
-    }
-    return v;
-  },
-  cutoff_hour: (v) => String(posInt(v, 'Hora de corte', { allowZero: true }) % 24),
   safety_pct: (v) => String(posInt(v, 'Margen de seguridad', { allowZero: true })),
   low_data_nights: (v) => String(posInt(v, 'Mínimo de noches')),
   min_nights_per_weekday: (v) => String(posInt(v, 'Noches por día de la semana')),
@@ -111,6 +96,9 @@ const EDITABLE_SETTINGS = {
 };
 
 export async function updateSettings(db, patch, { by, now } = {}) {
+  for (const [key, value] of [['timezone', 'Europe/Madrid'], ['cutoff_hour', '12']]) {
+    if (patch[key] !== undefined && String(patch[key]) !== value) throw bad('La noche de trabajo usa Europe/Madrid y el corte de las 12:00.');
+  }
   const before = await getSettings(db);
   const stmts = [];
   const changed = {};
@@ -127,6 +115,7 @@ export async function updateSettings(db, patch, { by, now } = {}) {
       const name = clean(bar.name, 40);
       if (!name) throw bad('El nombre de la barra no puede estar vacío.');
       stmts.push(['UPDATE bars SET name = ? WHERE id = ?', name, Number(bar.id)]);
+      stmts.push(['UPDATE stores SET name = ? WHERE bar_id = ?', name.slice(0, 40), Number(bar.id)]);
     }
     changed.bars = patch.bars;
   }
@@ -140,14 +129,28 @@ export async function updateSettings(db, patch, { by, now } = {}) {
       if (ids.has(id) || !await db.get('SELECT id FROM stores WHERE id = ?', id)) throw bad('Almacén no válido.');
       ids.add(id);
       stmts.push(['UPDATE stores SET name = ? WHERE id = ?', name, id]);
+      stmts.push(['UPDATE bars SET name = ? WHERE id = (SELECT bar_id FROM stores WHERE id = ?)', name, id]);
     }
     changed.stores = patch.stores;
   }
   if (stmts.length) {
     const hide = (o) => ({ ...o, staff_code: o.staff_code ? '••••' : '', manager_pin: o.manager_pin ? '••••' : '' });
     await db.tx(async (t) => {
+      if (patch.bars || patch.stores) {
+        await t.all('SELECT id FROM bars ORDER BY id FOR UPDATE');
+        await t.all('SELECT id FROM stores ORDER BY id FOR UPDATE');
+      }
+      const beforeNames = patch.bars || patch.stores ? {
+        bars: await t.all('SELECT id, name FROM bars ORDER BY id'),
+        stores: await t.all('SELECT id, name FROM stores ORDER BY id'),
+      } : {};
       for (const [sql, ...args] of stmts) await t.run(sql, ...args);
-      await audit(t, { actor: by, entity: 'ajustes', action: 'modificar', before: hide(before), after: hide(changed), now });
+      const afterNames = patch.bars || patch.stores ? {
+        bars: await t.all('SELECT id, name FROM bars ORDER BY id'),
+        stores: await t.all('SELECT id, name FROM stores ORDER BY id'),
+      } : {};
+      await audit(t, { actor: by, entity: 'ajustes', action: 'modificar',
+        before: { ...hide(before), ...beforeNames }, after: { ...hide(changed), ...afterNames }, now });
       if (patch.bars || patch.stores) await bumpCatalog(t);
     });
   }
@@ -204,6 +207,11 @@ function productFields(input, existing = {}) {
   }
   if (input.active !== undefined) out.active = input.active ? 1 : 0;
   if (input.sort !== undefined) out.sort = Number(input.sort) || 0;
+  if (input.main_store_id !== undefined) {
+    const id = Number(input.main_store_id);
+    if (!Number.isInteger(id) || id < 1) throw bad('Punto principal no válido.');
+    out.main_store_id = id;
+  }
   const status = out.status ?? existing.status;
   if (out.active === 1 && UNSELECTABLE.includes(status)) {
     throw bad('Identifica el producto antes de activarlo.');
@@ -222,6 +230,17 @@ function groupInput(v) {
 
 async function groupExists(t, id) {
   if (!await t.get('SELECT id FROM product_groups WHERE id = ?', id)) throw bad('Grupo no válido.');
+}
+
+async function defaultMainId(t, category) {
+  const s = await t.get('SELECT id FROM stores WHERE map_key = ?', defaultMainKey(category));
+  if (!s) throw bad('Punto principal no válido.');
+  return s.id;
+}
+
+async function validateMainStore(t, id) {
+  if (!await t.get(`SELECT id FROM stores WHERE id = ? AND in_vessel = 1
+    AND point_type IN ('almacen', 'nevera')`, id)) throw bad('Punto principal no válido.');
 }
 
 async function nextGroupOrder(t, groupId) {
@@ -244,6 +263,8 @@ export async function createProduct(db, input, { by, now } = {}) {
   const groupId = groupInput(input.group_id) ?? null;
   const t0 = nowIso(now);
   return db.tx(async (t) => {
+    f.main_store_id ??= await defaultMainId(t, f.category);
+    await validateMainStore(t, f.main_store_id);
     if (groupId !== null) {
       await groupExists(t, groupId);
       if (UNSELECTABLE.includes(f.status)) throw bad(`Identifica «${f.name}» antes de añadirlo a la selección.`);
@@ -252,10 +273,10 @@ export async function createProduct(db, input, { by, now } = {}) {
     const slug = await uniqueSlug(t, f.name);
     const order = groupId === null ? null : await nextGroupOrder(t, groupId);
     const { lastId } = await t.run(`INSERT INTO products
-      (name, slug, category, status, note, capacity_ml, per_case, active, sort, group_id, group_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      (name, slug, category, status, note, capacity_ml, per_case, active, sort, group_id, group_order, created_at, updated_at, main_store_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     f.name, slug, f.category, f.status, f.note ?? null, f.capacity_ml ?? null, f.per_case ?? null,
-    f.active ?? 1, f.sort ?? m + 10, groupId, order, t0, t0);
+    f.active ?? 1, f.sort ?? m + 10, groupId, order, t0, t0, f.main_store_id);
     const p = await getProduct(t, lastId);
     await audit(t, { actor: by, entity: 'producto', entityId: p.id, action: 'crear', after: p, now });
     await bumpCatalog(t);
@@ -268,6 +289,13 @@ async function applyProductUpdate(t, id, input, { by, now, reason, reslug = fals
   await t.get('SELECT id FROM products WHERE id = ? FOR UPDATE', id);
   const before = await getProduct(t, id);
   const f = productFields(input, before);
+  if (f.main_store_id !== undefined) await validateMainStore(t, f.main_store_id);
+  else if (f.category !== undefined && f.category !== before.category) {
+    const previousDefault = await defaultMainId(t, before.category);
+    if ((before.main_store_id ?? previousDefault) === previousDefault) {
+      f.main_store_id = await defaultMainId(t, f.category);
+    }
+  }
   const groupId = groupInput(input.group_id);
   if (groupId !== undefined && groupId !== before.group_id) {
     if (groupId === null) {
@@ -631,7 +659,7 @@ export async function bootstrap(db, { managerRequired }) {
   const rev = await catalogRev(db);
   const [bars, products, groups, staff, settings, date, stores] = await Promise.all([
     listBars(db), listProducts(db), listGroups(db), listStaff(db), publicSettings(db), currentDate(db),
-    db.all('SELECT id, name, kind, sort FROM stores ORDER BY sort, id'),
+    db.all('SELECT * FROM stores ORDER BY sort, id'),
   ]);
   return { bars, categories: CATEGORIES, products, settings, date, managerRequired, groups, staff, stores, catalog_rev: rev };
 }
@@ -696,6 +724,22 @@ async function getLine(db, id) {
 
 const lockLine = (t, id) => t.get('SELECT id FROM request_lines WHERE id = ? FOR UPDATE', id);
 
+// Comparte el bloqueo del punto con los recuentos; bloquea siempre por id.
+async function lockDeliveryPoints(t, pairs) {
+  const productIds = [...new Set(pairs.map((p) => p.product_id))].sort((a, b) => a - b);
+  if (productIds.length) await t.all(`SELECT id FROM products WHERE id IN (${marks(productIds)}) ORDER BY id FOR SHARE`, ...productIds);
+  const barIds = [...new Set(pairs.map((p) => p.bar_id))].sort((a, b) => a - b);
+  if (barIds.length) await t.all(`SELECT id FROM bars WHERE id IN (${marks(barIds)}) ORDER BY id FOR KEY SHARE`, ...barIds);
+  const storeIds = new Set();
+  for (const p of pairs) {
+    storeIds.add(p.from_store_id ?? await mainStoreId(t, p.product_id));
+    const bar = await t.get('SELECT id FROM stores WHERE bar_id = ?', p.bar_id);
+    if (bar) storeIds.add(bar.id);
+  }
+  const sorted = [...storeIds].sort((a, b) => a - b);
+  if (sorted.length) await t.all(`SELECT id FROM stores WHERE id IN (${marks(sorted)}) ORDER BY id FOR UPDATE`, ...sorted);
+}
+
 /**
  * Añade botellas a la lista de la noche actual. Si ya hay una línea abierta
  * del mismo producto para la misma barra, se suma a ella en lugar de crear
@@ -749,7 +793,6 @@ export async function createRequest(db, { bar_id, items, by }, { now } = {}) {
 export async function completeLines(db, { items, by }, { now } = {}) {
   if (!Array.isArray(items) || !items.length) throw bad('No hay nada que completar.');
   if (items.length > 40) throw bad('Demasiadas líneas de una vez: completa por barras.');
-  const t0 = nowIso(now);
   const who = clean(by);
   const wanted = items.map((i) => ({
     line_id: Number(i.line_id),
@@ -761,26 +804,29 @@ export async function completeLines(db, { items, by }, { now } = {}) {
   const ids = [...new Set(wanted.map((w) => w.line_id))].sort((a, b) => a - b);
   return db.tx(async (t) => {
     await t.all(`SELECT id FROM request_lines WHERE id IN (${marks(ids)}) ORDER BY id FOR UPDATE`, ...ids);
+    await lockDeliveryPoints(t, await t.all(`SELECT product_id, bar_id FROM request_lines WHERE id IN (${marks(ids)})`, ...ids));
+    const t0 = nowIso(now);
     const done = [];
     for (const w of [...wanted].sort((a, b) => a.line_id - b.line_id)) {
       // La entrega conserva l.session_id: «Hecho» cuenta en la jornada de la solicitud,
       // aunque delivered_at caiga después del corte de las 12:00 en Madrid.
       const r = await t.run(`INSERT INTO deliveries
-          (session_id, bar_id, product_id, line_id, qty, delivered_at, delivered_by, source)
-        SELECT l.session_id, l.bar_id, l.product_id, l.id, ?::int, ?::text, ?::text, 'lista'
-        FROM request_lines l
+          (session_id, bar_id, product_id, line_id, qty, delivered_at, delivered_by, source, from_store_id)
+        SELECT l.session_id, l.bar_id, l.product_id, l.id, ?::int, ?::text, ?::text, 'lista', ${MAIN_STORE_SQL}
+        FROM request_lines l JOIN products p ON p.id = l.product_id
         WHERE l.id = ? AND ${DELIVERED} = ? AND ${PENDING} >= ? RETURNING id`,
       w.qty, t0, who, w.line_id, w.delivered, w.qty);
       if (r.changes) done.push(w);
     }
     if (!done.length) throw new HttpError(409, 'Ya estaba hecho: otra persona lo ha repuesto.');
     const doneIds = done.map((d) => d.line_id);
-    const names = Object.fromEntries((await t.all(`SELECT l.id, l.bar_id, p.name FROM request_lines l
+    const names = Object.fromEntries((await t.all(`SELECT l.id, l.bar_id, p.name, ${MAIN_STORE_SQL} AS from_store_id FROM request_lines l
       JOIN products p ON p.id = l.product_id WHERE l.id IN (${marks(doneIds)})`, ...doneIds)).map((r) => [r.id, r]));
     await t.run(`UPDATE request_lines SET claimed_by = NULL, claimed_at = NULL WHERE id IN (${marks(doneIds)})`, ...doneIds);
     await audit(t, {
       actor: who, entity: 'reposicion', action: 'hecho',
-      after: done.map((d) => ({ producto: names[d.line_id]?.name, barra: names[d.line_id]?.bar_id, botellas: d.qty })), now,
+      after: done.map((d) => ({ producto: names[d.line_id]?.name, barra: names[d.line_id]?.bar_id,
+        botellas: d.qty, from_store_id: names[d.line_id]?.from_store_id })), now,
     });
     return { lines: done.length, bottles: sum(done, (d) => d.qty), skipped: wanted.length - done.length };
   });
@@ -791,10 +837,12 @@ export async function deliver(db, lineId, { qty, by }, { now } = {}) {
   const who = clean(by);
   return db.tx(async (t) => {
     if (!await lockLine(t, lineId)) throw notFound('Línea');
+    await lockDeliveryPoints(t, [await t.get('SELECT product_id, bar_id FROM request_lines WHERE id = ?', lineId)]);
     const { changes, lastId } = await t.run(`INSERT INTO deliveries
-        (session_id, bar_id, product_id, line_id, qty, delivered_at, delivered_by, source)
-      SELECT l.session_id, l.bar_id, l.product_id, l.id, ?::int, ?::text, ?::text, 'lista'
-      FROM request_lines l WHERE l.id = ? AND ${PENDING} >= ? RETURNING id`, n, nowIso(now), who, lineId, n);
+        (session_id, bar_id, product_id, line_id, qty, delivered_at, delivered_by, source, from_store_id)
+      SELECT l.session_id, l.bar_id, l.product_id, l.id, ?::int, ?::text, ?::text, 'lista', ${MAIN_STORE_SQL}
+      FROM request_lines l JOIN products p ON p.id = l.product_id
+      WHERE l.id = ? AND ${PENDING} >= ? RETURNING id`, n, nowIso(now), who, lineId, n);
     const line = await getLine(t, lineId);
     if (!changes) {
       if (line.qty_pending === 0) throw new HttpError(409, 'Esta línea ya está completa: otra persona la ha entregado.');
@@ -802,7 +850,8 @@ export async function deliver(db, lineId, { qty, by }, { now } = {}) {
     }
     await audit(t, {
       actor: who, entity: 'reposicion', entityId: lastId, action: 'entregar',
-      after: { producto: line.product_name, barra: line.bar_id, botellas: n }, now,
+      after: { producto: line.product_name, barra: line.bar_id, botellas: n,
+        from_store_id: await mainStoreId(t, line.product_id) }, now,
     });
     if (line.qty_pending === 0 && line.claimed_by) {
       await t.run('UPDATE request_lines SET claimed_by = NULL, claimed_at = NULL WHERE id = ?', lineId);
@@ -864,6 +913,7 @@ export async function undoDelivery(db, id, { by }, { now } = {}) {
     if (d0.line_id) await lockLine(t, d0.line_id);
     await t.get('SELECT id FROM deliveries WHERE id = ? FOR UPDATE', id);
     const d = await getDelivery(t, id);
+    await lockDeliveryPoints(t, [d]);
     const { changes } = await t.run(`UPDATE deliveries SET qty = 0, corrected = 1
       WHERE id = ? AND source = 'lista' AND corrected = 0 AND qty > 0 AND delivered_at >= ?`, id, limit);
     if (!changes) {
@@ -936,14 +986,18 @@ export async function correctDelivery(db, id, { qty, bar_id, product_id, reason,
     };
     await barExists(t, next.bar_id);
     const p = await getProduct(t, next.product_id);
+    if (next.product_id === d.product_id) next.from_store_id = d.from_store_id;
+    await lockDeliveryPoints(t, [d, next]);
+    next.from_store_id ??= await mainStoreId(t, next.product_id);
     // Si cambia la barra o el producto deja de corresponder a su línea de solicitud.
     const lineId = next.bar_id !== d.bar_id || next.product_id !== d.product_id ? null : d.line_id;
-    await t.run('UPDATE deliveries SET qty = ?, bar_id = ?, product_id = ?, line_id = ?, corrected = 1 WHERE id = ?',
-      next.qty, next.bar_id, next.product_id, lineId, id);
+    await t.run(`UPDATE deliveries SET qty = ?, bar_id = ?, product_id = ?, line_id = ?, from_store_id = ?, corrected = 1
+      WHERE id = ? AND qty = ? AND product_id = ? AND bar_id = ?`,
+    next.qty, next.bar_id, next.product_id, lineId, next.from_store_id, id, d.qty, d.product_id, d.bar_id);
     await audit(t, {
       actor: clean(by), entity: 'reposicion', entityId: id, action: 'corregir',
-      before: { botellas: d.qty, barra: d.bar_id, producto: d.product_name },
-      after: { botellas: next.qty, barra: next.bar_id, producto: p.name },
+      before: { botellas: d.qty, barra: d.bar_id, producto: d.product_name, from_store_id: d.from_store_id },
+      after: { botellas: next.qty, barra: next.bar_id, producto: p.name, from_store_id: next.from_store_id },
       reason: why, now,
     });
     return getDelivery(t, id);
@@ -951,7 +1005,7 @@ export async function correctDelivery(db, id, { qty, bar_id, product_id, reason,
 }
 
 /** Registrar a posteriori una reposición que no se anotó en su momento. */
-export async function addManualDelivery(db, { date, bar_id, product_id, qty, reason, by }, { now } = {}) {
+export async function addManualDelivery(db, { date, bar_id, product_id, qty, reason, by, delivered_at }, { now } = {}) {
   if (!isYmd(date)) throw bad('Fecha no válida.');
   const why = clean(reason, 300);
   if (!why) throw bad('Indica el motivo.');
@@ -959,14 +1013,24 @@ export async function addManualDelivery(db, { date, bar_id, product_id, qty, rea
   const barId = Number(bar_id);
   await barExists(db, barId);
   const p = await getProduct(db, Number(product_id));
+  const registeredAt = nowIso(now);
+  const today = businessDate(new Date(registeredAt));
+  if (!delivered_at && date !== today) throw bad('Indica la fecha y hora efectiva de la reposición olvidada.');
+  const effective = delivered_at === undefined ? null : new Date(delivered_at);
+  if (effective && (typeof delivered_at !== 'string' || !/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(delivered_at)
+      || !Number.isFinite(effective.getTime()) || effective.getTime() > new Date(registeredAt).getTime()
+      || businessDate(effective) !== date)) throw bad('La hora efectiva debe pertenecer a la noche elegida (Madrid, corte a las 12:00).');
   const s = await ensureSession(db, date, now);
   return db.tx(async (t) => {
+    await lockDeliveryPoints(t, [{ product_id: p.id, bar_id: barId }]);
     const { lastId } = await t.run(`INSERT INTO deliveries
-      (session_id, bar_id, product_id, qty, delivered_at, delivered_by, source, corrected)
-      VALUES (?, ?, ?, ?, ?, ?, 'manual', 1) RETURNING id`, s.id, barId, p.id, n, nowIso(now), clean(by));
+      (session_id, bar_id, product_id, qty, delivered_at, delivered_by, source, corrected, from_store_id)
+      SELECT ?::int, ?::int, p.id, ?::int, ?::text, ?::text, 'manual', 1, ${MAIN_STORE_SQL}
+      FROM products p WHERE p.id = ? RETURNING id`, s.id, barId, n, effective?.toISOString() ?? nowIso(now), clean(by), p.id);
     await audit(t, {
       actor: clean(by), entity: 'reposicion', entityId: lastId, action: 'añadir a posteriori',
-      after: { noche: date, producto: p.name, barra: barId, botellas: n }, reason: why, now,
+      after: { noche: date, delivered_at: effective?.toISOString() ?? registeredAt, producto: p.name, barra: barId, botellas: n,
+        from_store_id: await mainStoreId(t, p.id) }, reason: why, now,
     });
     return getDelivery(t, lastId);
   });
@@ -1481,14 +1545,18 @@ export async function deletePurchase(db, id, { by, now } = {}) {
 // ---------------------------------------------------------------- copia de seguridad
 
 export const BACKUP_TABLES = ['settings', 'bars', 'stores', 'product_groups', 'products', 'staff', 'sessions', 'request_lines',
-  'deliveries', 'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves'];
+  'deliveries', 'stockouts', 'audit', 'purchase_lists', 'trips', 'trip_lines', 'stock_counts', 'stock_moves', 'stock_operations'];
 
 /** Copia completa de los datos en JSON (sin los códigos de acceso ni las fotos propias). */
 export async function exportData(db, { now } = {}) {
-  const out = { exported_at: nowIso(now), tables: {} };
-  for (const t of BACKUP_TABLES) {
-    out.tables[t] = await db.all(`SELECT * FROM ${t} ORDER BY ${t === 'settings' ? 'key' : 'id'}`);
-  }
-  out.tables.settings = out.tables.settings.filter((r) => !['staff_code', 'manager_pin'].includes(r.key));
-  return out;
+  return db.tx(async (t) => {
+    // Debe ser la primera sentencia: una sola instantánea para todas las tablas.
+    await t.run('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const out = { exported_at: nowIso(now), tables: {} };
+    for (const table of BACKUP_TABLES) {
+      out.tables[table] = await t.all(`SELECT * FROM ${table} ORDER BY ${['settings','stock_operations'].includes(table) ? 'key' : 'id'}`);
+    }
+    out.tables.settings = out.tables.settings.filter((r) => !['staff_code', 'manager_pin'].includes(r.key));
+    return out;
+  });
 }

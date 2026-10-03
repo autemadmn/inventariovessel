@@ -1,20 +1,19 @@
 import { HttpError } from './errors.js';
-import { stockRows, suggestions, writeAudit } from './almacen.js';
+import { quantity } from './stock-operation.js';
+import { stockRows, suggestions, writeAudit, storeOf, MAIN_STORE_SQL, mainStoreId } from './almacen.js';
 
 const bad = (message) => new HttpError(400, message);
 const conflict = (message) => new HttpError(409, message);
 const clean = (v, max = 80) => (typeof v === 'string' ? v.trim().slice(0, max) : '') || null;
 const atOf = (now) => (now ?? new Date()).toISOString();
 function int(v, label, min = 0) {
-  const n = Number(v);
-  if (!Number.isInteger(n) || n < min || n > 10000) throw bad(`${label}: cantidad no válida.`);
-  return n;
+  return quantity(v, label, { allowZero: min === 0 });
 }
 
 async function endpoints(db) {
   const [from, to] = await Promise.all([
     db.get("SELECT id, name, kind FROM stores WHERE kind = 'central' ORDER BY sort, id LIMIT 1"),
-    db.get("SELECT id, name, kind FROM stores WHERE kind = 'local' ORDER BY sort, id LIMIT 1"),
+    storeOf(db, 'in').then((s) => ({ id: s.id, key: 'in', name: s.name, kind: s.kind })),
   ]);
   if (!from || !to) throw bad('Faltan almacenes.');
   return { from, to };
@@ -35,8 +34,10 @@ export async function tripView(db, { now } = {}) {
   if (!trip) return { trip: null, from, to, lines: [], count: 0, checked: 0 };
   const [lines, stocks] = await Promise.all([
     db.all(`SELECT l.id, l.product_id, l.text, p.name, p.slug, p.photo, p.per_case,
-      l.qty_planned, l.qty_loaded, l.checked, l.source, l.created_at, l.created_by
+      l.qty_planned, l.qty_loaded, l.checked, l.source, l.created_at, l.created_by,
+      dest.id AS to_store_id, dest.name AS to_store_name
       FROM trip_lines l LEFT JOIN products p ON p.id = l.product_id
+      LEFT JOIN stores dest ON p.id IS NOT NULL AND dest.id = ${MAIN_STORE_SQL}
       WHERE l.trip_id = ? AND l.removed = 0 ORDER BY l.created_at, l.id`, trip.id),
     stockRows(db, from, atOf(now)),
   ]);
@@ -164,14 +165,23 @@ export async function removeTripLine(db, id, body = {}, { now } = {}) {
 
 export async function finishTrip(db, body = {}, { now } = {}) {
   const tripId = int(body.trip_id, 'Viaje', 1);
-  const at = atOf(now);
   const by = clean(body.by);
   return db.tx(async (t) => {
     const trip = await t.get('SELECT id, status FROM trips WHERE id = ? FOR UPDATE', tripId);
     if (!trip || trip.status !== 'abierto') throw conflict('Este viaje ya está hecho.');
     const lines = await t.all('SELECT * FROM trip_lines WHERE trip_id = ? AND removed = 0 ORDER BY id FOR UPDATE', tripId);
     if (!lines.some((l) => l.checked === 1)) throw bad('Marca al menos una línea como cargada.');
-    const { from, to } = await endpoints(t);
+    const { from } = await endpoints(t);
+    const productIds = [...new Set(lines.filter((l) => l.checked && l.product_id).map((l) => l.product_id))].sort((a, b) => a - b);
+    if (productIds.length) await t.all(`SELECT id FROM products WHERE id IN (${productIds.map(() => '?').join(', ')})
+      ORDER BY id FOR SHARE`, ...productIds);
+    const destinations = new Map();
+    for (const line of lines) if (line.checked && line.product_id) {
+      destinations.set(line.product_id, await mainStoreId(t, line.product_id));
+    }
+    const storeIds = [...new Set([from.id, ...destinations.values()])].sort((a, b) => a - b);
+    await t.all(`SELECT id FROM stores WHERE id IN (${storeIds.map(() => '?').join(', ')}) ORDER BY id FOR UPDATE`, ...storeIds);
+    const at = atOf(now);
     let moves = 0;
     for (const line of lines) {
       if (!line.checked || !line.product_id) continue;
@@ -179,12 +189,13 @@ export async function finishTrip(db, body = {}, { now } = {}) {
       const r = await t.get(`INSERT INTO stock_moves
         (product_id, from_store_id, to_store_id, qty, kind, trip_id, created_at, created_by)
         VALUES (?, ?, ?, ?, 'traslado', ?, ?, ?) RETURNING id`,
-      line.product_id, from.id, to.id, line.qty_loaded, tripId, at, by);
+      line.product_id, from.id, destinations.get(line.product_id), line.qty_loaded, tripId, at, by);
       await writeAudit(t, { at, by, action: 'traslado', id: r.id,
-        after: { trip_id: tripId, product_id: line.product_id, qty: line.qty_loaded } });
+        after: { trip_id: tripId, product_id: line.product_id, from_store_id: from.id,
+          to_store_id: destinations.get(line.product_id), qty: line.qty_loaded } });
       moves++;
     }
-    await t.run("UPDATE trips SET status = 'hecho', done_at = ?, done_by = ? WHERE id = ?", at, by, tripId);
+    await t.run("UPDATE trips SET status = 'hecho', done_at = ?, done_by = ? WHERE id = ? AND status = 'abierto'", at, by, tripId);
     const carry = lines.filter((l) => !l.checked);
     let nextTripId = null;
     if (carry.length) {

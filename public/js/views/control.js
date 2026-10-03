@@ -2,7 +2,7 @@
 // recuento y todo lo que ha entrado, salido o se ha roto. Desde aquí se anula un
 // movimiento erróneo con su motivo; nunca se borra nada.
 import { auth, mget, mpost } from '../api.js';
-import { state, loadLive, stockText } from '../state.js';
+import { state, loadLive, stockText, storeById } from '../state.js';
 import { raw, $, html, mount, thumb, toast, buzz, fmt, dateTimeLabel, formDialog } from '../ui.js';
 import { icon } from '../icons.js';
 import { askPin } from './gestion.js';
@@ -10,9 +10,11 @@ import { back, qtyHtml, onStockChange } from './almacen.js';
 
 const PERIODS = [['mes', 'Este mes'], ['mes_pasado', 'Mes pasado'], ['todo', 'Todo']];
 let period = 'mes';
+let pointFilter = '';
 
-export function renderControl(root) {
-  mount(root, html`<section class="alm ctl" id="ctl">${back()}<h1 class="alm-title">Historial y descuadres</h1></section>`);
+export function renderControl(root, { gestion = false } = {}) {
+  const heading = () => html`${gestion ? '' : back()}<h1 class="alm-title">${gestion ? 'Descuadres' : 'Historial y descuadres'}</h1>`;
+  mount(root, html`<section class="alm ctl" id="ctl">${heading()}</section>`);
   const el = $('#ctl', root);
   let d = null; // descuadres
   let h = null; // historial
@@ -27,14 +29,14 @@ export function renderControl(root) {
     asking = true;
     try {
       const ok = await askPin(message);
-      if (!ok && !gone) location.hash = '#/almacen';
+      if (!ok && !gone) location.hash = gestion ? '#/gestion' : '#/almacen';
       return ok;
     } finally {
       asking = false;
     }
   };
 
-  const draw = () => mount(el, view(d, h));
+  const draw = () => mount(el, view(d, h, heading));
 
   const refresh = async () => {
     if (asking) return;
@@ -42,7 +44,7 @@ export function renderControl(root) {
     el.classList.add('is-loading');
     try {
       const [rd, rh] = await Promise.all([
-        mget(`/api/almacen/descuadres?period=${period}`),
+        mget(`/api/almacen/descuadres?period=${period}${pointFilter ? `&store=${pointFilter}` : ''}`),
         mget(`/api/almacen/historial?period=${period}`),
       ]);
       if (id !== requestId || !el.isConnected) return;
@@ -56,7 +58,7 @@ export function renderControl(root) {
       } else if (d) {
         toast(err.message, 'error');
       } else {
-        mount(el, html`${back()}<h1 class="alm-title">Historial y descuadres</h1><p class="empty">${err.message}</p>`);
+        mount(el, html`${heading()}<p class="empty">${err.message}</p>`);
       }
     } finally {
       if (id === requestId) el.classList.remove('is-loading');
@@ -75,6 +77,9 @@ export function renderControl(root) {
         b.setAttribute('aria-pressed', String(on));
       }
       buzz(8);
+      refresh();
+    } else if (t.dataset.filterPoint !== undefined) {
+      pointFilter = t.dataset.filterPoint;
       refresh();
     } else if (t.dataset.void) {
       const line = findLine(h, Number(t.dataset.void));
@@ -95,7 +100,7 @@ export function renderControl(root) {
   (async () => {
     if (state.managerRequired && !auth.pin && !await pin()) return;
     if (gone) return;
-    mount(el, html`${back()}<h1 class="alm-title">Historial y descuadres</h1>${periodSeg()}<p class="empty">Cargando…</p>`);
+    mount(el, html`${heading()}${periodSeg()}<p class="empty">Cargando…</p>`);
     unsub = onStockChange(refresh);
     refresh();
   })();
@@ -145,21 +150,22 @@ function periodSeg() {
       <button type="button" class="${period === v ? 'on' : ''}" data-period="${v}" aria-pressed="${String(period === v)}">${l}</button>`)}</div>`;
 }
 
-function view(d, h) {
+function view(d, h, heading) {
   return html`
-    ${back()}
-    <h1 class="alm-title">Historial y descuadres</h1>
+    ${heading()}
     ${periodSeg()}
     ${d.range ? html`<p class="ctl-range">${d.range.label}</p>` : ''}
 
     <div class="ctl-body">
       <h2 class="section-title">Descuadres</h2>
+      <div class="seg point-filters" role="group" aria-label="Punto del descuadre">${[{store_id:'',name:'Todos'},...(d.points ?? [])].map((p) => html`<button type="button" class="${String(p.store_id)===pointFilter ? 'on' : ''}" data-filter-point="${p.store_id}" aria-pressed="${String(String(p.store_id)===pointFilter)}">${p.name}</button>`)}</div>
       <div class="ctl-totals">${d.totals.map((t) => html`
         <div class="ctl-total ${t.missing > 0 ? 'bad' : ''}">
           <span>${t.store_name}</span>
           ${t.missing > 0
     ? html`<p><small>Faltan</small> <b>${fmt(t.missing)}</b> <small>${t.missing === 1 ? 'botella' : 'botellas'}</small></p>`
     : html`<p class="ctl-ok">${raw(icon('check', { size: 20 }))} Sin faltas</p>`}
+          ${t.extra > 0 ? html`<small>Sobran ${fmt(t.extra)} botellas</small>` : ''}
         </div>`)}</div>
       ${d.items.length
     ? html`<ul class="inf-list ctl-list">${d.items.map(diffRow)}</ul>`
@@ -195,13 +201,13 @@ function diffRow(x) {
     </li>`;
 }
 
-const TITLE = { viaje: 'Viaje hecho', entrada: 'Ha llegado mercancía', rotura: 'Rotura', recuento: 'Recuento' };
-const ICON = { viaje: 'truck', entrada: 'package-plus', rotura: 'wine-off', recuento: 'clipboard-list' };
+const TITLE = { viaje: 'Viaje hecho', entrada: 'Ha llegado mercancía', rotura: 'Rotura', recuento: 'Recuento', traslado:'Movida entre puntos' };
+const ICON = { viaje: 'truck', entrada: 'package-plus', rotura: 'wine-off', recuento: 'clipboard-list', traslado:'arrow-left-right' };
 
 function eventView(ev) {
   let title = TITLE[ev.type];
   let where = ev.store_name;
-  if (ev.type === 'viaje') where = [ev.from_store_name, ev.store_name].filter(Boolean).join(' → ');
+  if (ev.type === 'viaje' || ev.type === 'traslado') where = [ev.from_store_name, ev.store_name].filter(Boolean).join(' → ');
   if (ev.type === 'recuento') {
     title = `Recuento · ${ev.store_name}`;
     where = '';
@@ -213,7 +219,7 @@ function eventView(ev) {
         <span class="alm-h-ico">${raw(icon(ICON[ev.type], { size: 18 }))}</span>
         <span class="bt-del-text"><b>${title}</b><small>${sub}</small>${ev.note ? html`<small class="ctl-note">«${ev.note}»</small>` : ''}</span>
       </header>
-      <ul class="ctl-lines">${ev.lines.map((l) => (ev.type === 'recuento' ? countLine(l) : moveLine(l, ev.type)))}</ul>
+      <ul class="ctl-lines">${ev.lines.map((l) => (ev.type === 'recuento' ? countLine(l, storeById(ev.store_id)) : moveLine(l, ev.type)))}</ul>
     </li>`;
 }
 
@@ -227,14 +233,16 @@ function moveLine(l, type) {
       <span class="ctl-line-text">
         <b>${l.name}</b>
         <span class="ctl-line-qty">${sign}${stockText(l.qty, l.per_case)}</span>
+        ${type === 'viaje' && l.to_store_name ? html`<small class="muted">→ ${l.to_store_name}</small>` : ''}
         ${voided ? html`<small class="ctl-void">${why}</small>` : ''}
       </span>
       ${voided ? '' : html`<button type="button" class="btn small ghost ctl-void-btn" data-void="${l.move_id}" aria-label="Anular ${l.name}, ${stockText(l.qty, l.per_case)}">Anular</button>`}
     </li>`;
 }
 
-function countLine(l) {
+function countLine(l, point) {
   const diff = l.diff ?? null;
+  const consumption = l.result?.kind === 'consumo' ? l.result.consumption : ['barra','nevera'].includes(point?.point_type) && diff !== null ? -diff : null;
   return html`
     <li class="ctl-line">
       ${thumb(l, 'ctl-img')}
@@ -242,6 +250,6 @@ function countLine(l) {
         <b>${l.name}</b>
         <span class="ctl-line-qty">${l.qty > 0 ? stockText(l.qty, l.per_case) : 'Ninguna'}</span>
       </span>
-      ${diff ? html`<span class="ctl-tag ${diff < 0 ? 'bad' : 'extra'}">${diff < 0 ? 'faltan' : 'sobran'} ${stockText(Math.abs(diff), l.per_case)}</span>` : ''}
+      ${consumption !== null ? html`<span class="ctl-tag">${consumption >= 0 ? `Consumo ${fmt(consumption)}` : `+${fmt(-consumption)} más`}</span>` : diff ? html`<span class="ctl-tag ${diff < 0 ? 'bad' : 'extra'}">${diff < 0 ? 'faltan' : 'sobran'} ${stockText(Math.abs(diff), l.per_case)}</span>` : ''}
     </li>`;
 }

@@ -7,6 +7,7 @@
 /* ------------------------------------------------------------ lista */
 
 .alm { display: flex; flex-direction: column; min-width: 0; transition: opacity 0.2s var(--ease); }
+.alm .btn.small, .alm .icon-btn, .alm .seg button, .dlg .btn.small, .dlg .icon-btn { min-height: 44px; min-width: 44px; }
 .alm.is-loading .alm-body { opacity: 0.55; }
 .alm .empty { padding: 28px 16px; }
 
@@ -122,7 +123,7 @@
   min-height: 56px; padding: 0 8px; border-radius: 14px; text-align: center;
   font-size: 1.75rem; font-weight: 600; font-variant-numeric: tabular-nums;
 }
-.cnt-step input::placeholder { color: var(--faint); }
+.cnt-step input::placeholder { color: var(--muted); }
 .cnt-total { min-height: 1.4em; margin: 0; color: var(--muted); font-size: 0.9375rem; text-align: center; font-variant-numeric: tabular-nums; }
 .cnt-total:empty { display: none; }
 
@@ -307,7 +308,7 @@
   display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 14px 14px 12px;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
 }
-.ctl-total > span { color: var(--muted); font-size: 0.875rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctl-total > span { color: var(--muted); font-size: 0.875rem; font-weight: 500; white-space: normal; overflow-wrap: anywhere; }
 .ctl-total p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; margin: 0; line-height: 1.1; }
 .ctl-total p b { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .ctl-total p small { color: var(--muted); font-size: 0.875rem; font-weight: 500; }
@@ -380,3 +381,83 @@
 /* Botellas por caja, editable desde el detalle */
 .alm-stock .alm-percase { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-top: 2px; font-size: 0.9375rem; }
 .alm-stock .alm-percase .icon { display: inline-block; }
+
+/* Puntos de In Vessel: plano SVG y alternativa en lista. */
+.alm-map { max-width: 720px; margin-inline: auto; }
+.vessel-map { display: block; width: 100%; height: auto; max-width: 480px; margin: 8px auto; overflow: visible; }
+.map-outline { fill: var(--bg); stroke: var(--line-strong); stroke-width: 4; }
+.map-context { fill: var(--surface-2); stroke: var(--line); stroke-width: 2; pointer-events: none; }
+.vessel-map text { stroke: none; fill: var(--text); font-size: 26px; font-weight: 600; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.map-context .map-shape { opacity: .8; }
+.map-context text { fill: var(--muted); }
+.map-note p { margin: 6px 0; }
+.map-point { fill: var(--surface); stroke: var(--muted); stroke-width: 2; }
+.map-almacen { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+.map-barra { fill: var(--surface-2); stroke-width: 3; }
+.map-barra-1 { stroke: var(--bar1); }
+.map-barra-2 { stroke: var(--bar2); }
+.map-barra-vip { stroke: var(--muted); }
+.map-hit { fill: transparent; stroke: none; pointer-events: all; }
+.map-point.sin_contar .map-shape { stroke-dasharray: 6 4; }
+.map-point.sin_contar text { fill: var(--muted); }
+.map-point:focus-visible { outline: none; }
+.map-point:focus-visible .map-shape, .map-point:focus-visible .map-hit { stroke: var(--accent); stroke-width: 5.4; stroke-dasharray: none; }
+.map-alert circle { fill: var(--warn); stroke: none; }
+.map-alert text { fill: var(--surface); font-size: 20px; }
+.point-list { list-style: none; margin: 8px 0 16px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.point-list li + li { border-top: 1px solid var(--line); }
+.point-list a, .point-list button { display: flex; width: 100%; min-height: 56px; align-items: center; gap: 12px; padding: 12px; border: 0; background: none; color: var(--text); text-align: left; text-decoration: none; }
+.point-list a > span, .point-list button > b { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.point-list small { display: block; margin-top: 3px; color: var(--muted); font-size: 0.8125rem; }
+.point-list .tag { white-space: normal; }
+.point-filters, .shelf-tabs { display: flex; max-width: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.point-filters { margin: 12px 0; }
+.point-filters button { flex: none; padding-inline: 14px; }
+.alm .seg button { min-height: 44px; }
+.point-filters::-webkit-scrollbar, .shelf-tabs::-webkit-scrollbar { display: none; }
+.cnt-places { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.cnt-places .btn { min-height: 56px; white-space: normal; }
+.cnt-places .on { border-color: var(--accent); background: var(--accent-soft); }
+.cnt-bar progress { display: block; width: 100%; height: 6px; border: 0; appearance: none; background: var(--surface-2); accent-color: var(--accent); }
+.cnt-bar progress::-webkit-progress-bar { background: var(--surface-2); }
+.cnt-bar progress::-webkit-progress-value { background: var(--accent); border-radius: var(--radius-sm); }
+.cnt-bar progress::-moz-progress-bar { background: var(--accent); }
+.trip-progress .cnt-bar progress { accent-color: var(--ok); }
+.trip-progress .cnt-bar progress::-webkit-progress-value { background: var(--ok); }
+.trip-progress .cnt-bar progress::-moz-progress-bar { background: var(--ok); }
+
+/* Estantería: tres tarjetas a 390 px; el panel comparte el ancho del contenido. */
+.shelf { --shelf-panel-height: 212px; }
+.shelf.has-panel { padding-bottom: calc(var(--shelf-panel-height) + 16px); }
+.shelf-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0; }
+.shelf-tools .seg { flex: 1; max-width: 300px; }
+.shelf-tools .btn { white-space: normal; text-align: center; }
+.shelf-tabs { gap: 4px; margin: 0 0 12px; }
+.shelf-tabs button { flex: none; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--muted); background: var(--surface); font-weight: 500; font-size: 0.875rem; }
+.shelf-tabs button[aria-selected="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.shelf-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(104px,1fr)); grid-auto-rows: 150px; column-gap: 8px; row-gap: 14px; padding-bottom: 6px; background: repeating-linear-gradient(to bottom,transparent 0,transparent 150px,var(--line-strong) 150px,var(--line-strong) 156px,transparent 156px,transparent 164px); }
+.shelf-card { scroll-margin-bottom: calc(var(--shelf-panel-height) + var(--nav-h) + 16px); scroll-margin-top: 120px; position: relative; display: flex; align-items: center; flex-direction: column; justify-content: flex-start; gap: 4px; min-width: 0; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.shelf-card.selected { border: 2px solid var(--accent); padding: 3px; }
+.thumb.shelf-img { width: 54px; height: 72px; flex: none; }
+.shelf-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; hyphens: auto; font-size: 0.8125rem; font-weight: 500; line-height: 1.2; }
+.shelf-card .tag, .shelf-card small, .shelf-stock { font-size: 0.75rem; max-width: 100%; overflow-wrap: anywhere; white-space: normal; line-height: 1.15; }
+.shelf-card small { color: var(--muted); }
+.shelf-stock { font-weight: 600; }
+.shelf-check { position: absolute; top: 4px; right: 4px; color: var(--ok); background: var(--surface); border-radius: var(--radius-sm); }
+.shelf-add { width: 100%; margin-top: 20px; }
+.shelf-empty { grid-column: 1 / -1; background: var(--bg); padding: 24px 12px; text-align: center; }
+.shelf-panel { position: fixed; z-index: 25; left: 50%; transform: translateX(-50%); width: min(100%,1120px); height: auto; min-height: 212px; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line-strong); box-shadow: var(--shadow-2); padding: 12px 16px; }
+.shelf-panel form { display: flex; flex-direction: column; gap: 8px; }
+.shelf-panel-head { display: flex; align-items: center; gap: 12px; height: 48px; flex: none; }
+.shelf-panel-head .thumb { width: 36px; height: 48px; }
+.shelf-panel-head b { flex: 1; min-width: 0; font-size: 0.9375rem; line-height: 1.2; overflow-wrap: anywhere; }
+.shelf-panel .cnt-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 16px; row-gap: 2px; }
+.shelf-panel .cnt-field:only-of-type { grid-column: 1 / -1; }
+.shelf-panel .cnt-field { min-width: 0; }
+.shelf-panel .cnt-field label { font-size: 0.875rem; margin-bottom: 4px; white-space: nowrap; }
+.shelf-panel .cnt-step { grid-template-columns: 44px minmax(0,1fr) 44px; gap: 2px; }
+.shelf-panel .cnt-step .step { width: 44px; height: 44px; border-radius: var(--radius-sm); }
+.shelf-panel .cnt-step input { min-width: 0; min-height: 44px; padding: 0 2px; border-radius: var(--radius-sm); font-size: 1.25rem; }
+.shelf-panel .cnt-total { grid-column: 1 / -1; min-height: 20px; margin: 0; font-size: 0.8125rem; }
+.shelf-panel .shelf-done { width: 100%; min-height: 48px; margin-top: auto; }
+.alm-hist .bt-del-qty { white-space: normal; overflow-wrap: anywhere; }

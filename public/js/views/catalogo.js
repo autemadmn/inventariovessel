@@ -5,7 +5,7 @@
 import {
   mget, mpost, mput, mdel, post,
 } from '../api.js';
-import { state, loadBootstrap } from '../state.js';
+import { state, loadBootstrap, inVesselPoints, pointByKey } from '../state.js';
 import {
   html, mount, thumb, toast, formDialog, resizeImage, norm,
 } from '../ui.js';
@@ -162,6 +162,10 @@ function categorySelect(selected) {
 async function editProduct(p) {
   const isNew = !p;
   let changed = false;
+  let mainChanged = false;
+  let groupChanged = false;
+  const defaultMain = (category) => pointByKey(category === 'vino' ? 'nevera-vino' : ['cerveza','refresco'].includes(category) ? 'alm-cerveza' : 'alm-alcohol')?.id;
+  const oldDefault = defaultMain(p?.category ?? 'otros');
   const data = await formDialog(isNew ? 'Añadir producto' : 'Editar producto', html`
     ${!isNew ? html`<div class="photo-edit">
       <span id="ph-preview">${thumb(p, 'lg')}</span>
@@ -172,15 +176,17 @@ async function editProduct(p) {
         ${state.products.find((x) => x.id === p.id)?.image ? html`<small class="muted">Con imagen de catálogo, la foto propia solo se usa como respaldo.</small>` : ''}
       </div></div>` : ''}
     <label class="field"><span>Nombre</span><input name="name" value="${p?.name ?? ''}" required maxlength="80"></label>
+    <label class="field"><span>Categoría</span>${categorySelect(p?.category ?? 'otros')}</label>
     <label class="field"><span>Grupo</span>${groupSelect(isNew ? defaultGroupId() : p.group_id)}
       <small class="muted">Solo las botellas con grupo salen en «Pedir». Se ordenan en Selección.</small></label>
+    <label class="field"><span>Punto principal</span><select name="main_store_id">${inVesselPoints().filter((s) => ['almacen','nevera'].includes(s.point_type)).map((s) => html`<option value="${s.id}" ${s.id === (p?.main_store_id ?? oldDefault) ? 'selected' : ''}>${s.name}</option>`)}</select>
+      <small class="muted">Reponer saca de aquí y el viaje deja aquí la mercancía.</small></label>
     <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="10000" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Por ejemplo, 6"></label>
     ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado</label>` : ''}
     <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}>
       <span>Activo<small class="muted block">Si lo desmarcas, deja de salir en Pedir y en Selección. Sigue en el histórico.</small></span></label>
     <details class="more-data">
       <summary>Más datos</summary>
-      <label class="field"><span>Categoría</span>${categorySelect(p?.category ?? 'otros')}</label>
       <label class="field"><span>Estado</span><select name="status">
         <option value="confirmado" ${p?.status === 'confirmado' ? 'selected' : ''}>Confirmado</option>
         <option value="pendiente" ${!p || p.status === 'pendiente' ? 'selected' : ''}>Por confirmar</option></select></label>
@@ -190,6 +196,14 @@ async function editProduct(p) {
   {
     wide: true,
     onMount(dlg) {
+      const group = dlg.querySelector('[name="group_id"]');
+      const main = dlg.querySelector('[name="main_store_id"]');
+      group.addEventListener('change', () => { groupChanged = true; });
+      main.addEventListener('change', () => { mainChanged = true; });
+      dlg.querySelector('[name="category"]').addEventListener('change', (e) => {
+        if (isNew && !groupChanged) group.value = ['cerveza','refresco','vino'].includes(e.target.value) ? '' : String(defaultGroupId() ?? '');
+        if (!mainChanged && (isNew || (p.main_store_id ?? oldDefault) === oldDefault)) main.value = String(defaultMain(e.target.value));
+      });
       const file = dlg.querySelector('#ph-file');
       file?.addEventListener('change', async () => {
         if (!file.files[0]) return;
@@ -226,6 +240,7 @@ async function editProduct(p) {
     by: state.who,
   };
   const groupId = data.group_id === '' ? null : Number(data.group_id);
+  if (mainChanged) body.main_store_id = Number(data.main_store_id);
   if (isNew || groupId !== (p.group_id ?? null)) body.group_id = groupId;
   if (isNew) {
     await mpost('/api/products', body);
