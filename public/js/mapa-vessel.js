@@ -17,7 +17,6 @@ export const MAPA = {
   // Tabiques secundarios: cubículos, baños, sala de personal y almacenes.
   partitions: [
     'M528 60 V208', 'M528 208 H557', 'M608 208 H660', 'M446 130 H528',
-    'M491 280 V442 H556',
     'M54 415 H135 V330',
     'M349 623 H421 V1010 H349', 'M349 772 H386', 'M349 847 H421', 'M349 1242 H401 V1352',
     'M561 555 H614 V546 H660', 'M561 555 V646', 'M561 709 V841', 'M556 754 H660',
@@ -28,17 +27,14 @@ export const MAPA = {
   stairs: { rect: [177, 268, 44, 64], rungs: [279, 290, 301, 312, 323] },
   zones: [
     { label: 'VIP', at: [300, 205], rotate: -40, size: 'big' },
-    { label: 'NORMAL', at: [210, 900], rotate: -40, size: 'big' },
+    { label: 'PISTA', at: [210, 900], rotate: -40, size: 'big' },
     { label: 'DJ', at: [95, 373] },
-    { label: 'Descanso', at: [524, 361], rotate: -90 },
     { label: 'Personal', at: [612, 652], rotate: -90 },
-    { label: 'Pasillo al VIP', at: [482, 1188], rotate: -90 },
   ],
   points: [
     { key: 'alm-alcohol', kind: 'almacen', rect: [528, 60, 132, 148], hit: [528, 60, 132, 148],
       label: 'Alcohol', at: [600, 94], sub: [600, 120] },
-    { key: 'nevera-vino', kind: 'nevera', units: [[538, 152, 30, 46]], hit: [530, 134, 74, 74],
-      label: 'Vino', at: [578, 176], anchor: 'start', small: true },
+    { key: 'nevera-vino', kind: 'nevera', units: [[538, 152, 30, 46]], hit: [530, 134, 74, 74] },
     { key: 'neveras-especial', kind: 'nevera', units: [[449, 245, 39, 30], [491, 245, 39, 30]], hit: [445, 208, 140, 74],
       label: 'Especial', at: [489, 226], small: true },
     { key: 'chupiteria', kind: 'nevera', units: [[631, 229, 24, 24]], solid: true, hit: [588, 208, 72, 74],
@@ -54,7 +50,7 @@ export const MAPA = {
     { key: 'barra-1', kind: 'barra', rect: [58, 862, 56, 278], hit: [56, 862, 84, 278],
       label: 'Barra 1', at: [86, 1001], vertical: true },
     // Pegada a las neveras de cerveza especial, en vertical, del lado de la VIP.
-    { key: 'barra-vip', kind: 'barra', rect: [449, 288, 36, 150], hit: [412, 284, 77, 158],
-      label: 'Barra VIP', at: [467, 363], vertical: true },
+    { key: 'barra-vip', kind: 'barra', rect: [462, 288, 50, 150], hit: [437, 284, 100, 158],
+      label: 'Barra VIP', at: [487, 363], vertical: true },
   ],
 };

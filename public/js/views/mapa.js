@@ -10,6 +10,7 @@ const status = (p) => p.status === 'sin_contar' ? 'Sin contar nunca' : p.status 
 const shortStatus = (p) => p.status === 'descuadre' ? 'Descuadre' : p.last_count_at && p.status !== 'sin_contar' ? `Contado ${dateLabel(p.last_count_at.slice(0, 10))}` : 'Sin contar';
 
 function label(m) {
+  if (!m.label) return '';
   const [x, y] = m.at;
   const lines = Array.isArray(m.label) ? m.label : [m.label];
   return html`<text class="map-label${m.small ? ' small' : ''}" x="${x}" y="${y}" text-anchor="${m.anchor ?? 'middle'}"
