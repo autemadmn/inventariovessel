@@ -1,33 +1,22 @@
-# Prompt para «Crear con IA» (Orquesta) · Rediseño del inventario de Vessel
+# Prompt para «Crear con IA» (Orquesta) · Fase 2: pestaña Viajes
 
-Un mismo flujo sirve para las dos fases. Solo cambia el texto del bloque Entrada.
+Copia **todo lo que hay debajo de la línea** y pégalo en «Crear con IA» (elige Codex en la caja para
+que el dibujo no gaste créditos de Claude). Es el mismo flujo de la fase 1, con la Entrada de la fase 2.
 
-- **Fase 1:** usa el prompt tal cual. Ya trae la Entrada de la fase 1.
-- **Fase 2** (cuando la fase 1 esté terminada, revisada y subida): duplica el flujo en Orquesta y
-  sustituye el texto del bloque «entrada» por el de [Entrada de la fase 2](#entrada-de-la-fase-2), al
-  final de este archivo.
+Antes de pulsar Play, en PowerShell dentro de la carpeta del proyecto:
 
-Claude solo se usa en dos bloques: «manager» (al principio, reparte el trabajo) y «rev-ux» (revisión
-de la interfaz con la skill impeccable). Todo lo demás lo hace Codex. Gemini no se usa, por los
-errores 429.
+```
+git fetch origin
+git switch claude/new-session-s6yn8z
+git pull
+```
 
-## Antes de pulsar Play
-
-1. En tu carpeta del proyecto, ponte en la rama de trabajo y trae lo último. En PowerShell, dentro
-   de la carpeta:
-   ```
-   git fetch origin
-   git switch claude/new-session-s6yn8z
-   git pull
-   ```
-   Así tendrás `docs/rediseno/` (la propuesta, las imágenes y las peticiones de cada fase). El último
-   bloque hace commit y push en la rama en la que estés, **nunca en `main`**.
-2. En el bloque Entrada, añade **la carpeta del proyecto**. Si no, los bloques trabajan en otra.
-3. Comprueba que Claude y Codex tienen la sesión iniciada en Orquesta.
+Esa rama ya tiene la fase 1 y los documentos de `docs/rediseno/`. En el bloque Entrada añade la
+carpeta del proyecto, y como archivos `docs\rediseno\fase-2.md` y `docs\rediseno\img\maqueta-viajes.jpg`.
 
 ---
 
-Crea un flujo llamado «Vessel · Rediseño de inventario». Sigue esta especificación al pie de la letra.
+Crea un flujo llamado «Vessel · Rediseño de inventario · Fase 2». Sigue esta especificación al pie de la letra.
 
 REGLAS PARA CONSTRUIR EL FLUJO
 1. Crea exactamente los 12 bloques listados, con el id, tipo, proveedor, modelo, permiso y título
@@ -71,36 +60,41 @@ ESTRUCTURA (verbalizada)
 BLOQUES
 
 ────────────────────────────────────────
-id: entrada · tipo: Entrada · título: Petición fase 1 + carpeta del proyecto
+id: entrada · tipo: Entrada · título: Petición fase 2 + carpeta del proyecto
 ===== INSTRUCCIONES =====
-PETICIÓN: FASE 1 del rediseño del inventario de Vessel: In Vessel por puntos (mapa, inventario por punto, estantería y descuadres).
+PETICIÓN: FASE 2 del rediseño del inventario de Vessel: pestaña «Viajes» con Necesidades (ticket) y Pedido.
 
-LA PETICIÓN COMPLETA, CON SUS CRITERIOS DE ACEPTACIÓN, ESTÁ EN docs/rediseno/fase-1.md. Léelo entero antes de hacer nada. Ese archivo manda sobre cualquier plan, informe o revisión intermedios. Contexto: docs/rediseno/propuesta.md (la propuesta del usuario) y las imágenes de docs/rediseno/img/ (plano-vessel.jpg, maqueta-estanteria.jpg).
+LA PETICIÓN COMPLETA, CON SUS CRITERIOS DE ACEPTACIÓN, ESTÁ EN docs/rediseno/fase-2.md. Léelo entero antes de hacer nada, incluido el apartado «Cómo quedó la fase 1». Ese archivo manda sobre cualquier plan, informe o revisión intermedios. Contexto: docs/rediseno/propuesta.md (la propuesta del usuario), docs/rediseno/fase-1.md (lo que ya está hecho) y la imagen docs/rediseno/img/maqueta-viajes.jpg.
 
-Resumen (si algo no coincide, manda docs/rediseno/fase-1.md):
-- Almacén mantiene arriba «In Vessel · Out Vessel». In Vessel pasa a ser un mapa SVG del local hecho con datos (no la foto). Tiene 9 puntos: Almacén alcohol, Nevera de vino, Almacén cerveza y refrescos, Neveras de cerveza, Neveras cerveza especial, Nevera chupitería, Barra 1, Barra 2 y Barra VIP. Cada punto abre su propio inventario. Out Vessel sigue siendo un único inventario, como ahora.
-- El inventario de un punto es una estantería visual: pestañas de categoría, tarjetas con imagen y un panel fijo abajo con Cajas, Botellas y «Hecho». Hay dos modos, «Contar» (a ciegas, por defecto) y «Consultar» (muestra el stock teórico).
-- Cada producto tiene un punto principal. Reponer «Hecho» saca del punto principal y mete en la barra. El viaje «Hecho» mete en el punto principal. Hay «Mover a…» entre puntos, y las roturas van por punto.
-- En los almacenes, la diferencia al contar es un descuadre (con su punto). En barras y neveras se muestra como «Consumo desde el último recuento», no como descuadre.
-- Migración idempotente 0005. La historia de «In Vessel» pasa a «Almacén alcohol». Las copias antiguas se siguen importando. Hay categorías nuevas (Cervezas, Refrescos, Vinos) sin inventar productos.
-- La barra inferior sigue con 4 pestañas. La pestaña Viajes es de la fase 2: no se hace ahora.
+Resumen (si algo no coincide, manda docs/rediseno/fase-2.md):
+- La barra inferior pasa a 5 pestañas: Pedir · Reponer · Almacén · Viajes · Gestión. Viajes lleva el icono «truck».
+- Viajes tiene dos pestañas:
+  - «Necesidades» (por defecto): arriba «Agotados», en fila horizontal. Debajo, el ticket «Necesidades» (papel, bordes dentados, puntos) con la recomendación en cajas, «− N +» por línea y «Añadir al pedido».
+  - «Pedido»: el viaje Out → In Vessel de siempre, sacado de Almacén y pensado para leerlo de pie en la warehouse. Cajas y sueltas, casillas grandes y «Hecho».
+- Agotado = stock del punto principal (products.main_store_id) ≤ 0, o marcado «agotado en almacén» desde Reponer (products.out_of_stock).
+- La recomendación reutiliza la lógica actual de sugerencias (suggestions en server/almacen.js), pero sobre el punto principal de cada producto y en cajas. Sin datos, no se inventa. Sin botellas por caja, la línea va en botellas y avisa.
+- Los ajustes de cantidad se guardan en el servidor y se ven en todos los móviles. Es el mismo dato en la ficha de los almacenes principales («Próximo viaje»).
+- «Añadir al pedido» no duplica aunque dos móviles pulsen a la vez.
+- Todos los enlaces al viaje de Almacén pasan a #/viajes/pedido, y #/almacen/viaje redirige allí.
+- Migración idempotente 0006. Nada de proveedores. El mapa y los puntos de la fase 1 no se tocan.
 
 PROYECTO: «Vessel · Reposición», una web app para reponer botellas entre el almacén y las barras de la discoteca Vessel. Se usa desde el móvil. El repositorio es la carpeta de este bloque.
 - Antes de nada, lee README.md y PRODUCT.md.
 - Frontend: HTML, CSS y JS sin compilación, con módulos ES, en public/.
-  - Vistas en public/js/views/. Plantillas html`` con escape en public/js/ui.js. Iconos Lucide en public/js/icons.js.
+  - Vistas en public/js/views/ (entre ellas mapa.js, estanteria.js, almacen.js y viaje.js). Plantillas html`` con escape en public/js/ui.js. Iconos Lucide en public/js/icons.js.
+  - Barra inferior en public/index.html y rutas en public/js/main.js.
   - Estilos y tokens claro/oscuro en public/css/ (app.css, almacen.css, gestion.css). Fuente Archivo.
   - La CSP es 'self': nada de scripts inline ni onclick en atributos.
 - Servidor: un manejador Request/Response en server/handler.js. Corre en Cloudflare Workers (server/worker.js) y en Node (server/index.js).
-  - Lógica en server/services.js, almacen.js, viaje.js y control.js.
+  - Lógica en server/services.js, almacen.js, viaje.js, control.js y stock-operation.js.
 - Base de datos: Supabase (Postgres) con postgres.js. En local y en los tests, PGlite con el mismo SQL.
-  - Migraciones en supabase/migrations/ (0001 a 0004 ya existen). Todas idempotentes, con RLS activado y sin políticas.
+  - Migraciones en supabase/migrations/ (0001 a 0005 ya existen). Todas idempotentes, con RLS activado y sin políticas.
   - Las operaciones atómicas usan SELECT … FOR UPDATE más una escritura condicional.
   - Si cambias server/catalog.js, regenera la semilla con node scripts/db/build-seed.mjs.
-- Tests: npm test (en Windows, npm.cmd test). Hoy hay 69: 68 pasan y 1 se salta (concurrencia real, solo con TEST_DATABASE_URL).
+- Tests: npm test (en Windows, npm.cmd test). Hoy hay 93: 92 pasan y 1 se salta (concurrencia real, solo con TEST_DATABASE_URL).
 
 REGLAS PARA TODOS LOS BLOQUES
-1. La petición (docs/rediseno/fase-1.md) manda. Si un plan o una revisión la contradicen, gana la petición.
+1. La petición (docs/rediseno/fase-2.md) manda. Si un plan o una revisión la contradicen, gana la petición.
 2. Nada se borra en los datos: los errores se corrigen y queda constancia. La noche de trabajo cruza la medianoche: lo anterior a las 12:00 (hora de Madrid) cuenta para la noche anterior.
 3. No inventes productos, nombres, capacidades, botellas por caja ni fotos. Lo dudoso se marca como dudoso.
 4. Nunca toques producción, Supabase ni Cloudflare. Nunca uses DATABASE_URL, ni aunque exista en el entorno. Para probar, solo la versión local con PGlite.
@@ -118,9 +112,9 @@ Eres el MANAGER de esta ejecución. No escribes código: escribes el PLAN que se
 Haz esto:
 1. Lee entera la petición de la fase indicada en la Entrada (docs/rediseno/fase-N.md). Lee también docs/rediseno/propuesta.md, mira las imágenes de docs/rediseno/img/ y lee README.md y PRODUCT.md.
 2. Lee el código que vaya a cambiar:
-   - server/almacen.js, viaje.js, control.js, services.js, handler.js, schema.js, catalog.js e import-backup.js;
+   - server/almacen.js, viaje.js, control.js, services.js, stock-operation.js, handler.js, schema.js, catalog.js e import-backup.js;
    - supabase/migrations/;
-   - public/js/views/almacen.js, viaje.js y control.js, y public/js/main.js, ui.js, icons.js y api.js;
+   - public/index.html, public/js/views/almacen.js, mapa.js, estanteria.js, viaje.js y control.js, y public/js/main.js, ui.js, icons.js y api.js;
    - public/css/;
    - test/.
 
@@ -316,7 +310,7 @@ Eres el bloque de CORRECCIONES Y COMMIT. Recibes el informe de integración, el 
 5. Commit y push:
    - Mira la rama actual con git branch --show-current. Si es main (o master), NO hagas commit allí: crea la rama rediseno-fase-N (con git switch -c) y trabaja en ella.
    - Revisa git status. No subas tmp-capturas/, data/, node_modules/, .dev.vars ni ningún secreto.
-   - Un solo commit, con un mensaje claro en español. Por ejemplo: «Fase 1: In Vessel por puntos, mapa, estantería y descuadres por punto».
+   - Un solo commit, con un mensaje claro en español. Por ejemplo: «Fase 2: pestaña Viajes con Necesidades y Pedido».
    - git push -u origin <rama actual>. Nunca push a main. Nunca --force.
 6. Escribe el INFORME FINAL para el usuario (no programa: lenguaje llano):
    - qué se ha hecho;
@@ -352,53 +346,3 @@ CONEXIONES (origen → destino)
 15. comparador → union-revision
 16. union-revision → correcciones
 17. correcciones → salida
-
----
-
-## Entrada de la fase 2
-
-> **Más fácil:** usa el prompt completo de `docs/orquesta/flujo-fase-2.md`, que ya trae esta Entrada
-> actualizada con lo que dejó la fase 1. Lo de abajo queda como referencia.
-
-Cuando la fase 1 esté terminada y subida: duplica el flujo y sustituye **todo** el texto del bloque
-«entrada» por esto. No cambies nada más. Los demás bloques ya leen la fase que diga la Entrada.
-
-```
-PETICIÓN: FASE 2 del rediseño del inventario de Vessel: pestaña «Viajes» con Necesidades (ticket) y Pedido.
-
-LA PETICIÓN COMPLETA, CON SUS CRITERIOS DE ACEPTACIÓN, ESTÁ EN docs/rediseno/fase-2.md. Léelo entero antes de hacer nada. Ese archivo manda sobre cualquier plan, informe o revisión intermedios. Contexto: docs/rediseno/propuesta.md (la propuesta del usuario), docs/rediseno/fase-1.md (lo que ya está hecho) y la imagen docs/rediseno/img/maqueta-viajes.jpg.
-
-Resumen (si algo no coincide, manda docs/rediseno/fase-2.md):
-- La barra inferior pasa a 5 pestañas: Pedir · Reponer · Almacén · Viajes · Gestión. Viajes lleva el icono «truck».
-- Viajes tiene dos pestañas:
-  - «Necesidades» (por defecto): arriba «Agotados», en fila horizontal. Debajo, el ticket «Necesidades» (papel, bordes dentados, puntos) con la recomendación en cajas, «− N +» por línea y «Añadir al pedido».
-  - «Pedido»: el viaje Out → In Vessel de siempre, sacado de Almacén y pensado para leerlo en la warehouse. Cajas y sueltas, casillas grandes y «Hecho».
-- Agotado = stock del punto principal ≤ 0, o marcado «agotado en almacén» desde Reponer.
-- La recomendación reutiliza la lógica actual de sugerencias, sobre el punto principal y en cajas. Sin datos, no se inventa. Sin botellas por caja, la línea va en botellas y avisa.
-- Los ajustes de cantidad se guardan en el servidor y se ven en todos los móviles. Es el mismo dato en la ficha de los almacenes principales («Próximo viaje»).
-- «Añadir al pedido» no duplica aunque dos móviles pulsen a la vez.
-- Migración idempotente 0006. Nada de proveedores.
-
-PROYECTO: «Vessel · Reposición», una web app para reponer botellas entre el almacén y las barras de la discoteca Vessel. Se usa desde el móvil. El repositorio es la carpeta de este bloque.
-- Antes de nada, lee README.md y PRODUCT.md.
-- Frontend: HTML, CSS y JS sin compilación, con módulos ES, en public/.
-  - Vistas en public/js/views/. Plantillas html`` con escape en public/js/ui.js. Iconos Lucide en public/js/icons.js.
-  - Estilos y tokens claro/oscuro en public/css/. Fuente Archivo.
-  - La CSP es 'self': nada de scripts inline ni onclick en atributos.
-- Servidor: un manejador Request/Response en server/handler.js. Corre en Cloudflare Workers (server/worker.js) y en Node (server/index.js).
-  - Lógica en server/services.js, almacen.js, viaje.js y control.js.
-- Base de datos: Supabase (Postgres) con postgres.js. En local y en los tests, PGlite con el mismo SQL.
-  - Migraciones en supabase/migrations/ (0001 a 0005 ya existen). Todas idempotentes, con RLS activado y sin políticas.
-  - Las operaciones atómicas usan SELECT … FOR UPDATE más una escritura condicional.
-- Tests: npm test (en Windows, npm.cmd test). Todos deben seguir pasando.
-
-REGLAS PARA TODOS LOS BLOQUES
-1. La petición (docs/rediseno/fase-2.md) manda. Si un plan o una revisión la contradicen, gana la petición.
-2. Nada se borra en los datos: los errores se corrigen y queda constancia. La noche de trabajo cruza la medianoche: lo anterior a las 12:00 (hora de Madrid) cuenta para la noche anterior.
-3. No inventes productos, nombres, capacidades, botellas por caja ni fotos. Lo dudoso se marca como dudoso.
-4. Nunca toques producción, Supabase ni Cloudflare. Nunca uses DATABASE_URL, ni aunque exista en el entorno. Para probar, solo la versión local con PGlite.
-5. Nunca hagas commit ni push en main. Solo el bloque «correcciones» hace commit y push, en la rama actual.
-6. Los textos de la app van en español de España, con tono directo. Estilo «estándar limpio» de herramienta profesional de hostelería: nada de plantilla de IA ni de estética «hortera de discoteca».
-7. Rapidez ante todo en el móvil: botones de al menos 44 px, sin pasos de más. Debe verse bien a 390 × 844 en claro y en oscuro.
-8. En Windows: usa npm.cmd y npx.cmd.
-```

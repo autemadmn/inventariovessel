@@ -5,6 +5,30 @@ terminada (puntos de In Vessel, punto principal de cada producto y migración 00
 `docs/rediseno/propuesta.md` (con `img/maqueta-viajes.jpg`). Donde la propuesta y este archivo no
 coinciden, manda este archivo.
 
+## Cómo quedó la fase 1 (para orientarse en el código)
+
+- Los puntos de In Vessel son filas de `stores` con `point_type`, `map_key`, `bar_id` e `in_vessel`
+  (migración `0005_puntos.sql`). Out Vessel es la fila con `kind = 'central'`.
+- El punto principal de cada producto es `products.main_store_id` (`mainStoreId` en
+  `server/almacen.js`).
+- El stock por punto sale de `stockRows` en `server/almacen.js`.
+- Las sugerencias del viaje están en `suggestions` (`server/almacen.js`). Hoy calculan el stock con
+  el almacén local por defecto (Almacén alcohol), **no** con el punto principal de cada producto:
+  esto es lo que hay que cambiar.
+- Las sugerencias las usa `addSuggested` (`server/viaje.js`).
+- El viaje está en `server/viaje.js` (`tripView`, `addTripLine`, `updateTripLine`,
+  `removeTripLine`, `finishTrip`, con las rutas `/api/almacen/viaje...`) y en
+  `public/js/views/viaje.js`. «Hecho» ya mete cada línea en el punto principal.
+- **Enlaces al viaje que hay que cambiar a `#/viajes/pedido`:**
+  - la tarjeta «Próximo viaje» del mapa (`public/js/views/mapa.js`) y de la lista de Almacén
+    (`public/js/views/almacen.js`);
+  - «Ya en el viaje» y «Apuntar para el viaje» de la ficha de una botella
+    (`public/js/views/almacen.js`).
+- «Agotado en almacén» desde Reponer es `products.out_of_stock = 1`, con su historial en la tabla
+  `stockouts`.
+- La barra inferior está en `public/index.html` (4 enlaces `.nav a` con `data-route`) y las rutas
+  en `public/js/main.js`.
+
 ## Decisiones ya tomadas (no se discuten)
 
 - **Barra inferior con 5 pestañas:** Pedir · Reponer · Almacén · **Viajes** · Gestión. Viajes lleva
