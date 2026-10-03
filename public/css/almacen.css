@@ -387,15 +387,20 @@
 .map-card { margin: 12px 0 6px; padding: 14px 6px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); }
 .vessel-map { display: block; width: 100%; max-width: 440px; height: auto; margin: 0 auto; overflow: visible; }
 .vessel-map text { font-family: inherit; dominant-baseline: central; pointer-events: none; stroke: none; }
-/* Contexto: el local casi no pesa; la zona de personal lleva el rayado del plano. */
-.map-building { fill: var(--surface); }
-.map-staff { fill: var(--surface-2); }
+/* Contexto: paredes gruesas como en el plano; la zona de personal, en rojo suave con su rayado. */
+.vessel-map { --wall: color-mix(in srgb, var(--text) 62%, var(--surface)); --staff: var(--danger); }
+@media (prefers-color-scheme: dark) { .vessel-map { --wall: color-mix(in srgb, var(--text) 46%, var(--surface)); } }
+.map-building { fill: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+.map-staff { fill: color-mix(in srgb, var(--staff) 7%, var(--surface)); }
 .map-hatch-area { fill: url(#map-hatch); }
-.map-hatch-line { stroke: var(--line-strong); stroke-width: 1.5; }
-.map-staff-edge { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-linejoin: round; }
-.map-walls { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.map-edge { fill: none; stroke: var(--line-strong); stroke-width: 3.5; stroke-linejoin: round; }
-.map-zone { fill: var(--faint); font-size: 30px; font-weight: 600; letter-spacing: 0.24em; }
+.map-hatch-line { stroke: color-mix(in srgb, var(--staff) 22%, transparent); stroke-width: 1.5; }
+.map-edge { fill: none; stroke: var(--wall); stroke-width: 9; stroke-linejoin: round; }
+.map-wall { fill: none; stroke: var(--wall); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.map-partition { fill: none; stroke: color-mix(in srgb, var(--wall) 70%, var(--surface)); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.map-stairs { fill: none; stroke: var(--wall); stroke-width: 3; }
+.map-stairs-box { fill: var(--surface); stroke: var(--wall); stroke-width: 4; }
+.map-zone { fill: var(--faint); font-size: 19px; font-weight: 600; letter-spacing: 0.04em; }
+.map-zone.big { font-size: 30px; letter-spacing: 0.2em; }
 /* Puntos: almacenes protagonistas; neveras y barras, secundarios. */
 .map-point { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map-hit { fill: transparent; stroke: none; pointer-events: all; transition: fill 160ms var(--ease); }
@@ -427,7 +432,7 @@
 .sw-almacen { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border-color: var(--accent); }
 .sw-nevera { background: var(--surface); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
 .sw-barra { background: color-mix(in srgb, var(--bar1) 14%, var(--surface)); border-color: var(--bar1); }
-.sw-staff { background: repeating-linear-gradient(45deg, var(--line-strong) 0 1.5px, var(--surface-2) 1.5px 5px); border-color: var(--line-strong); }
+.sw-staff { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--danger) 30%, transparent) 0 1.5px, color-mix(in srgb, var(--danger) 7%, var(--surface)) 1.5px 5px); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
 .sw-alert { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--warn); color: var(--surface); font-size: 11px; font-weight: 800; }
 .map-note { margin: 4px 0 18px; color: var(--muted); font-size: 0.8125rem; text-align: center; }
 .point-list { list-style: none; margin: 8px 0 16px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }

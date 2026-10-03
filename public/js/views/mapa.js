@@ -42,10 +42,13 @@ function mapSvg(points) {
       <path class="map-building" d="${MAPA.building}"/>
       <path class="map-staff" d="${MAPA.staff}"/>
       <path class="map-hatch-area" d="${MAPA.staff}"/>
-      <path class="map-staff-edge" d="${MAPA.staff}"/>
-      <path class="map-walls" d="${MAPA.walls}"/>
+      ${MAPA.partitions.map((d) => html`<path class="map-partition" d="${d}"/>`)}
+      <g class="map-stairs">${rect(MAPA.stairs.rect, 'map-stairs-box')}${MAPA.stairs.rungs.map((y) =>
+        html`<line x1="${MAPA.stairs.rect[0]}" x2="${MAPA.stairs.rect[0] + MAPA.stairs.rect[2]}" y1="${y}" y2="${y}"/>`)}</g>
+      ${MAPA.walls.map((d) => html`<path class="map-wall" d="${d}"/>`)}
       <path class="map-edge" d="${MAPA.building}"/>
-      ${MAPA.zones.map((z) => html`<text class="map-zone" x="${z.at[0]}" y="${z.at[1]}" text-anchor="middle">${z.label}</text>`)}
+      ${MAPA.zones.map((z) => html`<text class="map-zone${z.size === 'big' ? ' big' : ''}" x="${z.at[0]}" y="${z.at[1]}" text-anchor="middle"
+        transform="${z.rotate ? `rotate(${z.rotate} ${z.at[0]} ${z.at[1]})` : ''}">${z.label}</text>`)}
     </g>
     ${order.map((m) => byKey.has(m.key) ? point(m, byKey.get(m.key)) : '')}
   </svg>`;
