@@ -35,7 +35,7 @@ const REST_SLUGS = ['brockmans', 'bulldog-london-dry', 'gvine-floraison', 'hendr
 
 // ------------------------------------------------------------------ catálogo y semilla
 
-test('catálogo inicial: botones por producto, dudosos por confirmar y sin datos inventados', async (t) => {
+test('catálogo inicial: botones por producto, alcoholes confirmados y sin datos inventados', async (t) => {
   const { db } = await setup(t);
   const visible = await svc.listProducts(db);
   assert.equal(visible.length, 17 + 10 + 9 + 12 + 1);
@@ -45,9 +45,8 @@ test('catálogo inicial: botones por producto, dudosos por confirmar y sin datos
   for (const p of visible.filter((x) => x.photo)) {
     assert.ok(existsSync(join(import.meta.dirname, '..', 'public', p.photo)), p.photo);
   }
-  const pending = visible.filter((p) => p.status === 'pendiente').map((p) => p.name);
-  assert.deepEqual(pending.sort(), ['Flor de Caña Añejo Reserva', 'Glenmorangie The Original', 'Old / Old Sport',
-    'Puerto de Indias', 'The Macallan 12', 'Zacapa'].sort());
+  // 0007 quita «Dudoso» de los alcoholes que la semilla dejó por confirmar.
+  assert.ok(visible.every((p) => p.status === 'confirmado' && p.note === null));
   const hidden = (await svc.listProducts(db, { all: true })).filter((p) => p.status === 'sin_identificar');
   assert.equal(hidden.length, 2);
   assert.ok(hidden.every((p) => !p.active));
@@ -67,6 +66,14 @@ test('la semilla se aplica una sola vez y no pisa cambios ni fotos propias', asy
   assert.match(all.find((p) => p.name === 'SKYY').photo, /^\/photos\/\d+$/);
   assert.equal((await db.get('SELECT count(*)::int AS n FROM product_groups')).n, 2);
   assert.equal((await db.get('SELECT count(*)::int AS n FROM staff')).n, 3);
+});
+
+test('confirmar los alcoholes se aplica una vez: un producto nuevo por confirmar sigue así', async (t) => {
+  const { db } = await setup(t);
+  const p = await svc.createProduct(db, { name: 'Ginebra nueva', category: 'ginebra' });
+  assert.equal(p.status, 'pendiente');
+  await applyMigrations(db);
+  assert.equal((await db.get('SELECT status FROM products WHERE id = ?', p.id)).status, 'pendiente');
 });
 
 test('grupos iniciales: Habituales en orden de estantería y Resto por categoría y nombre', async (t) => {
@@ -521,7 +528,7 @@ test('catalog_rev: sube con catálogo, selección, personal y barras; no con la 
   const { db, id } = await setup(t);
   const rev = () => svc.catalogRev(db);
   const r0 = await rev();
-  assert.equal(r0, 1);
+  assert.equal(r0, 2, 'la semilla la deja en 1 y 0007 (alcoholes confirmados) la sube una vez');
   assert.equal((await svc.bootstrap(db, { managerRequired: false })).catalog_rev, r0);
   assert.equal((await svc.liveState(db, { now: NIGHT })).catalog_rev, r0);
 
