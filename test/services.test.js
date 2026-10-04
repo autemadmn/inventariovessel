@@ -33,6 +33,11 @@ const REST_SLUGS = ['brockmans', 'bulldog-london-dry', 'gvine-floraison', 'hendr
   'barcelo-imperial', 'brugal-1888', 'brugal-doble-reserva', 'flor-de-cana-12', 'flor-de-cana-anejo-reserva', 'zacapa',
   'don-julio-reposado'];
 
+// Grupos después de 0008: «Old / Old Sport» es BoldCrew Original y Flor de Caña Añejo Reserva pasa al
+// final de Habituales.
+const USUAL_NOW = [...HABITUAL_SLUGS.map((s) => (s === 'old-old-sport' ? 'boldcrew-original' : s)), 'flor-de-cana-anejo-reserva'];
+const REST_NOW = REST_SLUGS.filter((s) => s !== 'flor-de-cana-anejo-reserva');
+
 // ------------------------------------------------------------------ catálogo y semilla
 
 test('catálogo inicial: botones por producto, alcoholes confirmados y sin datos inventados', async (t) => {
@@ -78,8 +83,10 @@ test('confirmar los alcoholes se aplica una vez: un producto nuevo por confirmar
 
 test('grupos iniciales: Habituales en orden de estantería y Resto por categoría y nombre', async (t) => {
   const { db } = await setup(t);
-  assert.deepEqual(await slugsOf(db, 'Habituales'), HABITUAL_SLUGS);
-  assert.deepEqual(await slugsOf(db, 'Resto'), REST_SLUGS);
+  assert.deepEqual(await slugsOf(db, 'Habituales'), USUAL_NOW);
+  assert.deepEqual(await slugsOf(db, 'Resto'), REST_NOW);
+  const bold = await db.get("SELECT name, category, status FROM products WHERE slug = 'boldcrew-original'");
+  assert.deepEqual({ ...bold }, { name: 'BoldCrew Original', category: 'whisky', status: 'confirmado' });
   const loose = await db.all('SELECT slug FROM products WHERE group_id IS NULL ORDER BY slug');
   assert.deepEqual(loose.map((r) => r.slug), ['botella-de-ron-con-malla', 'botella-pequena-y-oscura']);
   const staff = await svc.listStaff(db);
@@ -403,27 +410,27 @@ test('grupos: crear, validar, renombrar, ordenar y borrar moviendo sus botellas'
   const ordered = await svc.orderGroups(db, { ids: [g.id, usual.id, rest.id] });
   assert.deepEqual(ordered.map((x) => [x.name, x.sort]), [['Nuevas', 10], ['Habituales', 20], ['Resto', 30]]);
 
-  // Borrar Habituales moviendo sus 19 botellas al final de Nuevas (vacío), en su orden.
+  // Borrar Habituales moviendo sus 20 botellas al final de Nuevas (vacío), en su orden.
   await assert.rejects(svc.deleteGroup(db, usual.id, {}), { status: 400, message: 'Indica a dónde van las botellas del grupo.' });
   await assert.rejects(svc.deleteGroup(db, usual.id, { move_to: String(usual.id) }), { status: 400, message: 'Grupo de destino no válido.' });
   await assert.rejects(svc.deleteGroup(db, usual.id, { move_to: '999' }), { status: 400 });
   await assert.rejects(svc.deleteGroup(db, usual.id, { move_to: 'abc' }), { status: 400 });
   const res = await svc.deleteGroup(db, usual.id, { move_to: String(g.id), by: 'Encargado' });
-  assert.deepEqual(res, { ok: true, moved: 19 });
-  assert.deepEqual(await slugsOf(db, 'Nuevas'), HABITUAL_SLUGS);
+  assert.deepEqual(res, { ok: true, moved: 20 });
+  assert.deepEqual(await slugsOf(db, 'Nuevas'), USUAL_NOW);
   const orders = (await db.all('SELECT group_order FROM products WHERE group_id = ? ORDER BY group_order', g.id)).map((r) => r.group_order);
-  assert.deepEqual(orders, HABITUAL_SLUGS.map((_, i) => i + 1));
+  assert.deepEqual(orders, USUAL_NOW.map((_, i) => i + 1));
 
   // Borrar Resto dejando sus botellas fuera de la selección.
   await svc.deleteGroup(db, rest.id, { move_to: 'none' });
-  assert.equal((await db.get('SELECT count(*)::int AS n FROM products WHERE group_id IS NULL')).n, 2 + 30);
+  assert.equal((await db.get('SELECT count(*)::int AS n FROM products WHERE group_id IS NULL')).n, 2 + REST_NOW.length);
   await assert.rejects(svc.deleteGroup(db, rest.id, { move_to: 'none' }), { status: 404 });
 
   const log = await svc.listAudit(db, { entity: 'seleccion' });
   assert.deepEqual([...new Set(log.map((a) => a.action))].sort(),
     ['borrar grupo', 'crear grupo', 'ordenar grupos', 'renombrar grupo']);
   const del = log.find((a) => a.action === 'borrar grupo' && a.after.destino === 'Nuevas');
-  assert.deepEqual(del.before, { name: 'Habituales', botellas: 19 });
+  assert.deepEqual(del.before, { name: 'Habituales', botellas: USUAL_NOW.length });
 });
 
 test('orden de botellas: mover entre grupos, renumerar, validar sin aplicar nada y quitar', async (t) => {
@@ -447,7 +454,7 @@ test('orden de botellas: mover entre grupos, renumerar, validar sin aplicar nada
   // El grupo de origen (Resto) se renumera sin huecos.
   const restOrders = res.items.filter((x) => x.group_id === rest.id).map((x) => x.group_order);
   assert.deepEqual(restOrders, restOrders.map((_, i) => i + 1));
-  assert.equal(restOrders.length, 29);
+  assert.equal(restOrders.length, REST_NOW.length - 1);
 
   // Grupo inválido: 400 y nada aplicado.
   const before = await db.all('SELECT id, group_id, group_order FROM products ORDER BY id');
@@ -471,13 +478,13 @@ test('orden de botellas: mover entre grupos, renumerar, validar sin aplicar nada
   // PUT /api/products/:id con group_id: al final del grupo.
   const p = await svc.updateProduct(db, skyy, { group_id: rest.id });
   assert.equal(p.group_id, rest.id);
-  assert.equal(p.group_order, 30);
+  assert.equal(p.group_order, REST_NOW.length);
   const out = await svc.updateProduct(db, skyy, { group_id: null });
   assert.equal(out.group_order, null);
 
   // Crear producto: con grupo va al final; sin grupo, fuera de la selección.
   const n1 = await svc.createProduct(db, { name: 'Nueva ginebra', category: 'ginebra', group_id: usual.id });
-  assert.equal(n1.group_order, 20); // Habituales tiene 19 tras quitar SKYY
+  assert.equal(n1.group_order, USUAL_NOW.length + 1); // Habituales + Roku − SKYY
   const n2 = await svc.createProduct(db, { name: 'Otra nueva', category: 'ginebra' });
   assert.equal(n2.group_id, null);
   await assert.rejects(svc.createProduct(db, { name: 'X', group_id: 999 }), { status: 400, message: 'Grupo no válido.' });
@@ -528,7 +535,7 @@ test('catalog_rev: sube con catálogo, selección, personal y barras; no con la 
   const { db, id } = await setup(t);
   const rev = () => svc.catalogRev(db);
   const r0 = await rev();
-  assert.equal(r0, 2, 'la semilla la deja en 1 y 0007 (alcoholes confirmados) la sube una vez');
+  assert.equal(r0, 3, 'la semilla la deja en 1; 0007 y 0008 la suben una vez cada una');
   assert.equal((await svc.bootstrap(db, { managerRequired: false })).catalog_rev, r0);
   assert.equal((await svc.liveState(db, { now: NIGHT })).catalog_rev, r0);
 
@@ -674,7 +681,7 @@ test('API: código de acceso para el personal, PIN para el encargado, fotos y co
   assert.equal(noDest.status, 400);
   const del = await call(`/api/groups/${usual.id}?move_to=${created.id}&by=E`, { method: 'DELETE', headers: mgr });
   assert.equal(del.status, 200);
-  assert.deepEqual(await del.json(), { ok: true, moved: 19 });
+  assert.deepEqual(await del.json(), { ok: true, moved: 20 });
 
   // Foto propia guardada en la base de datos y servida en /photos/:id.
   const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';

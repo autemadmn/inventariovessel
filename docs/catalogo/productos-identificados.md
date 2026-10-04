@@ -15,11 +15,12 @@ Marcas de confianza: **✓** confirmado · **≈** muy probable · **?** falta c
 | The Macallan 12 | Pasa a **The Macallan 12 Double Cask** | 15 |
 | Zacapa (pendiente) | Pasa a **Zacapa Centenario Solera 23** | 11 |
 | Flor de Caña Añejo Reserva | Pasa a **Flor de Caña Añejo Reserva 5** | 9 |
-| Old / Old Sport (ron, pendiente) | Pasa a **BoldCrew Original**: es un **whisky** (blended scotch) | 10 |
+| Old / Old Sport (ron, pendiente) | Pasa a **BoldCrew Original** (whisky, blended scotch). Hecho en la migración 0008 | 10 |
 | Botella de ron con malla | Era Brugal Añejo o Doble Reserva: **se borra** (está inactiva) | 9 |
 | Botella pequeña y oscura | Era Talisker 10, que se da de alta: **se borra** (está inactiva) | 15 |
 | Grupo «Resto» | Pasa a llamarse **«Premium»** | — |
-| Zeeland Pink Nº12, Brugal Doble Reserva y Flor de Caña Añejo Reserva | Pasan de «Resto» a **Habituales** | 8, 9 |
+| Flor de Caña Añejo Reserva | Pasa de «Resto» a **Habituales**. Hecho en la migración 0008 | 9 |
+| Zeeland Pink Nº12 y Brugal Doble Reserva | Se quedan en **Premium** (aunque salgan junto a los habituales) | 8, 9 |
 
 Se mantienen tal como están, aunque no salgan en las fotos: Master’s Pink, Larios Pomelo y DYC 8, en
 Habituales; Cîroc Pineapple, Monkey Shoulder, Chivas Regal 12, Abuelo Añejo, Abuelo 12 y Don Julio
@@ -35,7 +36,6 @@ cantidades de la caja son las estándar del mercado español.
 | Producto | Categoría | Estado |
 |---|---|---|
 | Zeeland Nº8 | ginebra | ya está |
-| Zeeland Pink Nº12 | ginebra | ya está (pasa de Resto) |
 | Puerto de Indias Strawberry | ginebra | ya está (cambia el nombre) |
 | Larios Rosé | ginebra | ya está |
 | Larios 12 | ginebra | ya está |
@@ -44,12 +44,11 @@ cantidades de la caja son las estándar del mercado español.
 | Master’s Pink | ginebra | ya está |
 | Tanqueray London Dry | ginebra | ya está |
 | Brugal Añejo | ron | ya está |
-| Brugal Doble Reserva | ron | ya está (pasa de Resto) |
 | Cacique Añejo | ron | ya está |
 | Flor de Caña Añejo Reserva 5 | ron | ya está (pasa de Resto) |
 | Barceló Añejo | ron | ya está |
 | Johnnie Walker Red Label | whisky | ya está |
-| BoldCrew Original | whisky | ya está (antes «Old / Old Sport») |
+| BoldCrew Original | whisky | ya está (antes «Old / Old Sport»; renombrado) |
 | Jack Daniel’s Old No. 7 | whisky | ya está |
 | **Cutty Sark** (`cutty-sark`) | whisky | **nuevo** |
 | Dewar’s White Label | whisky | ya está |
@@ -63,9 +62,9 @@ cantidades de la caja son las estándar del mercado español.
 
 | Producto | Categoría | Estado |
 |---|---|---|
-| Brockmans, Bulldog, Hendrick’s, Nordés, Martin Miller’s, G’Vine Floraison, Roku, Macaronesian | ginebra | ya están |
+| Brockmans, Bulldog, Hendrick’s, Nordés, Martin Miller’s, G’Vine Floraison, Roku, Macaronesian, Zeeland Pink Nº12 | ginebra | ya están |
 | **Larios 150 Aniversario** (`larios-150`) | ginebra | **nuevo** |
-| Zacapa Centenario Solera 23, Brugal 1888, Flor de Caña 12, Barceló Imperial, Abuelo Añejo, Abuelo 12 | ron | ya están |
+| Zacapa Centenario Solera 23, Brugal 1888, Brugal Doble Reserva, Flor de Caña 12, Barceló Imperial, Abuelo Añejo, Abuelo 12 | ron | ya están |
 | Glenmorangie The Original 10, The Macallan 12 Double Cask, Monkey Shoulder, Chivas Regal 12 | whisky | ya están |
 | **Talisker 10** (`talisker-10`) | whisky | **nuevo** |
 | **Johnnie Walker Black Label 12** (`johnnie-walker-black-label`) | whisky | **nuevo** |

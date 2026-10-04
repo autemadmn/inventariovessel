@@ -30,7 +30,7 @@ REGLAS PARA CONSTRUIR EL FLUJO
 
 ESTRUCTURA
 - Fase 0. «brief» (Entrada) lleva el contexto común y se conecta a todos los bloques IA.
-- Fase 1. «fichas» (Gemini 2.5 Flash, lectura) busca referencias visuales reales de las 6 botellas.
+- Fase 1. «fichas» (Gemini 2.5 Flash, lectura) busca referencias visuales reales de las 4 botellas.
 - Fase 2. Dos generadores trabajan a la vez con las mismas fichas: «gen-gemini» (Gemini 2.5 Pro con Nano
   Banana, escritura) y «gen-codex» (Codex, escritura). Cada uno hace una candidata por botella.
 - Fase 3. «union-candidatas» (Merge) → «seleccion» (Claude Opus, lectura). Selección compara las dos
@@ -49,7 +49,7 @@ id: brief · tipo: Entrada · título: Brief común
 PROYECTO: «Vessel · Reposición», web app de reposición e inventario de una discoteca. El repositorio es la
 carpeta de trabajo actual. HTML/CSS/JS sin build en public/; servidor Node en server/.
 
-OBJETIVO: crear las imágenes de catálogo de 6 botellas del grupo «Habituales» que hoy no tienen imagen, con
+OBJETIVO: crear las imágenes de catálogo de 4 botellas del grupo «Habituales» que hoy no tienen imagen, con
 el mismo aspecto que las 18 que ya hay. Esta ejecución solo hace imágenes: no toca la base de datos, ni el
 catálogo, ni el código de la app.
 
@@ -65,19 +65,18 @@ CÓMO FUNCIONAN LAS IMÁGENES HOY
   thumb()). Si una botella sale mal, es mejor no ponerla: se queda la silueta.
 - Las 18 entradas que ya hay en el manifest y sus PNG NO se tocan.
 
-LAS 6 BOTELLAS (slug del manifest → archivo → producto exacto → foto real del local)
-1. old-old-sport → boldcrew-original.png → BoldCrew Original, blended scotch whisky 70 cl → docs/catalogo/referencias/old-old-sport.jpg
-   (En la app el producto aún se llama «Old / Old Sport»; el slug no cambia al renombrarlo, por eso la clave
-   del manifest es old-old-sport.)
+LAS 4 BOTELLAS (slug del manifest → archivo → producto exacto → foto real del local)
+1. boldcrew-original → boldcrew-original.png → BoldCrew Original, blended scotch whisky 70 cl (botella
+   transparente de hombros cuadrados, etiqueta blanca con «BOLD» en gris y «Crew» manuscrito en naranja,
+   tapón negro con banda naranja) → docs/catalogo/referencias/boldcrew-original.jpg
 2. cutty-sark → cutty-sark.png → Cutty Sark Blended Scotch Whisky 70 cl (botella verde, etiqueta amarilla con
    un velero) → docs/catalogo/referencias/cutty-sark.jpg
-3. zeeland-pink-n12 → zeeland-pink-n12.png → Zeeland Pink Gin Nº12 700 ml (botella rosa y oscura degradada,
-   águila, tapón rosa) → docs/catalogo/referencias/zeeland-pink-n12.jpg
-4. brugal-doble-reserva → brugal-doble-reserva.png → Brugal Doble Reserva 70 cl, con su malla de cordel
-   blanca → docs/catalogo/referencias/brugal-doble-reserva.jpg
-5. flor-de-cana-anejo-reserva → flor-de-cana-anejo-reserva.png → Flor de Caña Añejo Reserva 5 años 70 cl,
+3. flor-de-cana-anejo-reserva → flor-de-cana-anejo-reserva.png → Flor de Caña Añejo Reserva 5 años 70 cl,
    etiqueta negra «Terroir volcánico», diseño actual con el volcán → docs/catalogo/referencias/flor-de-cana-anejo-reserva.jpg
-6. aperol → aperol.png → Aperol 70 cl (sin foto del local; solo referencias web)
+4. aperol → aperol.png → Aperol 70 cl (sin foto del local; solo referencias web)
+
+Cutty Sark y Aperol aún no están dados de alta en la app: su imagen se verá cuando se creen con esos
+nombres (slug cutty-sark y aperol). Esta ejecución no los crea.
 
 Las fotos de docs/catalogo/referencias/ son recortes de fotos reales de la barra de Vessel: mandan sobre
 cualquier referencia web cuando no coincidan (diseño de etiqueta, color, tapón).
@@ -94,7 +93,7 @@ REGLAS PARA TODOS
 ────────────────────────────────────────
 id: fichas · tipo: IA · proveedor: Gemini · modelo: gemini-2.5-flash · permiso: lectura · título: Fichas visuales
 ===== INSTRUCCIONES =====
-Para cada una de las 6 botellas del brief:
+Para cada una de las 4 botellas del brief:
 1. Abre la foto real del local (docs/catalogo/referencias/<slug>.jpg) si la hay.
 2. Busca en la web (google_web_search y web_fetch) la página oficial de la marca y fotos de producto de
    tiendas fiables, de la expresión exacta y con el diseño de etiqueta que coincide con la foto del local.
@@ -176,7 +175,7 @@ id: union-candidatas · tipo: Merge · título: Unión de candidatas
 ────────────────────────────────────────
 id: seleccion · tipo: IA · proveedor: Claude · modelo: Opus · permiso: lectura · título: Selección de la mejor candidata
 ===== INSTRUCCIONES =====
-Para cada una de las 6 botellas, abre:
+Para cada una de las 4 botellas, abre:
 - la foto del local (docs/catalogo/referencias/<slug>.jpg), si existe;
 - assets/candidatas/gemini/<slug>.png y assets/candidatas/codex/<slug>.png, las que existan;
 - dos o tres PNG actuales como referencia de estilo (public/img/botellas/larios-12.png, j-b-rare.png,
