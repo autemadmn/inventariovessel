@@ -57,7 +57,7 @@ cantidades de la caja son las estándar del mercado español.
 | DYC 8 | whisky | ya está |
 | SKYY | vodka | ya está |
 | Moskovskaya | vodka | ya está |
-| **Aperol** (`aperol`) | aperitivo | **nuevo**; se pone en barra (grupo por confirmar) |
+| **Aperol** (`aperol`) | aperitivo | **nuevo** |
 
 ### Premium: también en todas las barras (fotos 11 a 15)
 
@@ -169,7 +169,7 @@ cantidades de la caja son las estándar del mercado español.
 | Vino blanco | 1 |
 
 **Hielo**
-- Barras 1 y 2: «4 bolsas de 5». VIP: «2 de 5». Falta aclarar si son 5 kg por bolsa o tandas de 5 bolsas.
+- Barras 1 y 2: 4 tandas de 5 bolsas, **20 bolsas** cada una. VIP: 2 tandas de 5, **10 bolsas**.
 
 **Alcohol**
 - Todas las barras tienen los habituales y los premium. Faltan las cantidades (filas de 3 y cuáles van
@@ -182,6 +182,5 @@ cantidades de la caja son las estándar del mercado español.
 - Botella turbia de tapón cobrizo de la chupitería (¿ginger beer?).
 - Almacén de alcohol, balda baja junto al DYC: botella «Olé» y botella de etiqueta azul y blanca.
 - Marca de los zumos.
-- Peso de la bolsa de hielo y qué significa «4 bolsas de 5».
+- Peso de la bolsa de hielo.
 - Cantidad de botellas de alcohol por barra.
-- Grupo del Aperol (¿Habituales?).
