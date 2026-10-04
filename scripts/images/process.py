@@ -4,6 +4,9 @@ Windows: ~/.cache/vessel-img/Scripts/python.exe scripts/images/process.py
 Unix: ~/.cache/vessel-img/bin/python scripts/images/process.py
 Instalar primero las dependencias de requirements.txt en ese entorno externo.
 Los intermedios, la selección y el informe quedan en assets/procesado/.
+Para otra lista: --selection assets/premium/seleccion.json
+                --adjustments assets/premium/ajustes.json
+Sus intermedios se guardan en procesado/ junto al JSON de selección.
 """
 
 from __future__ import annotations
@@ -44,6 +47,31 @@ ADJUSTMENTS = {
     "cutty-sark": {"alpha_matting": False, "erode_px": 1, "alpha_floor": 8},
     "flor-de-cana-anejo-reserva": {"alpha_matting": False, "erode_px": 1, "alpha_floor": 8},
 }
+DEFAULT_ADJUSTMENTS = {"alpha_matting": False, "erode_px": 1, "alpha_floor": 8}
+
+
+def adjustments_for(slug):
+    return {**DEFAULT_ADJUSTMENTS, **ADJUSTMENTS.get(slug, {})}
+
+
+def load_selection(path):
+    entries = json.loads(path.read_text(encoding="utf-8-sig"))
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("La selección debe ser una lista no vacía")
+    seen = set()
+    for entry in entries:
+        for key in ("slug", "file", "source", "model", "refs", "confidence"):
+            if key not in entry:
+                raise ValueError(f"Falta {key} en la selección")
+        slug = entry["slug"]
+        if slug in seen or not slug or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-" for c in slug):
+            raise ValueError(f"Slug repetido o inválido: {slug}")
+        seen.add(slug)
+        if entry["file"] != slug + ".png" or entry["confidence"] not in ("alta", "media"):
+            raise ValueError(f"Archivo o confianza inválidos: {slug}")
+        if not isinstance(entry["refs"], list) or not (ROOT / entry["source"]).is_file():
+            raise ValueError(f"Referencias o bruto inválidos: {slug}")
+    return entries
 
 
 def digest(path):
@@ -83,7 +111,7 @@ def measure_baseline():
 def cutout(entry, session, refresh):
     from rembg import remove
     slug = entry["slug"]
-    adjustments = ADJUSTMENTS[slug]
+    adjustments = adjustments_for(slug)
     source = ROOT / entry["source"]
     signature = {"source_sha256": digest(source), "model": MODEL,
                  "alpha_matting": adjustments["alpha_matting"], "decontaminate": True,
@@ -105,6 +133,21 @@ def cutout(entry, session, refresh):
     values = np.array(alpha)
     values[values <= adjustments["alpha_floor"]] = 0
     values[values >= 250] = 255
+    if adjustments.get("opaque_interior"):
+        # Una etiqueta clara y una botella cerámica no son agujeros de vidrio.
+        # Rellena entre los bordes fiables de cada fila y recupera el RGB del
+        # bruto: la descontaminación de rembg también altera esas zonas.
+        interior = np.zeros(values.shape, dtype=bool)
+        for y, row in enumerate(values):
+            xs = np.flatnonzero(row > adjustments.get("interior_threshold", 16))
+            if xs.size >= 2:
+                interior[y, xs[0]:xs[-1] + 1] = True
+        values[interior] = 255
+        rgba = np.array(image)
+        with Image.open(source) as original:
+            original_rgb = np.array(original.convert("RGB"))
+        rgba[interior, :3] = original_rgb[interior]
+        image = Image.fromarray(rgba)
     # Conserva únicamente el componente de la botella; elimina motas aisladas.
     labels, count = ndimage.label(values > 0)
     if not count:
@@ -256,24 +299,37 @@ def verify_originals(originals):
 
 
 def main():
+    global WORK
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--refresh", action="store_true", help="Recalcular las máscaras rembg")
+    parser.add_argument("--selection", type=Path, help="JSON de candidatas; omitir conserva la selección original")
+    parser.add_argument("--adjustments", type=Path, help="JSON de ajustes por slug")
     args = parser.parse_args()
+    selection = load_selection(args.selection) if args.selection else SELECTION
+    if args.selection:
+        WORK = args.selection.resolve().parent / "procesado"
+    if args.adjustments:
+        ADJUSTMENTS.update(json.loads(args.adjustments.read_text(encoding="utf-8-sig")))
     WORK.mkdir(parents=True, exist_ok=True)
     originals = preserve_originals()
+    if args.selection:
+        # Las nuevas selecciones nunca pueden sobrescribir los PNG originales.
+        overlap = set(originals["manifest"]) & {entry["slug"] for entry in selection}
+        if overlap:
+            raise ValueError(f"Selección contiene originales protegidos: {sorted(overlap)}")
     baseline, reference_measurements = measure_baseline()
     print(json.dumps({"baseline": baseline, "references": reference_measurements}), flush=True)
-    json_write(WORK / "seleccion.json", SELECTION)
+    json_write(WORK / "seleccion.json", selection)
     from rembg import new_session
     os.environ.setdefault("OMP_NUM_THREADS", "4")
     session = new_session(MODEL, providers=["CPUExecutionProvider"])
     report = {"generated_at": date.today().isoformat(), "baseline_exclusive": baseline,
               "references": reference_measurements, "images": [],
-              "without_image": ["boldcrew-original", "aperol"]}
+              "without_image": [] if args.selection else ["boldcrew-original", "aperol"]}
     additions = {}
-    for entry in SELECTION:
+    for entry in selection:
         image, source_bbox = cutout(entry, session, args.refresh)
-        canvas, placement = place(image, baseline, ADJUSTMENTS[entry["slug"]])
+        canvas, placement = place(image, baseline, adjustments_for(entry["slug"]))
         encoded, quantized = encode(canvas)
         (OUTPUT / entry["file"]).write_bytes(encoded)
         additions[entry["slug"]] = {key: entry[key] for key in ("file", "model", "refs", "confidence")}
@@ -281,16 +337,17 @@ def main():
         with Image.open(OUTPUT / entry["file"]) as saved:
             item = {**entry, "bytes": len(encoded), "KB": round(len(encoded) / 1000, 2),
                     "quantized_256_rgba": quantized, "source_bbox": source_bbox,
-                    "output_bbox": alpha_bbox(saved), "adjustments": ADJUSTMENTS[entry["slug"]], **placement}
+                    "output_bbox": alpha_bbox(saved), "adjustments": adjustments_for(entry["slug"]), **placement}
         report["images"].append(item)
         print(json.dumps(item, ensure_ascii=False), flush=True)
     append_manifest(additions)
-    update_credits()
-    contact_sheet()
+    if not args.selection:
+        update_credits()
+        contact_sheet()
     verify_originals(originals)
     report["originals_unchanged"] = len(originals["manifest"])
     json_write(WORK / "informe.json", report)
-    print("Verificado: PNG originales y entradas originales intactos; assets/revision.png listo.")
+    print(f"Verificado: {len(originals['manifest'])} PNG y entradas originales intactos; informe en {WORK}.")
 
 
 if __name__ == "__main__":
