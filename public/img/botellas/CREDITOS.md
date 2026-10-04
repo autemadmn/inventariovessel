@@ -6,6 +6,9 @@ Las 18 imágenes PNG del manifiesto son representaciones generadas con OpenAI Im
 
 «Old / Old Sport» sigue sin imagen de producto porque su identificación está pendiente. La referencia de Puerto de Indias corresponde a Strawberry; la variedad del inventario sigue pendiente de confirmar.
 
+<!-- vessel-reposicion-recortes -->
+Los nuevos PNG `cutty-sark` y `flor-de-cana-anejo-reserva` se generaron con OpenAI ImageGen (`openai-imagegen`, candidatas de Codex). Son representaciones generadas a partir de referencias públicas y fotos del local, no fotografías oficiales. En estas dos incorporaciones se usaron las fotos del local de `docs/catalogo/referencias/`; no se verificaron ni se añadieron referencias web nuevas. El recorte y la transparencia se procesaron con rembg (`isnet-general-use`), sin regenerar las imágenes.
+
 ## Fotografías de referencia
 
 Fotos de referencia de las botellas, obtenidas de fuentes con licencia libre y reducidas de tamaño (la de DYC 8 está además recortada). Se pueden sustituir por fotos propias desde Gestión → Catálogo.
