@@ -114,7 +114,9 @@ Brugal Doble Reserva y Brugal 1888.
 | 18 | Almacén de alcohol (punto 3), con la nevera Cabreiroá de vino y champán | Alcohol fuerte, en botellas y en cajas |
 | 8, 9, 10 | Contrabarra: **alcoholes habituales**, los mismos en todas las barras (Barra 1, Barra 2 y VIP). Son los de los cubatas normales, no los premium | Ver la lista de abajo |
 | 11–15 | Contrabarra: **alcoholes premium**, también en todas las barras, pero aparte de los habituales | Ver la lista de abajo |
-| 2, 16, 17 | Pendiente de que Alejandro lo explique | — |
+| 16, 17 | **Nevera de barra** (la de la foto es la de la Barra 1). Las tres barras tienen una igual, con lo mismo | 3 Buen Amigo, 3 Jägermeister, 3 Fireball, 3 tequila rosa, 5 Desperados, 5 1906, 5 B.Lemon, 5 Estrella 0,0, 5 Estrella sin gluten y 1 vino blanco. En la foto también salen Karlova Blue y Red, Faro de Cullera, una botella cuadrada de tapón dorado y Estrella Galicia normal: falta confirmar si forman parte de la dotación |
+| 18 | Almacén de alcohol fuerte (punto 3). La nevera cerrada (Cabreiroá) es la **nevera de vino** | Vino y champán |
+| 2 | Pendiente | — |
 
 ### Alcoholes habituales (en todas las barras)
 
