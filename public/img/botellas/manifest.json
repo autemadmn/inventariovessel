@@ -16,5 +16,7 @@
   "dyc-8": { "file": "dyc-8.png", "model": "openai-imagegen", "refs": ["https://commons.wikimedia.org/wiki/File:Botella_DYC.jpg"], "confidence": "media", "generated_at": "2026-09-30" },
   "cacique-anejo": { "file": "cacique-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/5000281030838"], "confidence": "media", "generated_at": "2026-09-30" },
   "barcelo-anejo": { "file": "barcelo-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/7461323129237"], "confidence": "media", "generated_at": "2026-09-30" },
-  "brugal-anejo": { "file": "brugal-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/7460855200353"], "confidence": "media", "generated_at": "2026-09-30" }
+  "brugal-anejo": { "file": "brugal-anejo.png", "model": "openai-imagegen", "refs": ["https://world.openfoodfacts.org/product/7460855200353"], "confidence": "media", "generated_at": "2026-09-30" },
+  "cutty-sark": {"file": "cutty-sark.png", "model": "openai-imagegen", "refs": ["docs/catalogo/referencias/cutty-sark.jpg"], "confidence": "media", "generated_at": "2026-10-04"},
+  "flor-de-cana-anejo-reserva": {"file": "flor-de-cana-anejo-reserva.png", "model": "openai-imagegen", "refs": ["docs/catalogo/referencias/flor-de-cana-anejo-reserva.jpg"], "confidence": "media", "generated_at": "2026-10-04"}
 }
