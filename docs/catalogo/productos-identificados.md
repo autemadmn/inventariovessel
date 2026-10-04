@@ -55,13 +55,13 @@ Brugal Doble Reserva y Brugal 1888.
 
 | Nombre | slug | Conf. | Foto |
 |---|---|---|---|
-| Estrella Galicia | `estrella-galicia` | ✓ | 3, 4, 5, 6, 7, 16 |
+| Estrella Galicia | `estrella-galicia` | ✓ | 3, 4, 5, 7, 16 |
 | Estrella Galicia 0,0 | `estrella-galicia-00` | ✓ | 4, 5, 16, 17 |
-| Estrella Galicia sin gluten | `estrella-galicia-sin-gluten` | ✓ | 16, 17 |
+| Estrella Galicia sin gluten | `estrella-galicia-sin-gluten` | ✓ | 4, 5, 6, 16, 17 |
 | 1906 Reserva Especial («La Milnueve») | `estrella-1906` | ✓ | 6, 16, 17 |
 | B.Lemon (la Radler, de Estrella Galicia) | `b-lemon` | ✓ | 4, 5, 16, 17 |
 | Desperados | `desperados` | ✓ | 6, 16, 17 |
-| Heineken | `heineken` | ≈ | 6 |
+| Heineken | `heineken` | ✓ | 6 |
 | Stella Artois | `stella-artois` | ✓ | 4, 5 |
 | Tyris Original (cerveza valenciana) | `tyris-original` | ✓ | 4, 5 |
 
@@ -102,15 +102,14 @@ Brugal Doble Reserva y Brugal 1888.
 - Foto 5, nevera vertical: botella de líquido turbio claro con tapón cobrizo (¿ginger beer?).
 - Foto 5, balda inferior: botellas rojas y botellas oscuras (¿Karlova Red y vino?).
 
-## 4. Qué se ve en cada foto (deducido con el plano)
+## 4. Dónde está cada cosa (confirmado por Alejandro)
 
-| Foto | Lugar | Conf. |
+| Foto | Lugar | Qué hay |
 |---|---|---|
-| 1 | Pasillo de personal con los arcones de cerveza fría: punto 1 | ≈ |
-| 3 | Almacén de cerveza y refrescos: punto 2 | ✓ |
-| 7 | Cajas vacías de Estrella Galicia y arcón Estrella: punto 1 o 4 | ? |
-| 2, 6 | Sala con perchas y cubiteras Moët: ¿mini almacén de la VIP o sala del personal? | ? |
-| 4, 5 | Nevera vertical con chupitos y cervezas especiales: punto 5 (chupitería) | ≈ |
-| 16, 17 | Arcón de chupitos de barra: cuadra con tu dotación (3 Buen Amigo, 3 Jäger, 3 Fireball, 3 tequila rosa, 5 de cada cerveza especial y 1 vino blanco) | ✓ |
-| 8–15 | Contrabarra iluminada (¿Barra 1, 2 o VIP?) | ? |
-| 18 | Almacén de alcohol (punto 3), con la nevera Cabreiroá de vino y champán | ✓ |
+| 1 | Pasillo de personal. A la izquierda, las **neveras de cerveza fría (punto 1)**: 4 grupos de 2 neveras, 8 en total | En cada nevera caben **4 cajas de 24** (32 cajas en total) |
+| 4, 5 | **Nevera de chupitería (punto 5)**, nevera vertical pegada a las de cerveza fría, justo detrás de quien hace la foto del pasillo | Fireball, Jägermeister, tequila rosa, Buen Amigo, Estrella Galicia 0,0, Estrella sin gluten y B.Lemon (la Radler). En la foto también salen Perrier, Tyris, Stella Artois, tónica Schweppes y Estrella Galicia: falta confirmar si se guardan ahí |
+| 7 | Detalle de las neveras de cerveza fría: a la izquierda 3 grupos de 2 y a la derecha 1 grupo de 2 | Aquí se apilan las **cajas vacías** de Estrella Galicia al rellenar las neveras |
+| 6 | **Neveras de cerveza especial (punto 4)**: un grupo de 2 neveras pegado a la VIP | **4 compartimentos iguales**: Estrella sin gluten, Heineken, 1906 y Desperados |
+| 3 | Almacén de cerveza y refrescos (punto 2) | Cajas de Estrella Galicia, Pepsi, Schweppes y Red Bull |
+| 18 | Almacén de alcohol (punto 3), con la nevera Cabreiroá de vino y champán | Alcohol fuerte, en botellas y en cajas |
+| 2, 8–17 | Pendiente de que Alejandro lo explique | — |
