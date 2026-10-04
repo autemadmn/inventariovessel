@@ -113,7 +113,8 @@ Brugal Doble Reserva y Brugal 1888.
 | 3 | Almacén de cerveza y refrescos (punto 2) | Cajas de Estrella Galicia, Pepsi, Schweppes y Red Bull |
 | 18 | Almacén de alcohol (punto 3), con la nevera Cabreiroá de vino y champán | Alcohol fuerte, en botellas y en cajas |
 | 8, 9, 10 | Contrabarra: **alcoholes habituales**, los mismos en todas las barras (Barra 1, Barra 2 y VIP). Son los de los cubatas normales, no los premium | Ver la lista de abajo |
-| 2, 11–17 | Pendiente de que Alejandro lo explique | — |
+| 11–15 | Contrabarra: **alcoholes premium**, también en todas las barras, pero aparte de los habituales | Ver la lista de abajo |
+| 2, 16, 17 | Pendiente de que Alejandro lo explique | — |
 
 ### Alcoholes habituales (en todas las barras)
 
@@ -132,3 +133,22 @@ Diferencias con el grupo «Habituales» que tiene ahora la app:
   Reserva (ahora están en «Resto»), y Cutty Sark, que es nuevo.
 - **Están en Habituales pero no salen en las fotos:** Master’s Pink, Larios Pomelo y DYC 8 (DYC 8 sí
   aparece en el almacén de alcohol). Falta confirmar si siguen siendo habituales.
+
+### Alcoholes premium (en todas las barras)
+
+Lo que se ve en las fotos 11 a 15:
+
+- **Ginebra:** Brockmans, Bulldog, Hendrick’s, Nordés, Martin Miller’s, G’Vine Floraison, Roku,
+  Macaronesian y Larios 150.
+- **Ron:** Zacapa Solera 23, Brugal 1888, Flor de Caña 12 y Barceló Imperial.
+- **Whisky:** Glenmorangie The Original 10, Talisker 10, The Macallan 12 Double Cask y Johnnie Walker
+  Black Label 12.
+- **Vodka:** Cîroc Original, Apple, Red Berry, French Vanilla y Summer Colada, Tito’s, Beluga Noble y
+  Belvedere Organic.
+
+Diferencias con el grupo «Resto» que tiene ahora la app:
+
+- **Nuevos premium:** Larios 150, Talisker 10, Johnnie Walker Black Label 12 y Cîroc Summer Colada.
+- **Están en la app pero no salen en las fotos:** Cîroc Pineapple, Monkey Shoulder, Chivas Regal 12,
+  Abuelo Añejo, Abuelo 12 y Don Julio Reposado. Falta confirmar si se siguen poniendo.
+- Propuesta: cambiar el nombre del grupo «Resto» por **«Premium»**.
