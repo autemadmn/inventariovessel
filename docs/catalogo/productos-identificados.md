@@ -1,156 +1,187 @@
-# Productos identificados en las fotos del local (4 oct 2026)
+# Catálogo de Vessel identificado con fotos (4 oct 2026)
 
-Identificación hecha a partir de 18 fotos de barras, neveras y almacenes de Vessel. Sirve de base para
-dar de alta los productos que faltan y para generar sus imágenes (`public/img/botellas/<slug>.png`).
+Resultado de revisar 33 fotos de barras, neveras y almacenes, y de las respuestas de Alejandro. Sirve
+de base para dar de alta los productos que faltan y para generar sus imágenes
+(`public/img/botellas/<slug>.png`).
 
-Marcas de confianza: **✓** se lee en la etiqueta · **≈** muy probable · **?** hay que confirmarlo.
+Marcas de confianza: **✓** confirmado · **≈** muy probable · **?** falta confirmarlo.
 
-## 1. Productos que ya están en la app y quedan resueltos
+## 1. Cambios en productos que ya están en la app
 
-| En la app | Pasa a ser | Conf. | Foto |
+| En la app | Cambio | Foto |
+|---|---|---|
+| Puerto de Indias (pendiente) | Pasa a **Puerto de Indias Strawberry** | 8, 18 |
+| Glenmorangie The Original | Se añade **10 años** | 15 |
+| The Macallan 12 | Pasa a **The Macallan 12 Double Cask** | 15 |
+| Zacapa (pendiente) | Pasa a **Zacapa Centenario Solera 23** | 11 |
+| Flor de Caña Añejo Reserva | Pasa a **Flor de Caña Añejo Reserva 5** | 9 |
+| Old / Old Sport (ron, pendiente) | Pasa a **BoldCrew Original**: es un **whisky** (blended scotch) | 10 |
+| Botella de ron con malla | Era Brugal Añejo o Doble Reserva: **se borra** (está inactiva) | 9 |
+| Botella pequeña y oscura | Era Talisker 10, que se da de alta: **se borra** (está inactiva) | 15 |
+| Grupo «Resto» | Pasa a llamarse **«Premium»** | — |
+| Zeeland Pink Nº12, Brugal Doble Reserva y Flor de Caña Añejo Reserva | Pasan de «Resto» a **Habituales** | 8, 9 |
+
+Se mantienen tal como están, aunque no salgan en las fotos: Master’s Pink, Larios Pomelo y DYC 8, en
+Habituales; Cîroc Pineapple, Monkey Shoulder, Chivas Regal 12, Abuelo Añejo, Abuelo 12 y Don Julio
+Reposado, en Premium.
+
+## 2. Catálogo completo por grupo
+
+«Nuevo» marca lo que no está todavía en la app. La unidad de compra es la caja del proveedor; las
+cantidades de la caja son las estándar del mercado español.
+
+### Habituales: en todas las barras, para los cubatas normales (fotos 8, 9 y 10)
+
+| Producto | Categoría | Estado |
+|---|---|---|
+| Zeeland Nº8 | ginebra | ya está |
+| Zeeland Pink Nº12 | ginebra | ya está (pasa de Resto) |
+| Puerto de Indias Strawberry | ginebra | ya está (cambia el nombre) |
+| Larios Rosé | ginebra | ya está |
+| Larios 12 | ginebra | ya está |
+| Larios Pomelo | ginebra | ya está |
+| Master’s London Dry | ginebra | ya está |
+| Master’s Pink | ginebra | ya está |
+| Tanqueray London Dry | ginebra | ya está |
+| Brugal Añejo | ron | ya está |
+| Brugal Doble Reserva | ron | ya está (pasa de Resto) |
+| Cacique Añejo | ron | ya está |
+| Flor de Caña Añejo Reserva 5 | ron | ya está (pasa de Resto) |
+| Barceló Añejo | ron | ya está |
+| Johnnie Walker Red Label | whisky | ya está |
+| BoldCrew Original | whisky | ya está (antes «Old / Old Sport») |
+| Jack Daniel’s Old No. 7 | whisky | ya está |
+| **Cutty Sark** (`cutty-sark`) | whisky | **nuevo** |
+| Dewar’s White Label | whisky | ya está |
+| J&B Rare | whisky | ya está |
+| DYC 8 | whisky | ya está |
+| SKYY | vodka | ya está |
+| Moskovskaya | vodka | ya está |
+| **Aperol** (`aperol`) | aperitivo | **nuevo**; se pone en barra (grupo por confirmar) |
+
+### Premium: también en todas las barras (fotos 11 a 15)
+
+| Producto | Categoría | Estado |
+|---|---|---|
+| Brockmans, Bulldog, Hendrick’s, Nordés, Martin Miller’s, G’Vine Floraison, Roku, Macaronesian | ginebra | ya están |
+| **Larios 150 Aniversario** (`larios-150`) | ginebra | **nuevo** |
+| Zacapa Centenario Solera 23, Brugal 1888, Flor de Caña 12, Barceló Imperial, Abuelo Añejo, Abuelo 12 | ron | ya están |
+| Glenmorangie The Original 10, The Macallan 12 Double Cask, Monkey Shoulder, Chivas Regal 12 | whisky | ya están |
+| **Talisker 10** (`talisker-10`) | whisky | **nuevo** |
+| **Johnnie Walker Black Label 12** (`johnnie-walker-black-label`) | whisky | **nuevo** |
+| Cîroc Original, Apple, Red Berry, French Vanilla y Pineapple; Tito’s; Beluga Noble; Belvedere Organic | vodka | ya están |
+| **Cîroc Summer Colada** (`ciroc-summer-colada`) | vodka | **nuevo** |
+| Don Julio Reposado | tequila | ya está |
+
+### Chupitería (todo nuevo)
+
+| Producto | slug | Categoría | Conf. |
 |---|---|---|---|
-| Puerto de Indias (pendiente) | **Puerto de Indias Strawberry** | ✓ | 8, 18 |
-| Glenmorangie The Original (falta la edad) | **Glenmorangie The Original 10 años** | ✓ | 15 |
-| The Macallan 12 (falta la expresión) | **The Macallan 12 Double Cask** | ✓ | 15 |
-| Zacapa (pendiente) | **Zacapa Centenario Solera 23** | ✓ | 11 |
-| Flor de Caña Añejo Reserva (falta la edad) | **Flor de Caña Añejo Reserva 5** | ✓ | 9 |
-| Old / Old Sport (ron, pendiente) | **BoldCrew Original**: es un whisky (blended scotch), no un ron | ✓ | 10 |
-| Botella de ron con malla (sin identificar) | Es Brugal Añejo o Brugal Doble Reserva, que ya están: **no crear** | ≈ | 9 |
-| Botella pequeña y oscura (sin identificar) | Probablemente **Talisker 10** (nuevo, ver abajo) | ≈ | 15 |
-
-Confirmados tal como están: Bulldog, Brockmans, Hendrick’s, Nordés, Martin Miller’s, G’Vine Floraison,
-Roku, Macaronesian, Tanqueray, Larios Rosé, Larios 12, Master’s London Dry, Zeeland Nº8,
-Zeeland Pink Nº12, Belvedere Organic, Beluga Noble, Tito’s, Cîroc Original, Apple, Red Berry y
-French Vanilla, SKYY, Moskovskaya, Jack Daniel’s, Dewar’s, Johnnie Walker Red Label, J&B, DYC 8,
-Chivas 12, Monkey Shoulder, Cacique, Barceló Añejo, Barceló Imperial, Flor de Caña 12, Brugal Añejo,
-Brugal Doble Reserva y Brugal 1888.
-
-## 2. Productos nuevos
-
-### Alcohol (botella de 70 cl, salvo que se indique otra cosa)
-
-| Nombre | slug | Categoría | Conf. | Foto |
-|---|---|---|---|---|
-| Larios 150 Aniversario | `larios-150` | ginebra | ✓ | 11, 12 |
-| Cîroc Summer Colada | `ciroc-summer-colada` | vodka | ✓ | 14, 15 |
-| Cutty Sark | `cutty-sark` | whisky | ✓ | 10, 18 |
-| Johnnie Walker Black Label 12 | `johnnie-walker-black-label` | whisky | ✓ | 15 |
-| Talisker 10 | `talisker-10` | whisky | ✓ | 15 |
-| Aperol | `aperol` | otros (aperitivo) | ✓ | 18 |
-| Tequila Olé | `tequila-ole` | tequila | ? | 18 |
-
-### Chupitería
-
-| Nombre | slug | Categoría | Conf. | Foto |
-|---|---|---|---|---|
-| Jägermeister | `jagermeister` | licor | ✓ | 4, 5, 16, 17 |
-| Fireball | `fireball` | licor | ✓ | 4, 5, 16, 17 |
-| Buen Amigo (tequila; el «Bon Amigo») | `buen-amigo` | tequila | ✓ (falta la variedad) | 16, 17 |
-| Karlova Blue | `karlova-blue` | licor | ✓ | 16, 17 |
-| Karlova Red | `karlova-red` | licor | ✓ | 16, 17 |
-| Faro de Cullera (licor rojo) | `faro-de-cullera` | licor | ✓ (falta saber qué licor es) | 16, 17 |
-| Tequila rosa (botella con estampado de rombos) | `tequila-rosa` | tequila | ? (falta la marca) | 4, 5, 16, 17 |
+| Jägermeister | `jagermeister` | licor | ✓ |
+| Fireball | `fireball` | licor | ✓ |
+| Buen Amigo Tequila Oro (con dos botellas distintas: la clásica y una cuadrada de tapón dorado) | `buen-amigo-oro` | tequila | ✓ |
+| DIEX Crema de Fresas con Tequila 70 cl, 15 % (el «tequila rosa»: botella blanca con rombos rosas, turquesa y amarillos) | `diex-crema-fresas-tequila` | licor | ✓ por el diseño de la botella |
+| Karlova Blue | `karlova-blue` | licor | ✓ |
+| Karlova Red | `karlova-red` | licor | ✓ |
+| Cassaya (licor rojo, de Faro de Cullera) | `cassaya` | licor | ✓ |
+| Tequila de melón | — | licor | ? falta la marca |
 
 ### Cerveza (caja de 24, botellín)
 
-| Nombre | slug | Conf. | Foto |
+| Producto | slug | Conf. |
+|---|---|---|
+| Estrella Galicia | `estrella-galicia` | ✓ |
+| Estrella Galicia 0,0 | `estrella-galicia-00` | ✓ |
+| Estrella Galicia sin gluten | `estrella-galicia-sin-gluten` | ✓ |
+| 1906 Reserva Especial | `estrella-1906` | ✓ |
+| B.Lemon (la Radler) | `b-lemon` | ✓ |
+| Desperados | `desperados` | ✓ |
+| Heineken | `heineken` | ✓ |
+| Stella Artois | `stella-artois` | ✓ |
+| Tyris Original | `tyris-original` | ✓ |
+
+### Refrescos, agua, zumos y energéticas
+
+| Producto | slug | Caja | Conf. |
 |---|---|---|---|
-| Estrella Galicia | `estrella-galicia` | ✓ | 3, 4, 5, 7, 16 |
-| Estrella Galicia 0,0 | `estrella-galicia-00` | ✓ | 4, 5, 16, 17 |
-| Estrella Galicia sin gluten | `estrella-galicia-sin-gluten` | ✓ | 4, 5, 6, 16, 17 |
-| 1906 Reserva Especial («La Milnueve») | `estrella-1906` | ✓ | 6, 16, 17 |
-| B.Lemon (la Radler, de Estrella Galicia) | `b-lemon` | ✓ | 4, 5, 16, 17 |
-| Desperados | `desperados` | ✓ | 6, 16, 17 |
-| Heineken | `heineken` | ✓ | 6 |
-| Stella Artois | `stella-artois` | ✓ | 4, 5 |
-| Tyris Original (cerveza valenciana) | `tyris-original` | ✓ | 4, 5 |
+| Pepsi 20 cl | `pepsi` | 24 (retornable) | ✓ |
+| Pepsi Zero 20 cl | `pepsi-zero` | 24 | ✓ |
+| 7Up 20 cl | `7up` | 24 | ✓ |
+| Schweppes Limón 20 cl | `schweppes-limon` | 24 (en algunas zonas la caja retornable es de 28) | ✓ |
+| Schweppes Naranja 20 cl | `schweppes-naranja` | 24 | ✓ |
+| Schweppes Tónica 20 cl | `schweppes-tonica` | 24 | ✓ |
+| **Schweppes Tónica Zero** 20 cl | `schweppes-tonica-zero` | 24 | ✓ |
+| Schweppes Fresa 20 cl | `schweppes-fresa` | 24 | ✓ |
+| Perrier | `perrier` | 24 | ✓ |
+| Red Bull 25 cl | `red-bull` | 24 | ✓ |
+| Red Bull Sugarfree 25 cl | `red-bull-sugarfree` | 24 | ✓ |
+| Agua Cabreiroá 33 cl | `cabreiroa` | **35** (se lee en la caja) | ✓ |
+| Zumo de naranja | `zumo-naranja` | 24 | ✓ (falta la marca) |
+| Zumo de melocotón | `zumo-melocoton` | 24 | ✓ (falta la marca) |
+| Zumo de piña | `zumo-pina` | 24 | ✓ (falta la marca) |
 
-### Refrescos, agua y energéticas (caja de 24, salvo que se indique otra cosa)
+### Vino
 
-| Nombre | slug | Conf. | Foto |
-|---|---|---|---|
-| Pepsi | `pepsi` | ✓ | 1, 2, 3 |
-| Pepsi Zero | `pepsi-zero` | por tu lista | — |
-| 7Up | `7up` | ✓ | 2 |
-| Schweppes Limón | `schweppes-limon` | ≈ | 3 |
-| Schweppes Tónica | `schweppes-tonica` | ✓ | 3, 4, 5 |
-| Schweppes Naranja | `schweppes-naranja` | ≈ | 2, 3 |
-| Schweppes Fresa | `schweppes-fresa` | por tu lista | — |
-| Perrier | `perrier` | ✓ | 1, 4, 5 |
-| Red Bull | `red-bull` | ✓ (paquete de 24 latas) | 3, 6 |
-| Red Bull Sugarfree | `red-bull-sugarfree` | ✓ | 6 |
-| Agua Cabreiroá 33 cl | `cabreiroa` | ✓ (caja de **35**) | 6 |
-| Zumos | — | ? (falta la marca y los sabores) | — |
-
-### Vino y espumoso
-
-| Nombre | slug | Conf. | Foto |
-|---|---|---|---|
-| Vino blanco (el de la nevera de chupitos) | `vino-blanco` | ? (falta la marca) | 16, 18 |
-| Champán, botellas doradas y una rosada (en la nevera Cabreiroá del almacén de alcohol) | — | ? (por las cubiteras, quizá Moët & Chandon Brut y Rosé) | 18 |
+| Producto | slug | Conf. |
+|---|---|---|
+| Vino blanco | `vino-blanco` | ? falta la marca |
+| Champán y vino de la nevera de vino | — | ? se mira más adelante |
 
 ### Hielo
 
-| Nombre | slug | Conf. |
+| Producto | slug | Unidad |
 |---|---|---|
-| Hielo (bolsa) | `hielo` | por tu lista; falta la capacidad de la bolsa |
+| Hielo | `hielo` | bolsa (falta saber el peso) |
 
-## 3. Sin identificar (no crear todavía)
+## 3. Puntos de almacenaje y qué guarda cada uno
 
-- Foto 18, almacén de alcohol, balda baja junto a DYC: botella de etiqueta azul y blanca.
-- Foto 16: botella cuadrada con tapón dorado y líquido amarillo, en la nevera de chupitos.
-- Foto 5, nevera vertical: botella de líquido turbio claro con tapón cobrizo (¿ginger beer?).
-- Foto 5, balda inferior: botellas rojas y botellas oscuras (¿Karlova Red y vino?).
-
-## 4. Dónde está cada cosa (confirmado por Alejandro)
-
-| Foto | Lugar | Qué hay |
+| Punto | Dónde | Qué guarda |
 |---|---|---|
-| 1 | Pasillo de personal. A la izquierda, las **neveras de cerveza fría (punto 1)**: 4 grupos de 2 neveras, 8 en total | En cada nevera caben **4 cajas de 24** (32 cajas en total) |
-| 4, 5 | **Nevera de chupitería (punto 5)**, nevera vertical pegada a las de cerveza fría, justo detrás de quien hace la foto del pasillo | Fireball, Jägermeister, tequila rosa, Buen Amigo, Estrella Galicia 0,0, Estrella sin gluten y B.Lemon (la Radler). En la foto también salen Perrier, Tyris, Stella Artois, tónica Schweppes y Estrella Galicia: falta confirmar si se guardan ahí |
-| 7 | Detalle de las neveras de cerveza fría: a la izquierda 3 grupos de 2 y a la derecha 1 grupo de 2 | Aquí se apilan las **cajas vacías** de Estrella Galicia al rellenar las neveras |
-| 6 | **Neveras de cerveza especial (punto 4)**: un grupo de 2 neveras pegado a la VIP | **4 compartimentos iguales**: Estrella sin gluten, Heineken, 1906 y Desperados |
-| 3 | Almacén de cerveza y refrescos (punto 2) | Cajas de Estrella Galicia, Pepsi, Schweppes y Red Bull |
-| 18 | Almacén de alcohol (punto 3), con la nevera Cabreiroá de vino y champán | Alcohol fuerte, en botellas y en cajas |
-| 8, 9, 10 | Contrabarra: **alcoholes habituales**, los mismos en todas las barras (Barra 1, Barra 2 y VIP). Son los de los cubatas normales, no los premium | Ver la lista de abajo |
-| 11–15 | Contrabarra: **alcoholes premium**, también en todas las barras, pero aparte de los habituales | Ver la lista de abajo |
-| 16, 17 | **Nevera de barra** (la de la foto es la de la Barra 1). Las tres barras tienen una igual, con lo mismo | 3 Buen Amigo, 3 Jägermeister, 3 Fireball, 3 tequila rosa, 5 Desperados, 5 1906, 5 B.Lemon, 5 Estrella 0,0, 5 Estrella sin gluten y 1 vino blanco. En la foto también salen Karlova Blue y Red, Faro de Cullera, una botella cuadrada de tapón dorado y Estrella Galicia normal: falta confirmar si forman parte de la dotación |
-| 18 | Almacén de alcohol fuerte (punto 3). La nevera cerrada (Cabreiroá) es la **nevera de vino** | Vino y champán |
-| 2 | Pendiente | — |
+| **1 · Neveras de cerveza fría** | Pasillo de personal, a la izquierda | Solo **Estrella Galicia**. 8 neveras en 4 grupos de 2, con 4 cajas de 24 en cada una: 32 cajas. Las cajas vacías se apilan junto a las 2 últimas neveras |
+| **2 · Almacén de cerveza y refrescos** | Sala grande | Cajas de cerveza caliente, refrescos, Red Bull, agua y **zumos** |
+| **3 · Almacén de alcohol fuerte** | Sala con estanterías naranjas | Alcohol en botellas y en cajas. La nevera cerrada Cabreiroá es la **nevera de vino** |
+| **4 · Neveras de cerveza especial** | Un grupo de 2 neveras pegado a la VIP | 4 compartimentos de unas 48 botellas cada uno (±7): **Estrella sin gluten, Heineken, 1906 y Desperados** |
+| **5 · Nevera de chupitería** | Nevera vertical pegada a las de cerveza fría | Jägermeister, Fireball, DIEX, Buen Amigo, Estrella 0,0, Estrella sin gluten, B.Lemon, Tyris, Stella Artois, tónica Schweppes y tónica Zero. En la balda de abajo hay Cassaya, tequila de melón y cosas varias (se mira más adelante). La Perrier no se guarda aquí |
+| **Neveras de hielo** (punto nuevo) | 3 neveras pegadas a la zona de descanso | Bolsas de hielo |
+| **Mini almacén VIP** (punto nuevo) | Sala con perchas junto a la VIP (foto 2) | Cajas de refrescos (Pepsi, 7Up, Schweppes), por comodidad. Es el mismo producto que en los otros almacenes |
 
-### Alcoholes habituales (en todas las barras)
+## 4. Dotación de cada barra (Barra 1, Barra 2 y VIP son iguales)
 
-Lo que se ve en las fotos 8, 9 y 10:
+**Nevera de cerveza**
+- 48 Estrella Galicia, 5 Heineken, ¼ de la nevera de Red Bull y ¼ de agua.
 
-- **Ginebra:** Zeeland Nº8, Zeeland Pink Nº12, Puerto de Indias Strawberry, Larios Rosé, Larios 12,
-  Master’s London Dry y Tanqueray London Dry.
-- **Ron:** Brugal Añejo, Brugal Doble Reserva, Cacique Añejo, Flor de Caña Añejo Reserva 5 y Barceló Añejo.
-- **Whisky:** Johnnie Walker Red Label, BoldCrew Original, Jack Daniel’s, Cutty Sark, Dewar’s White Label
-  y J&B.
-- **Vodka:** SKYY y Moskovskaya.
+**Nevera de chupitos de barra (fotos 16 y 17)**
 
-Diferencias con el grupo «Habituales» que tiene ahora la app:
+| Producto | Cantidad |
+|---|---|
+| Buen Amigo Oro | 3 |
+| Jägermeister | 3 |
+| Fireball | 3 |
+| DIEX (tequila rosa) | 3 |
+| Karlova Blue | 1 |
+| Karlova Red | 1 |
+| Cassaya | 1 |
+| Desperados | 5 |
+| 1906 | 5 |
+| B.Lemon | 5 |
+| Estrella Galicia 0,0 | 5 |
+| Estrella Galicia sin gluten | 5 |
+| Vino blanco | 1 |
 
-- **Hay que pasarlos a Habituales:** Zeeland Pink Nº12, Brugal Doble Reserva y Flor de Caña Añejo
-  Reserva (ahora están en «Resto»), y Cutty Sark, que es nuevo.
-- **Están en Habituales pero no salen en las fotos:** Master’s Pink, Larios Pomelo y DYC 8 (DYC 8 sí
-  aparece en el almacén de alcohol). Falta confirmar si siguen siendo habituales.
+**Hielo**
+- Barras 1 y 2: «4 bolsas de 5». VIP: «2 de 5». Falta aclarar si son 5 kg por bolsa o tandas de 5 bolsas.
 
-### Alcoholes premium (en todas las barras)
+**Alcohol**
+- Todas las barras tienen los habituales y los premium. Faltan las cantidades (filas de 3 y cuáles van
+  a 2 filas).
 
-Lo que se ve en las fotos 11 a 15:
+## 5. Pendiente
 
-- **Ginebra:** Brockmans, Bulldog, Hendrick’s, Nordés, Martin Miller’s, G’Vine Floraison, Roku,
-  Macaronesian y Larios 150.
-- **Ron:** Zacapa Solera 23, Brugal 1888, Flor de Caña 12 y Barceló Imperial.
-- **Whisky:** Glenmorangie The Original 10, Talisker 10, The Macallan 12 Double Cask y Johnnie Walker
-  Black Label 12.
-- **Vodka:** Cîroc Original, Apple, Red Berry, French Vanilla y Summer Colada, Tito’s, Beluga Noble y
-  Belvedere Organic.
-
-Diferencias con el grupo «Resto» que tiene ahora la app:
-
-- **Nuevos premium:** Larios 150, Talisker 10, Johnnie Walker Black Label 12 y Cîroc Summer Colada.
-- **Están en la app pero no salen en las fotos:** Cîroc Pineapple, Monkey Shoulder, Chivas Regal 12,
-  Abuelo Añejo, Abuelo 12 y Don Julio Reposado. Falta confirmar si se siguen poniendo.
-- Propuesta: cambiar el nombre del grupo «Resto» por **«Premium»**.
+- Marca del vino blanco y contenido de la nevera de vino.
+- Balda de abajo de la chupitería: marca del tequila de melón y el resto de «cosas varias».
+- Botella turbia de tapón cobrizo de la chupitería (¿ginger beer?).
+- Almacén de alcohol, balda baja junto al DYC: botella «Olé» y botella de etiqueta azul y blanca.
+- Marca de los zumos.
+- Peso de la bolsa de hielo y qué significa «4 bolsas de 5».
+- Cantidad de botellas de alcohol por barra.
+- Grupo del Aperol (¿Habituales?).
