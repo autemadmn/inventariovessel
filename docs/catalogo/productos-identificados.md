@@ -112,4 +112,23 @@ Brugal Doble Reserva y Brugal 1888.
 | 6 | **Neveras de cerveza especial (punto 4)**: un grupo de 2 neveras pegado a la VIP | **4 compartimentos iguales**: Estrella sin gluten, Heineken, 1906 y Desperados |
 | 3 | Almacén de cerveza y refrescos (punto 2) | Cajas de Estrella Galicia, Pepsi, Schweppes y Red Bull |
 | 18 | Almacén de alcohol (punto 3), con la nevera Cabreiroá de vino y champán | Alcohol fuerte, en botellas y en cajas |
-| 2, 8–17 | Pendiente de que Alejandro lo explique | — |
+| 8, 9, 10 | Contrabarra: **alcoholes habituales**, los mismos en todas las barras (Barra 1, Barra 2 y VIP). Son los de los cubatas normales, no los premium | Ver la lista de abajo |
+| 2, 11–17 | Pendiente de que Alejandro lo explique | — |
+
+### Alcoholes habituales (en todas las barras)
+
+Lo que se ve en las fotos 8, 9 y 10:
+
+- **Ginebra:** Zeeland Nº8, Zeeland Pink Nº12, Puerto de Indias Strawberry, Larios Rosé, Larios 12,
+  Master’s London Dry y Tanqueray London Dry.
+- **Ron:** Brugal Añejo, Brugal Doble Reserva, Cacique Añejo, Flor de Caña Añejo Reserva 5 y Barceló Añejo.
+- **Whisky:** Johnnie Walker Red Label, BoldCrew Original, Jack Daniel’s, Cutty Sark, Dewar’s White Label
+  y J&B.
+- **Vodka:** SKYY y Moskovskaya.
+
+Diferencias con el grupo «Habituales» que tiene ahora la app:
+
+- **Hay que pasarlos a Habituales:** Zeeland Pink Nº12, Brugal Doble Reserva y Flor de Caña Añejo
+  Reserva (ahora están en «Resto»), y Cutty Sark, que es nuevo.
+- **Están en Habituales pero no salen en las fotos:** Master’s Pink, Larios Pomelo y DYC 8 (DYC 8 sí
+  aparece en el almacén de alcohol). Falta confirmar si siguen siendo habituales.
