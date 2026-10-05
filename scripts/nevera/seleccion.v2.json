@@ -1,0 +1,873 @@
+{
+  "version": 2,
+  "fondo": {
+    "imagen": "bandeja.v2.webp",
+    "w": 1080,
+    "h": 1500
+  },
+  "piezas": [
+    {
+      "id": "chapas-1-pieza-1",
+      "grupo": "chapas-1",
+      "slug": "b-amarilla-por-confirmar",
+      "nombre": "B limón",
+      "tipo": "chapas",
+      "numero": 1,
+      "pixels": {
+        "x": 86,
+        "y": 94,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "b-amarilla-por-confirmar-pieza-1.v2.webp",
+      "seleccion": "b-amarilla-por-confirmar-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-1-pieza-2",
+      "grupo": "chapas-1",
+      "slug": "b-amarilla-por-confirmar",
+      "nombre": "B limón",
+      "tipo": "chapas",
+      "numero": 2,
+      "pixels": {
+        "x": 43,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "b-amarilla-por-confirmar-pieza-2.v2.webp",
+      "seleccion": "b-amarilla-por-confirmar-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-1-pieza-3",
+      "grupo": "chapas-1",
+      "slug": "b-amarilla-por-confirmar",
+      "nombre": "B limón",
+      "tipo": "chapas",
+      "numero": 3,
+      "pixels": {
+        "x": 129,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "b-amarilla-por-confirmar-pieza-3.v2.webp",
+      "seleccion": "b-amarilla-por-confirmar-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-1-pieza-4",
+      "grupo": "chapas-1",
+      "slug": "b-amarilla-por-confirmar",
+      "nombre": "B limón",
+      "tipo": "chapas",
+      "numero": 4,
+      "pixels": {
+        "x": 43,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "b-amarilla-por-confirmar-pieza-4.v2.webp",
+      "seleccion": "b-amarilla-por-confirmar-pieza-4-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-1-pieza-5",
+      "grupo": "chapas-1",
+      "slug": "b-amarilla-por-confirmar",
+      "nombre": "B limón",
+      "tipo": "chapas",
+      "numero": 5,
+      "pixels": {
+        "x": 129,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "b-amarilla-por-confirmar-pieza-5.v2.webp",
+      "seleccion": "b-amarilla-por-confirmar-pieza-5-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-2-pieza-1",
+      "grupo": "chapas-2",
+      "slug": "estrella-galicia-especial",
+      "nombre": "Estrella Galicia sin gluten",
+      "tipo": "chapas",
+      "numero": 1,
+      "pixels": {
+        "x": 284,
+        "y": 94,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-especial-pieza-1.v2.webp",
+      "seleccion": "estrella-galicia-especial-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-2-pieza-2",
+      "grupo": "chapas-2",
+      "slug": "estrella-galicia-especial",
+      "nombre": "Estrella Galicia sin gluten",
+      "tipo": "chapas",
+      "numero": 2,
+      "pixels": {
+        "x": 241,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-especial-pieza-2.v2.webp",
+      "seleccion": "estrella-galicia-especial-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-2-pieza-3",
+      "grupo": "chapas-2",
+      "slug": "estrella-galicia-especial",
+      "nombre": "Estrella Galicia sin gluten",
+      "tipo": "chapas",
+      "numero": 3,
+      "pixels": {
+        "x": 327,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-especial-pieza-3.v2.webp",
+      "seleccion": "estrella-galicia-especial-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-2-pieza-4",
+      "grupo": "chapas-2",
+      "slug": "estrella-galicia-especial",
+      "nombre": "Estrella Galicia sin gluten",
+      "tipo": "chapas",
+      "numero": 4,
+      "pixels": {
+        "x": 241,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-especial-pieza-4.v2.webp",
+      "seleccion": "estrella-galicia-especial-pieza-4-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-2-pieza-5",
+      "grupo": "chapas-2",
+      "slug": "estrella-galicia-especial",
+      "nombre": "Estrella Galicia sin gluten",
+      "tipo": "chapas",
+      "numero": 5,
+      "pixels": {
+        "x": 327,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-especial-pieza-5.v2.webp",
+      "seleccion": "estrella-galicia-especial-pieza-5-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-3-pieza-1",
+      "grupo": "chapas-3",
+      "slug": "estrella-galicia-00",
+      "nombre": "Estrella Galicia 0,0",
+      "tipo": "chapas",
+      "numero": 1,
+      "pixels": {
+        "x": 482,
+        "y": 94,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-00-pieza-1.v2.webp",
+      "seleccion": "estrella-galicia-00-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-3-pieza-2",
+      "grupo": "chapas-3",
+      "slug": "estrella-galicia-00",
+      "nombre": "Estrella Galicia 0,0",
+      "tipo": "chapas",
+      "numero": 2,
+      "pixels": {
+        "x": 439,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-00-pieza-2.v2.webp",
+      "seleccion": "estrella-galicia-00-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-3-pieza-3",
+      "grupo": "chapas-3",
+      "slug": "estrella-galicia-00",
+      "nombre": "Estrella Galicia 0,0",
+      "tipo": "chapas",
+      "numero": 3,
+      "pixels": {
+        "x": 525,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-00-pieza-3.v2.webp",
+      "seleccion": "estrella-galicia-00-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-3-pieza-4",
+      "grupo": "chapas-3",
+      "slug": "estrella-galicia-00",
+      "nombre": "Estrella Galicia 0,0",
+      "tipo": "chapas",
+      "numero": 4,
+      "pixels": {
+        "x": 439,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-00-pieza-4.v2.webp",
+      "seleccion": "estrella-galicia-00-pieza-4-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-3-pieza-5",
+      "grupo": "chapas-3",
+      "slug": "estrella-galicia-00",
+      "nombre": "Estrella Galicia 0,0",
+      "tipo": "chapas",
+      "numero": 5,
+      "pixels": {
+        "x": 525,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-00-pieza-5.v2.webp",
+      "seleccion": "estrella-galicia-00-pieza-5-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-4-pieza-1",
+      "grupo": "chapas-4",
+      "slug": "estrella-galicia-1906",
+      "nombre": "1906",
+      "tipo": "chapas",
+      "numero": 1,
+      "pixels": {
+        "x": 680,
+        "y": 94,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-1906-pieza-1.v2.webp",
+      "seleccion": "estrella-galicia-1906-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-4-pieza-2",
+      "grupo": "chapas-4",
+      "slug": "estrella-galicia-1906",
+      "nombre": "1906",
+      "tipo": "chapas",
+      "numero": 2,
+      "pixels": {
+        "x": 637,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-1906-pieza-2.v2.webp",
+      "seleccion": "estrella-galicia-1906-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-4-pieza-3",
+      "grupo": "chapas-4",
+      "slug": "estrella-galicia-1906",
+      "nombre": "1906",
+      "tipo": "chapas",
+      "numero": 3,
+      "pixels": {
+        "x": 723,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-1906-pieza-3.v2.webp",
+      "seleccion": "estrella-galicia-1906-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-4-pieza-4",
+      "grupo": "chapas-4",
+      "slug": "estrella-galicia-1906",
+      "nombre": "1906",
+      "tipo": "chapas",
+      "numero": 4,
+      "pixels": {
+        "x": 637,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-1906-pieza-4.v2.webp",
+      "seleccion": "estrella-galicia-1906-pieza-4-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-4-pieza-5",
+      "grupo": "chapas-4",
+      "slug": "estrella-galicia-1906",
+      "nombre": "1906",
+      "tipo": "chapas",
+      "numero": 5,
+      "pixels": {
+        "x": 723,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "estrella-galicia-1906-pieza-5.v2.webp",
+      "seleccion": "estrella-galicia-1906-pieza-5-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-5-pieza-1",
+      "grupo": "chapas-5",
+      "slug": "desperados",
+      "nombre": "Desperados",
+      "tipo": "chapas",
+      "numero": 1,
+      "pixels": {
+        "x": 878,
+        "y": 94,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "desperados-pieza-1.v2.webp",
+      "seleccion": "desperados-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-5-pieza-2",
+      "grupo": "chapas-5",
+      "slug": "desperados",
+      "nombre": "Desperados",
+      "tipo": "chapas",
+      "numero": 2,
+      "pixels": {
+        "x": 835,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "desperados-pieza-2.v2.webp",
+      "seleccion": "desperados-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-5-pieza-3",
+      "grupo": "chapas-5",
+      "slug": "desperados",
+      "nombre": "Desperados",
+      "tipo": "chapas",
+      "numero": 3,
+      "pixels": {
+        "x": 921,
+        "y": 178,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "desperados-pieza-3.v2.webp",
+      "seleccion": "desperados-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-5-pieza-4",
+      "grupo": "chapas-5",
+      "slug": "desperados",
+      "nombre": "Desperados",
+      "tipo": "chapas",
+      "numero": 4,
+      "pixels": {
+        "x": 835,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "desperados-pieza-4.v2.webp",
+      "seleccion": "desperados-pieza-4-seleccion.v2.webp"
+    },
+    {
+      "id": "chapas-5-pieza-5",
+      "grupo": "chapas-5",
+      "slug": "desperados",
+      "nombre": "Desperados",
+      "tipo": "chapas",
+      "numero": 5,
+      "pixels": {
+        "x": 921,
+        "y": 262,
+        "w": 116,
+        "h": 116
+      },
+      "hit": {
+        "x": 16,
+        "y": 16,
+        "w": 84,
+        "h": 84,
+        "round": true
+      },
+      "imagen": "desperados-pieza-5.v2.webp",
+      "seleccion": "desperados-pieza-5-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-1-pieza-1",
+      "grupo": "botellas-1",
+      "slug": "buen-amigo",
+      "nombre": "Buen amigo",
+      "tipo": "botellas",
+      "numero": 1,
+      "pixels": {
+        "x": 48,
+        "y": 471,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "buen-amigo-pieza-1.v2.webp",
+      "seleccion": "buen-amigo-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-1-pieza-2",
+      "grupo": "botellas-1",
+      "slug": "buen-amigo",
+      "nombre": "Buen amigo",
+      "tipo": "botellas",
+      "numero": 2,
+      "pixels": {
+        "x": 48,
+        "y": 791,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "buen-amigo-pieza-2.v2.webp",
+      "seleccion": "buen-amigo-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-1-pieza-3",
+      "grupo": "botellas-1",
+      "slug": "buen-amigo",
+      "nombre": "Buen amigo",
+      "tipo": "botellas",
+      "numero": 3,
+      "pixels": {
+        "x": 48,
+        "y": 1111,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "buen-amigo-pieza-3.v2.webp",
+      "seleccion": "buen-amigo-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-2-pieza-1",
+      "grupo": "botellas-2",
+      "slug": "fireball",
+      "nombre": "Fireball",
+      "tipo": "botellas",
+      "numero": 1,
+      "pixels": {
+        "x": 298,
+        "y": 471,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "fireball-pieza-1.v2.webp",
+      "seleccion": "fireball-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-2-pieza-2",
+      "grupo": "botellas-2",
+      "slug": "fireball",
+      "nombre": "Fireball",
+      "tipo": "botellas",
+      "numero": 2,
+      "pixels": {
+        "x": 298,
+        "y": 791,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "fireball-pieza-2.v2.webp",
+      "seleccion": "fireball-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-2-pieza-3",
+      "grupo": "botellas-2",
+      "slug": "fireball",
+      "nombre": "Fireball",
+      "tipo": "botellas",
+      "numero": 3,
+      "pixels": {
+        "x": 298,
+        "y": 1111,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "fireball-pieza-3.v2.webp",
+      "seleccion": "fireball-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-3-pieza-1",
+      "grupo": "botellas-3",
+      "slug": "jagermeister",
+      "nombre": "Jägermeister",
+      "tipo": "botellas",
+      "numero": 1,
+      "pixels": {
+        "x": 548,
+        "y": 471,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "jagermeister-pieza-1.v2.webp",
+      "seleccion": "jagermeister-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-3-pieza-2",
+      "grupo": "botellas-3",
+      "slug": "jagermeister",
+      "nombre": "Jägermeister",
+      "tipo": "botellas",
+      "numero": 2,
+      "pixels": {
+        "x": 548,
+        "y": 791,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "jagermeister-pieza-2.v2.webp",
+      "seleccion": "jagermeister-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-3-pieza-3",
+      "grupo": "botellas-3",
+      "slug": "jagermeister",
+      "nombre": "Jägermeister",
+      "tipo": "botellas",
+      "numero": 3,
+      "pixels": {
+        "x": 548,
+        "y": 1111,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "jagermeister-pieza-3.v2.webp",
+      "seleccion": "jagermeister-pieza-3-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-4-pieza-1",
+      "grupo": "botellas-4",
+      "slug": "rosa-por-confirmar",
+      "nombre": "Botella rosa",
+      "tipo": "botellas",
+      "numero": 1,
+      "pixels": {
+        "x": 798,
+        "y": 471,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "rosa-por-confirmar-pieza-1.v2.webp",
+      "seleccion": "rosa-por-confirmar-pieza-1-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-4-pieza-2",
+      "grupo": "botellas-4",
+      "slug": "rosa-por-confirmar",
+      "nombre": "Botella rosa",
+      "tipo": "botellas",
+      "numero": 2,
+      "pixels": {
+        "x": 798,
+        "y": 791,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "rosa-por-confirmar-pieza-2.v2.webp",
+      "seleccion": "rosa-por-confirmar-pieza-2-seleccion.v2.webp"
+    },
+    {
+      "id": "botellas-4-pieza-3",
+      "grupo": "botellas-4",
+      "slug": "rosa-por-confirmar",
+      "nombre": "Botella rosa",
+      "tipo": "botellas",
+      "numero": 3,
+      "pixels": {
+        "x": 798,
+        "y": 1111,
+        "w": 234,
+        "h": 306
+      },
+      "hit": {
+        "x": 12,
+        "y": 12,
+        "w": 210,
+        "h": 282,
+        "round": false
+      },
+      "imagen": "rosa-por-confirmar-pieza-3.v2.webp",
+      "seleccion": "rosa-por-confirmar-pieza-3-seleccion.v2.webp"
+    }
+  ],
+  "ordenChapas": [
+    "B limón",
+    "Estrella Galicia sin gluten",
+    "Estrella Galicia 0,0",
+    "1906",
+    "Desperados"
+  ],
+  "seleccion": {
+    "rellenoBlanco": 0.34,
+    "contornoPx": 6,
+    "anchoMinimoNevera": 640
+  }
+}

@@ -675,3 +675,49 @@ select.mini { width: auto; text-align: left; }
   .sec-grid .sec-btn { min-height: 220px; }
   .sec-pics { height: 136px; }
 }
+
+/* ---------------------------------------------------------------- Chupitería: nevera vista desde arriba */
+.nevera-wrap { margin: 4px 0 12px; }
+/* En una tablet fija en la barra, la nevera entera cabe en pantalla sin desplazar. */
+.nevera { max-width: clamp(320px, calc((100dvh - 300px) * 0.72), 560px); margin: 0 auto; }
+.pedir.no-bar .nevera { opacity: 0.5; }
+.nev-tray {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: var(--radius); background: #26282c; box-shadow: var(--shadow-1);
+}
+.nev-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; user-select: none; }
+.nev-g { position: absolute; transform-origin: 50% 50%; transition: transform 0.15s var(--ease); }
+.nev-g.on { z-index: 1; transform: scale(1.03); }
+.nev-g:has(.nev-hit:active) { transform: scale(0.98); }
+.nev-p { position: absolute; pointer-events: none; }
+.nev-p img { position: absolute; inset: 0; width: 100%; height: 100%; user-select: none; }
+.nev-p.wait { border-radius: 14%; background: rgba(255, 255, 255, 0.14); }
+.nev-p.wait.round { border-radius: 50%; }
+.nev-p .nev-sel { opacity: 0; transition: opacity 0.15s var(--ease); }
+.nev-p.sel .nev-sel { opacity: 1; }
+.nev-g.out .nev-img { filter: grayscale(1) brightness(0.8); }
+.nev-hit {
+  position: absolute; inset: 0; z-index: 1; padding: 0; border: 0; border-radius: 10px;
+  background: transparent; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.nev-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nev-ctl .count, .nev-ctl .card-minus { z-index: 2; }
+.nev-ctl .count {
+  position: absolute; top: -8px; right: -8px;
+  min-width: 28px; height: 28px; padding: 0 7px; border-radius: 14px;
+  background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 2px #26282c;
+  font-size: 0.9375rem; font-weight: 700; line-height: 28px; text-align: center; font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.nev-ctl .card-minus { position: absolute; top: -8px; left: -8px; box-shadow: var(--shadow-1), 0 0 0 2px #26282c; }
+.nev-flag {
+  position: absolute; left: 50%; bottom: 4px; z-index: 2; transform: translateX(-50%);
+  padding: 2px 7px; border-radius: 6px; background: rgba(17, 18, 20, 0.86);
+  font-size: 0.6875rem; font-weight: 600; line-height: 1.4; white-space: nowrap; pointer-events: none;
+}
+.nev-flag.info { color: #8fb0ff; }
+.nev-flag.danger { color: #ff8a82; }
+.nev-flag:empty { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .nev-g, .nev-g.on, .nev-g:has(.nev-hit:active) { transform: none; }
+}

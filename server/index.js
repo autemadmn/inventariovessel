@@ -50,7 +50,8 @@ function serveFile(res, file) {
   res.writeHead(200, {
     'Content-Type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
     'Content-Length': st.size,
-    'Cache-Control': 'no-cache',
+    // Igual que public/_headers: las imágenes de la nevera llevan versión en el nombre.
+    'Cache-Control': file.startsWith(join(PUBLIC, 'img', 'nevera') + sep) ? 'public, max-age=31536000, immutable' : 'no-cache',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'same-origin',
     'X-Frame-Options': 'DENY',
