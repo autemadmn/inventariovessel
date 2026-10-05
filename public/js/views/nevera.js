@@ -48,6 +48,16 @@ const rel = (piece, g) => ({
 });
 const box = ({ left, top, width, height }) => `left:${left}%;top:${top}%;width:${width}%;height:${height}%`;
 
+/** Las cinco zonas de chapas reparten toda la fila, con límites contiguos.
+ * El dibujo conserva las coordenadas del plano; solo cambia el botón invisible. */
+export function toqueChapas(g, plano) {
+  const fila = plano.grupos.filter((x) => x.tipo === 'chapas').sort((a, b) => a.x - b.x);
+  const index = fila.findIndex((x) => x.id === g.id);
+  if (index < 0) return '';
+  return box({ left: index * 100 / fila.length, top: g.y,
+    width: 100 / fila.length, height: g.h });
+}
+
 function groupHtml(g, p, plano) {
   const BASE = baseFor(plano);
   return html`
@@ -56,10 +66,11 @@ function groupHtml(g, p, plano) {
         <img class="nev-img" src="${BASE + pz.img}" alt="" decoding="async" draggable="false">
         <img class="nev-sel" src="${BASE + pz.sel}" alt="" decoding="async" draggable="false">
       </span>`)}
-      <button type="button" class="nev-hit" data-add="${p.id}"></button>
+      ${g.tipo !== 'chapas' ? html`<button type="button" class="nev-hit" data-add="${p.id}"></button>` : ''}
       <span class="nev-ctl"></span>
       <span class="nev-flag" aria-hidden="true"></span>
-    </div>`;
+    </div>
+    ${g.tipo === 'chapas' ? html`<button type="button" class="nev-hit nev-chapas-hit" data-add="${p.id}" style="${toqueChapas(g, plano)}"></button>` : ''}`;
 }
 
 const planoBox = (r, plano) => box({ left: r.x / plano.fondo.w * 100,
@@ -161,7 +172,7 @@ function updateGroup(el, g, p, plano, value) {
   node.classList.toggle('out', out);
   node.querySelectorAll('.nev-p').forEach((piece, i) => piece.classList.toggle('sel', plano.marcar === 'producto' ? n > 0 : i < n));
 
-  const hit = node.querySelector('.nev-hit');
+  const hit = node.querySelector('.nev-hit') || el.querySelector(`.nev-chapas-hit[data-add="${p.id}"]`);
   hit.setAttribute('aria-pressed', n > 0);
   const parts = [p.name, n ? `${qty} en el pedido` : `toca para pedir ${what}`];
   if (pend) parts.push(`${pending} pend.`);

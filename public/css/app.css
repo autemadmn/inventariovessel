@@ -726,6 +726,10 @@ select.mini { width: auto; text-align: left; }
 .nev-g { position: absolute; transform-origin: 50% 50%; transition: transform 0.15s var(--ease); }
 .nev-g.on { z-index: 1; transform: scale(1.03); }
 .nev-g:has(.nev-hit:active) { transform: scale(0.98); }
+/* El botón ampliado comparte límites con sus vecinos: no se escala al seleccionar. */
+.nev-chapas { pointer-events: none; }
+.nev-chapas.on, .nev-chapas:has(.nev-hit:active) { transform: none; z-index: auto; }
+.nev-chapas .card-minus { pointer-events: auto; }
 .nev-p { position: absolute; pointer-events: none; }
 .nev-p img { position: absolute; inset: 0; width: 100%; height: 100%; user-select: none; }
 .nev-p.wait { border-radius: 14%; background: rgba(255, 255, 255, 0.14); }
