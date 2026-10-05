@@ -306,3 +306,15 @@ public/         interfaz (HTML, CSS y JavaScript sin compilación)
 test/           pruebas (node --test)
 wrangler.jsonc  configuración de Cloudflare
 ```
+
+## Imágenes y revisión final del catálogo
+
+El catálogo dispone de 79 PNG transparentes y nueve siluetas justificadas en [docs/catalogo/imagenes-pendientes.json](docs/catalogo/imagenes-pendientes.json). El manifiesto indica `forma: caja`; se usa en tarjetas, filas, carrito y Catálogo sin listas de productos en el código.
+
+Nevera muestra Heineken, Sugarfree y Lanjarón con sus diseños reales y máscaras v3. Chupitería conserva su plano aprobado y mejora las zonas de toque: al menos 44 px en 360×640, sin mover las piezas ni solapar los botones. El carrito de móviles estrechos dispone las cantidades bajo el nombre para evitar columnas ilegibles.
+
+**Agua:** en Gestión → Catálogo renombrar el producto existente Agua Cabreiroá 33 cl a Agua Lanjarón 33 cl, conservando su id/slug e historial, y confirmar las unidades reales del pack. La foto no confirma 35 botellas; el paso existente se conserva hasta que se compruebe. No hace falta migración nueva.
+
+El informe y las capturas locales se generan en `tmp-capturas/final/` con `scripts/images/revisar-final.cjs`; ver instrucciones de [scripts/nevera/frontal/README.md](scripts/nevera/frontal/README.md). Antes de fusionar en main sigue siendo necesario ejecutar `supabase/migrations/0011_vip_y_otros.sql` con `SET search_path TO vessel_reposicion;` en el SQL Editor.
+
+El plano activo también lleva versión: `nevera.v3.json`. El frontal v2 y el plano de Chupitería se conservan byte a byte. Para una exportación futura, aumentar también `PLAN_VERSION` en config.py y actualizar la referencia de Pedir.

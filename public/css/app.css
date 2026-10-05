@@ -276,8 +276,8 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
   filter: drop-shadow(0 2px 3px rgba(20, 20, 18, 0.22));
 }
 /* Las fotos de cajas aprovechan la base del lienzo; solo tarjetas y filas. */
-.card-main .thumb.case-photo, .row .thumb.case-photo { overflow: hidden; }
-.card-main .thumb.case-photo img, .row .thumb.case-photo img {
+.card-main .thumb.case-photo, .row .thumb.case-photo, .cart-list .thumb.case-photo, .cat-list .thumb.case-photo { overflow: hidden; }
+.card-main .thumb.case-photo img, .row .thumb.case-photo img, .cart-list .thumb.case-photo img, .cat-list .thumb.case-photo img {
   object-fit: cover; object-position: 50% 100%;
 }
 @media (prefers-color-scheme: dark) {
@@ -382,6 +382,11 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
 .cart-list li + li { border-top: 1px solid var(--line); }
 .cart-name { flex: 1; min-width: 0; font-weight: 500; }
 .cart-name small { display: block; font-size: 0.8125rem; font-weight: 400; }
+@media (max-width: 480px) {
+  .cart-list li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px 12px; }
+  .cart-list .thumb { grid-row: span 2; align-self: center; }
+  .cart-list .stepper { grid-column: 2; justify-content: flex-end; }
+}
 .stepper { display: flex; align-items: center; gap: 4px; }
 .stepper output { min-width: 32px; text-align: center; font-size: 1.125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .step {
@@ -702,7 +707,7 @@ select.mini { width: auto; text-align: left; }
   font-size: 1rem; font-weight: 600; color: var(--text); touch-action: manipulation;
 }
 .sec-title { margin: 0; font-size: 1.375rem; font-weight: 700; letter-spacing: -0.01em; }
-.card-main .tag.unit { align-self: flex-start; margin-left: 4px; font-size: 0.75rem; }
+.card-main .tag.unit { align-self: flex-start; margin-left: 4px; padding-inline: 4px; font-size: 0.6875rem; white-space: normal; }
 @media (min-width: 700px) {
   .cover { max-width: 640px; margin: 0 auto; }
   .pedir:has(> .cover) > .bar-pick { max-width: 640px; margin-inline: auto; }
@@ -794,3 +799,6 @@ select.mini { width: auto; text-align: left; }
   font-size: 11px; white-space: normal; overflow-wrap: normal;
 }
 .nevera-frontal .nev-caption .nev-flag:empty { display: none; }
+
+/* En tarjetas pequeñas, los pendientes se leen completos en dos líneas. */
+.card-main .tag.info { white-space: normal; overflow: visible; }

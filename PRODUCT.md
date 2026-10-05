@@ -39,7 +39,7 @@ explicable. No es un TPV ni un inventario genérico.
 
 ## Capabilities and Constraints
 
-- Catálogo provisional de 49 productos (ginebras, vodkas, whiskies, rones, tequila); productos
+- Catálogo local de 88 productos activos (ginebras, vodkas, whiskies, rones, tequila); productos
   dudosos marcados «por confirmar»; dos botellas sin identificar fuera de la pantalla de pedir.
 - Agotado en almacén ≠ falta en barra.
 - Informes por producto/barra/noche/semana/mes; «consumo» solo si el nivel de las barras es el mismo.
@@ -60,9 +60,12 @@ explicable. No es un TPV ni un inventario genérico.
 
 ## Evidence on Hand
 
-- 29 fotos de referencia de botellas con licencia libre en `public/img/botellas/` (créditos en
-  `CREDITOS.md`); el resto se fotografían desde la app. No inventar fotos de productos dudosos.
-- No hay logo, fotografías del local ni material de marca.
+- 79 imágenes de catálogo: 63 PNG previos conservados y 16 nuevos. Fuentes, modelos y referencias en `public/img/botellas/manifest.json` y `CREDITOS.md`.
+- En el cierre hay ocho fotografías oficiales/de tienda recortadas, la caja Lanjarón aportada y siete imágenes de ImageGen contrastadas con referencias reales. `origen` distingue fotos externas de fotos del local; el campo heredado `foto-local` indica procesamiento fotográfico local.
+- Nueve productos conservan silueta justificada: Buen Amigo y Cassaya sin botella completa verificable; Schweppes Zero/Fresa y Perrier sin imagen exacta del pack; los tres zumos sin marca confirmada y vino blanco sin identificar. Lista auditada contra PGlite en `docs/catalogo/imagenes-pendientes.json`.
+- Nevera frontal: fotografía real de chapa Heineken, diseño oficial Sugarfree y etiqueta Lanjarón aportada, aplicados a la geometría de Blender/Cycles; todos los grupos tienen imagen y máscara v3 o sus recursos previos.
+- Chupitería: plano aprobado y 37 piezas intactos. Zonas táctiles independientes de los dibujos, mínimo 44 px en 360×640.
+- No hay logo ni material de marca propio; no se inventan referencias para productos dudosos.
 
 ## Product Principles
 
