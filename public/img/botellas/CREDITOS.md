@@ -86,3 +86,19 @@ Las 30 imágenes fueron aprobadas en la revisión final. Se aceptaron pequeñas 
 | Brugal 1888 Ron Gran Reserva Doblemente Añejado | `brugal-1888.png` | `openai-imagegen` | [tienda](https://www.drinkfinder.co.uk/products/brugal-1888-gran-reserva-familiar-rum-70cl) | No documentada en esta generación |
 | Brugal Doble Reserva | `brugal-doble-reserva.png` | `openai-imagegen` | [tienda](https://www.1898drinksboutique.com/ron-brugal-doble-reserva-0700) | `docs/catalogo/referencias/brugal-doble-reserva.jpg` |
 | Flor de Caña Centenario 12 Años | `flor-de-cana-12.png` | `openai-imagegen` | [tienda](https://www.thebottleclub.com/products/flor-de-cana-12-year-old-rum) | No documentada en esta generación |
+
+<!-- vessel-portada-secciones -->
+## Portada de Pedir: cuatro botellas
+
+Generadas el 4 de octubre de 2026 con OpenAI ImageGen (`openai-imagegen`) a partir de las referencias oficiales o de tienda indicadas abajo. Son representaciones generadas, no fotografías oficiales; las microletras y algunos detalles ornamentales pueden variar. Cada candidata se comparó visualmente con sus referencias y el PNG final se revisó sobre fondos blanco y oscuro. Las cuatro quedaron aprobadas para los botones de la app.
+
+| Producto | PNG / clave del manifest | Referencia utilizada |
+|---|---|---|
+| Estrella Galicia Especial, botellín de 33 cl | `estrella-galicia.png` / `estrella-galicia` | [Escerveza](https://escerveza.com/collections/nacionales/products/estrella-galicia): foto frontal de la botella; el gráfico «12 uds.» se excluyó de la generación. |
+| Jägermeister Original 70 cl | `jagermeister.png` / `jagermeister` | [Tienda oficial Jägermeister](https://uk.jagermeister.com/shop/our-products/jagermeister-70cl): botella frontal de 70 cl; se excluyó el fondo promocional. |
+| DIEX Crema de Fresas con Tequila 70 cl | `diex-crema-de-fresas-con-tequila.png` / `diex-crema-de-fresas-con-tequila` | [Bodegas del Desierto](https://bodegasdeldesierto.es/producto/diex-crema-de-fresas-con-tequila-70cl/): foto detallada del cuerpo, rombos y etiqueta; [Private Celler](https://privateceller.es/es/crema-de-licor-licores-y-destilados/4466888-crema-de-licor-diex-mexico-70-cl-fresa-tequila-8422711810044.html): botella completa y tapón blanco. |
+| Schweppes Tónica Original, vidrio de 20 cl | `schweppes-tonica.png` / `schweppes-tonica` | [Gadis](https://www.gadisline.com/tonica-schweppes-botella-cristal-20-cl): foto frontal del botellín de vidrio de 20 cl con etiqueta y chapa amarillas. |
+
+Los enlaces directos a las imágenes se conservan en `manifest.json`. Los originales descargados, las candidatas, los prompts, los ajustes y las comparaciones están en `assets/portada/`. Procesado con `scripts/images/process.py`, rembg (`isnet-general-use`) y la opción específica `preserve_source_alpha` para conservar también el contorno transparente de ImageGen y eliminar restos de recorte. Esta opción no cambia el procesado de las selecciones anteriores.
+
+Formato final: PNG transparente de 512×683 px, botella de 642 px de alto (94 %), base en y=668 (borde exclusivo), menos de 150.000 bytes. Las 50 entradas e imágenes anteriores permanecen intactas. Para DIEX se usa el slug completo del contrato técnico, `diex-crema-de-fresas-con-tequila`, en vez del nombre abreviado `diex-crema-fresas-tequila`.

@@ -4,9 +4,10 @@
 import { post, store } from '../api.js';
 import {
   state, subscribe, barName, loadLive, loadBootstrap, productById, stockFor, stockText, isOut,
+  orderStep, qtyText, unitSummary, faltan, withVerb,
 } from '../state.js';
 import {
-  raw, $, html, mount, thumb, toast, buzz, bottles, confirmDialog, dialog, norm,
+  raw, $, html, mount, thumb, toast, buzz, confirmDialog, dialog, norm,
 } from '../ui.js';
 import { icon } from '../icons.js';
 import { apuntar } from './viaje.js';
@@ -37,7 +38,7 @@ function leftHtml(l) {
   const left = stockFor(l.product_id);
   if (left === null) return '';
   if (left <= 0) return html`<small class="row-left none">No queda en almacén</small>`;
-  return html`<small class="row-left">Quedan ${stockText(left, productById(l.product_id)?.per_case)}</small>`;
+  return html`<small class="row-left">${withVerb('Queda', 'Quedan', stockText(left, productById(l.product_id)?.per_case))}</small>`;
 }
 
 function rowHtml(l) {
@@ -49,10 +50,10 @@ function rowHtml(l) {
         ${thumb(l, 'mini')}
         <span class="row-text">
           <b>${l.product_name}</b>
-          <small>${isOut(l) && !(left !== null && left <= 0) ? html`<span class="danger">Agotado en almacén · </span>` : ''}Faltan ${l.qty_pending}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${n}</span>` : ''}</small>
+          <small>${isOut(l) && !(left !== null && left <= 0) ? html`<span class="danger">Agotado en almacén · </span>` : ''}${faltan(qtyText(l.qty_pending, l))}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${qtyText(n, l)}</span>` : ''}</small>
           ${leftHtml(l)}
         </span>
-        <span class="row-qty">x${n}</span>
+        <span class="row-qty">${qtyText(n, l)}</span>
       </button>
       ${left !== null && left <= 0 ? html`
         <button type="button" class="row-trip" data-trip="${l.product_id}">
@@ -62,11 +63,10 @@ function rowHtml(l) {
 
 function view() {
   const lines = openLines();
-  const total = lines.reduce((a, l) => a + toDeliver(l), 0);
-  const pendingTotal = lines.reduce((a, l) => a + l.qty_pending, 0);
+  const total = unitSummary(lines.map((l) => ({ p: l, qty: toDeliver(l) })));
+  const pendingTotal = unitSummary(lines.map((l) => ({ p: l, qty: l.qty_pending })));
   const tabs = [['all', 'Todas'], ...state.bars.map((b) => [String(b.id), b.name])];
-  const count = (v) => state.live.lines.filter((l) => l.qty_pending > 0 && (v === 'all' || l.bar_id === Number(v)))
-    .reduce((a, l) => a + l.qty_pending, 0);
+  const count = (v) => state.live.lines.filter((l) => l.qty_pending > 0 && (v === 'all' || l.bar_id === Number(v))).length;
 
   const groups = filter === 'all'
     ? state.bars.map((b) => ({ bar: b, lines: lines.filter((l) => l.bar_id === b.id) })).filter((g) => g.lines.length)
@@ -80,12 +80,12 @@ function view() {
     </div>
 
     ${lines.length ? html`
-      <p class="status-line"><strong>Faltan ${bottles(pendingTotal)}</strong></p>
+      <p class="status-line"><strong>${faltan(pendingTotal)}</strong></p>
       ${groups.map((g) => html`
         ${g.bar ? html`<h2 class="group-title bar-${g.bar.id}">${g.bar.name}</h2>` : ''}
         <ul class="rows">${g.lines.map(rowHtml)}</ul>`)}
       <button type="button" class="btn primary big done-btn" data-done>
-        Hecho${filter !== 'all' ? ` · ${barName(filter)}` : ''} (${bottles(total)})
+        Hecho${filter !== 'all' ? ` · ${barName(filter)}` : ''} (${total})
       </button>
       <button type="button" class="link small stock-link" data-stock-panel>Agotados en almacén</button>`
     : html`
@@ -125,10 +125,10 @@ async function onClick(e) {
 async function complete() {
   const lines = openLines();
   const items = lines.map((l) => ({ line_id: l.id, qty: toDeliver(l), delivered: l.qty_delivered })).filter((i) => i.qty > 0);
-  const total = items.reduce((a, i) => a + i.qty, 0);
+  const total = unitSummary(lines.map((l) => ({ p: l, qty: toDeliver(l) })).filter((x) => x.qty > 0));
   if (!items.length) return;
   const where = filter === 'all' ? '' : ` de ${barName(filter)}`;
-  if (!await confirmDialog('¿Reposición hecha?', `Se registrarán ${bottles(total)} como repuestas${where}.`, { ok: 'Sí, hecho' })) return;
+  if (!await confirmDialog('¿Reposición hecha?', `Se registrarán ${total} como repuestas${where}.`, { ok: 'Sí, hecho' })) return;
   let res;
   try {
     res = await post('/api/complete', { items, by: state.who });
@@ -142,7 +142,7 @@ async function complete() {
   // Lo que quede pendiente vuelve a mostrarse completo la próxima vez.
   for (const l of lines) delete adjust[l.id];
   buzz(30);
-  toast(res.bottles ? `Hecho: ${bottles(res.bottles)} repuestas` : 'Ya estaba hecho por otra persona');
+  toast(res.bottles ? `Hecho: ${total} repuestas` : 'Ya estaba hecho por otra persona');
   await loadLive();
 }
 
@@ -153,12 +153,12 @@ async function rowMenu(l) {
   const choice = await dialog({
     title: l.product_name,
     body: html`
-      <p class="muted">${barName(l.bar_id)} · faltan ${bottles(l.qty_pending)}</p>
-      <div class="field"><span>Botellas que se llevan</span>
+      <p class="muted">${barName(l.bar_id)} · ${faltan(qtyText(l.qty_pending, l)).toLowerCase()}</p>
+      <div class="field"><span>Cantidad que se lleva</span>
         <div class="stepper big-step">
-          <button type="button" class="step" data-step="-1" aria-label="Una menos">${raw(icon('minus', { size: 22 }))}</button>
-          <output id="adj-n">${n}</output>
-          <button type="button" class="step" data-step="1" aria-label="Una más">${raw(icon('plus', { size: 22 }))}</button>
+          <button type="button" class="step" data-step="-1" aria-label="${orderStep(l) > 1 ? 'Una caja menos' : 'Una menos'}">${raw(icon('minus', { size: 22 }))}</button>
+          <output id="adj-n">${qtyText(n, l)}</output>
+          <button type="button" class="step" data-step="1" aria-label="${orderStep(l) > 1 ? 'Una caja más' : 'Una más'}">${raw(icon('plus', { size: 22 }))}</button>
         </div>
         <small class="muted">Lo que no se lleve seguirá pendiente después de pulsar «Hecho».</small>
       </div>`,
@@ -173,8 +173,8 @@ async function rowMenu(l) {
       dlg.addEventListener('click', (e) => {
         const b = e.target.closest('[data-step]');
         if (!b) return;
-        n = Math.max(0, Math.min(l.qty_pending, n + Number(b.dataset.step)));
-        dlg.querySelector('#adj-n').textContent = n;
+        n = Math.max(0, Math.min(l.qty_pending, n + Number(b.dataset.step) * orderStep(l)));
+        dlg.querySelector('#adj-n').textContent = qtyText(n, l);
         buzz(8);
       });
     },
@@ -184,7 +184,7 @@ async function rowMenu(l) {
     else adjust[l.id] = n;
     mount($('#reponer'), view());
   } else if (choice === 'cancel') {
-    if (!await confirmDialog('Quitar de la lista', `${l.product_name} (${bottles(l.qty_pending)}) dejará de estar pendiente para ${barName(l.bar_id)}.`, { ok: 'Quitar', kind: 'danger' })) return;
+    if (!await confirmDialog('Quitar de la lista', `${l.product_name} (${qtyText(l.qty_pending, l)}) dejará de estar pendiente para ${barName(l.bar_id)}.`, { ok: 'Quitar', kind: 'danger' })) return;
     await post(`/api/lines/${l.id}/cancel`, { by: state.who });
     delete adjust[l.id];
     toast('Quitado de la lista');

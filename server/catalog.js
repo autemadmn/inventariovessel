@@ -8,10 +8,22 @@ export const CATEGORIES = [
   { id: 'whisky', name: 'Whiskies' },
   { id: 'ron', name: 'Rones' },
   { id: 'tequila', name: 'Tequila' },
+  { id: 'licor', name: 'Licores' },
   { id: 'cerveza', name: 'Cervezas' },
   { id: 'refresco', name: 'Refrescos' },
   { id: 'vino', name: 'Vinos' },
   { id: 'otros', name: 'Otros / sin clasificar' },
+];
+
+export const SECTIONS = [
+  { id: 'alcohol', name: 'Alcohol' }, { id: 'nevera', name: 'Nevera' },
+  { id: 'chupiteria', name: 'Chupitería' }, { id: 'refrescos', name: 'Refrescos' },
+  { id: 'otros', name: 'Otros' },
+];
+export const ORDER_UNITS = [
+  { id: 'botella', one: 'botella', many: 'botellas' },
+  { id: 'caja', one: 'caja', many: 'cajas' },
+  { id: 'bolsa', one: 'bolsa', many: 'bolsas' },
 ];
 
 // status: confirmado | pendiente (dato por confirmar) | sin_identificar | descartado
@@ -174,7 +186,7 @@ export const INITIAL_STORES = [
   { id: 2, name: 'Out Vessel', kind: 'central', sort: 20, point_type: null, map_key: null, bar_id: null, in_vessel: 0 },
 ];
 export const POINT_KEYS = INITIAL_STORES.filter((s) => s.in_vessel).map((s) => s.map_key);
-export const SHELF_ORDER = ['ginebra', 'ron', 'vodka', 'whisky', 'tequila', 'cerveza', 'refresco', 'vino', 'otros'];
+export const SHELF_ORDER = ['ginebra', 'ron', 'vodka', 'whisky', 'tequila', 'licor', 'cerveza', 'refresco', 'vino', 'otros'];
 export function defaultMainKey(category) {
   return ['cerveza', 'refresco'].includes(category) ? 'alm-cerveza' : category === 'vino' ? 'nevera-vino' : 'alm-alcohol';
 }

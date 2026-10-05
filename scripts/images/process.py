@@ -148,6 +148,14 @@ def cutout(entry, session, refresh):
             original_rgb = np.array(original.convert("RGB"))
         rgba[interior, :3] = original_rgb[interior]
         image = Image.fromarray(rgba)
+    if adjustments.get("preserve_source_alpha"):
+        # ImageGen ya delimita el objeto: rembg puede confundir el RGB invisible
+        # con reflejos o sombras. Interseca ambas máscaras sin ampliar el objeto.
+        with Image.open(source) as original:
+            source_alpha = np.array(original.convert("RGBA").getchannel("A"))
+        source_alpha[source_alpha <= adjustments["alpha_floor"]] = 0
+        source_alpha[source_alpha >= 250] = 255
+        values = np.minimum(values, source_alpha)
     # Conserva únicamente el componente de la botella; elimina motas aisladas.
     labels, count = ndimage.label(values > 0)
     if not count:
