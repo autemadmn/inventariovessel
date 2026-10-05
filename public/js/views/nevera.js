@@ -84,8 +84,6 @@ function siluetaZona(tipo) {
   return raw(`<svg class="nev-placeholder" viewBox="0 0 ${tipo === 'chapas' ? '900 150' : '290 346'}" aria-hidden="true" fill="currentColor">${shapes}</svg>`);
 }
 
-const nombreCorto = (p) => ({ 'agua-cabreiroa-33-cl': 'Lanjarón', 'red-bull-sugarfree': 'Sugarfree' })[p.slug] || p.name;
-
 /** HTML puro: el estado del pedido llega como argumento, no se lee el DOM ni state. */
 export function zonaHtml(p, zonas, plano, { n = 0, pend = 0, out = false, shown = n, qty = String(n), pending = String(pend), what = 'una botella' } = {}) {
   const zona = zonas[0];
@@ -94,7 +92,7 @@ export function zonaHtml(p, zonas, plano, { n = 0, pend = 0, out = false, shown 
   const hit = zona.hit;
   const relative = (r) => box({ left: (r.x - hit.x) / hit.w * 100,
     top: (r.y - hit.y) / hit.h * 100, width: r.w / hit.w * 100, height: r.h / hit.h * 100 });
-  const label = [nombreCorto(p), n ? `${qty} en el pedido` : `toca para pedir ${what}`,
+  const label = [p.name, n ? `${qty} en el pedido` : `toca para pedir ${what}`,
     pend ? `${pending} pend.` : '', out ? 'agotado en almacén' : ''].filter(Boolean).join(', ');
   return html`<div class="nev-zone${n ? ' on' : ''}${out ? ' out' : ''}" data-card="${p.id}" data-nev="${p.id}" style="${planoBox(hit, plano)}">
     <span class="nev-p${n ? ' sel' : ''}" style="${relative(rect)}">
@@ -102,9 +100,7 @@ export function zonaHtml(p, zonas, plano, { n = 0, pend = 0, out = false, shown 
         <img class="nev-sel" src="${BASE + zona.seleccion}" alt="" decoding="async" draggable="false">` : siluetaZona(zona.silueta)}
     </span>
     <button type="button" class="nev-hit" data-add="${p.id}" aria-label="${label}" aria-pressed="${String(n > 0)}">
-      <span class="nev-caption"><span class="nev-name">${nombreCorto(p)}</span>
-        <span class="nev-flag${out ? ' danger' : pend ? ' info' : ''}" aria-hidden="true">${out ? 'Agotado' : pend ? `${pending} pend.` : ''}</span>
-      </span>
+      <span class="nev-flag${out ? ' danger' : pend ? ' info' : ''}" aria-hidden="true">${out ? 'Agotado' : pend ? `${pending} pend.` : ''}</span>
     </button>
     <span class="nev-ctl">${n ? html`<span class="count" aria-label="${qty} en la solicitud">${shown}</span>
       <button type="button" class="card-minus" data-minus="${p.id}" aria-label="Quitar ${what} de ${p.name}">${raw(icon('minus', { size: 18 }))}</button>` : ''}</span>

@@ -10,7 +10,7 @@ import {
 import { icon } from '../icons.js';
 import { loadNevera, drawNevera, patchNevera, planoCargado, zonasDelPlano, zonaHtml } from './nevera.js';
 
-const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v3.json' };
+const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v4.json' };
 const planoActual = () => planoCargado(PLANOS[lastSection]);
 
 let query = '';

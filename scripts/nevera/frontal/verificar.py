@@ -3,7 +3,7 @@ import json
 from PIL import Image
 from config import OUTPUT
 
-plano = json.loads((OUTPUT/'nevera.v3.json').read_text(encoding='utf-8'))
+plano = json.loads((OUTPUT/'nevera.v4.json').read_text(encoding='utf-8'))
 assert Image.open(OUTPUT/plano['fondo']['imagen']).size == (1080, 1440)
 files = [(plano['fondo']['imagen'], 150_000)]
 for zona in plano['zonas']:

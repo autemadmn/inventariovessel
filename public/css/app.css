@@ -788,17 +788,7 @@ select.mini { width: auto; text-align: left; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nev-zone .nev-ctl .card-minus { top: 0; left: 0; }
-.nevera-frontal .nev-caption {
-  position: absolute; left: 0; right: 0; bottom: 0;
-  padding: 3px 0; border-radius: 4px; background: rgba(17,18,20,0.9);
-  color: #fff; line-height: 1.2; text-align: center;
-}
-.nevera-frontal .nev-name { display: block; font-size: 13px; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: anywhere; }
-.nevera-frontal .nev-caption .nev-flag {
-  position: static; display: block; transform: none; padding: 1px 0 0; background: none;
-  font-size: 11px; white-space: normal; overflow-wrap: normal;
-}
-.nevera-frontal .nev-caption .nev-flag:empty { display: none; }
+.nevera-frontal .nev-flag:empty { display: none; }
 
 /* En tarjetas pequeñas, los pendientes se leen completos en dos líneas. */
 .card-main .tag.info { white-space: normal; overflow: visible; }

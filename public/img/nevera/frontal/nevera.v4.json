@@ -1,0 +1,89 @@
+{
+  "version": 4,
+  "seccion": "nevera",
+  "base": "img/nevera/frontal/",
+  "fondo": {
+    "imagen": "bandeja.v1.webp",
+    "w": 1080,
+    "h": 1440
+  },
+  "marcar": "producto",
+  "zonas": [
+    {
+      "slug": "agua-cabreiroa-33-cl",
+      "rect": {
+        "x": 106,
+        "y": 132,
+        "w": 289,
+        "h": 393
+      },
+      "hit": {
+        "x": 106,
+        "y": 120,
+        "w": 289,
+        "h": 390,
+        "round": false
+      },
+      "imagen": "agua-cabreiroa-33-cl-grupo.v3.webp",
+      "seleccion": "agua-cabreiroa-33-cl-seleccion.v3.webp"
+    },
+    {
+      "slug": "red-bull",
+      "rect": {
+        "x": 395,
+        "y": 179,
+        "w": 579,
+        "h": 346
+      },
+      "hit": {
+        "x": 395,
+        "y": 120,
+        "w": 579,
+        "h": 390,
+        "round": false
+      },
+      "imagen": "red-bull-grupo.v4.webp",
+      "seleccion": "red-bull-seleccion.v4.webp"
+    },
+    {
+      "slug": "heineken",
+      "rect": {
+        "x": 106,
+        "y": 552,
+        "w": 868,
+        "h": 153
+      },
+      "hit": {
+        "x": 106,
+        "y": 510,
+        "w": 868,
+        "h": 270,
+        "round": false
+      },
+      "imagen": "heineken-grupo.v3.webp",
+      "seleccion": "heineken-seleccion.v3.webp"
+    },
+    {
+      "slug": "estrella-galicia",
+      "rect": {
+        "x": 106,
+        "y": 745,
+        "w": 868,
+        "h": 590
+      },
+      "hit": {
+        "x": 106,
+        "y": 780,
+        "w": 868,
+        "h": 560,
+        "round": false
+      },
+      "imagen": "estrella-galicia-grupo.v2.webp",
+      "seleccion": "estrella-galicia-seleccion.v2.webp"
+    }
+  ],
+  "seleccion": {
+    "rellenoBlanco": 0.34,
+    "contornoPx": 6
+  }
+}

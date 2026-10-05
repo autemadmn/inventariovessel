@@ -23,14 +23,14 @@ const captures = path.join(__dirname, '_build/capturas');
       return Object.fromEntries(state.products.map((p) => [p.slug, p]));
     });
     const zone = (slug) => page.locator(`.nev-zone[data-card="${products[slug].id}"]`);
-    assert.equal(await page.locator('.nev-zone').count(), 5);
+    assert.equal(await page.locator('.nev-zone').count(), 4);
     assert.equal(await page.locator('.filters').count(), 0);
     assert.equal(await page.locator('.bar-btn').count(), 3);
     await zone('red-bull').locator('.nev-hit').click();
     assert.equal(await zone('red-bull').locator('.count').count(), 0);
     assert.match(await page.locator('.toast').textContent(), /Primero elige la barra/);
     await page.locator('[data-bar="3"]').click();
-    for (const slug of ['agua-cabreiroa-33-cl', 'red-bull', 'red-bull-sugarfree', 'heineken', 'estrella-galicia']) {
+    for (const slug of ['agua-cabreiroa-33-cl', 'red-bull', 'heineken', 'estrella-galicia']) {
       await zone(slug).locator('.nev-hit').click();
       assert.equal(await zone(slug).locator('.count').textContent(), '1');
       assert.equal(await zone(slug).locator('.nev-hit').getAttribute('aria-pressed'), 'true');
@@ -85,15 +85,15 @@ const captures = path.join(__dirname, '_build/capturas');
         assert.ok(b.width >= 44 && b.height >= 44, JSON.stringify(b));
       }
       assert.ok((await zone('heineken').locator('.nev-hit').boundingBox()).height >= 56);
-      for (const slug of ['heineken', 'red-bull-sugarfree']) {
+      for (const slug of ['heineken', 'red-bull']) {
         assert.equal(await zone(slug).locator('.nev-placeholder').count(), 0);
         assert.equal(await zone(slug).locator('img').count(), 2);
       }
       const selected = zone('heineken').locator('.nev-hit');
       assert.notEqual(await selected.evaluate((el) => getComputedStyle(el).boxShadow), 'none');
-      for (const caption of await page.locator('.nev-caption').all()) {
-        assert.ok(await caption.evaluate((el) => el.scrollWidth <= el.clientWidth + 1));
-      }
+      assert.equal(await page.locator('.nevera-frontal .nev-caption,.nevera-frontal .nev-name').count(), 0);
+      assert.equal(await zone('red-bull-sugarfree').count(), 0);
+      assert.equal(await page.locator(`.grid .card[data-card="${products['red-bull-sugarfree'].id}"]`).count(), 1);
       await page.screenshot({ path: path.join(captures, `nevera-${width}x${height}.png`) });
       console.log(`${width}x${height}: ${tray.width.toFixed(1)}x${tray.height.toFixed(1)}, hit >=44 px, sin overflow`);
     }
@@ -105,8 +105,8 @@ const captures = path.join(__dirname, '_build/capturas');
       state.products = state.products.filter((x) => x.id !== p.id);
       state.products.push({ ...p, id: 9999, slug: 'alta-nueva', name: 'Alta nueva' });
       notify('bootstrap');
-    }, products['red-bull-sugarfree']);
-    assert.equal(await page.locator('.nev-zone').count(), 4);
+    }, products['red-bull']);
+    assert.equal(await page.locator('.nev-zone').count(), 3);
     assert.equal(await page.locator('.grid .card[data-card="9999"]').count(), 1);
     assert.match(await page.locator('#grid').textContent(), /Más de la nevera/);
     await page.evaluate(async () => {
@@ -131,7 +131,7 @@ const captures = path.join(__dirname, '_build/capturas');
     const fallback = await browser.newContext();
     await fallback.addInitScript(() => localStorage.setItem('whoAsked', 'true'));
     const other = await fallback.newPage();
-    await other.route('**/img/nevera/frontal/nevera.v3.json', (r) => r.abort());
+    await other.route('**/img/nevera/frontal/nevera.v4.json', (r) => r.abort());
     await other.goto(`${url}/#/pedir/nevera`);
     await other.locator('.grid .card').first().waitFor();
     assert.equal(await other.locator('.grid .card').count(), 5);
