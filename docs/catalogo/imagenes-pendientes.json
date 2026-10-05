@@ -1,0 +1,48 @@
+{
+  "buen-amigo-oro": {
+    "motivo": "La foto local muestra solo cuello y parte de la etiqueta. Las fotografías completas encontradas corresponden a envases con otra tipografía o tapón; la candidata generada añadió una franja no verificable y se descartó.",
+    "refs": [
+      "docs/catalogo/referencias/buen-amigo-oro.jpg",
+      "https://www.comprar-bebidas.com/tequila-buen-amigo-gold",
+      "https://mexcor.com/wp-content/uploads/2026/03/MBG-California-Portfolio-2026-03-09.pdf"
+    ]
+  },
+  "cassaya": {
+    "motivo": "La fotografía local es parcial, oblicua y con la etiqueta tapada; no permite confirmar todas las letras ni una botella completa de esa misma variedad. No se reconstruye una marca o etiqueta sin evidencia.",
+    "refs": [
+      "docs/catalogo/referencias/cassaya.jpg"
+    ]
+  },
+  "schweppes-tonica-zero": {
+    "motivo": "Localizados botellines de 20 cl y fichas de cajas de 24, pero ninguna fotografía fiable del pack o caja exacta. No se inventa una caja a partir de una botella.",
+    "refs": [
+      "https://hydradrinks.es/es/mixers/150-schweppes-tonica-zero-botella-24x20cl.html"
+    ]
+  },
+  "schweppes-fresa": {
+    "motivo": "No hay caja en las referencias aportadas ni fotografía verificada del producto y pack exactos. No se sustituye por Hibiscus o Pimienta Rosa.",
+    "refs": []
+  },
+  "perrier": {
+    "motivo": "La referencia de distribuidor confirma 20 cl y caja de 24, pero solo muestra una botella; falta una fotografía verificable de ese pack.",
+    "refs": [
+      "https://disterri.com/es/categoria-producto/agua/agua-con-gas-no-recuperable/perrier-agua-con-gas-no-recuperable/"
+    ]
+  },
+  "zumo-de-naranja": {
+    "motivo": "Marca y envase reales del local sin identificar; no se inventan.",
+    "refs": []
+  },
+  "zumo-de-melocoton": {
+    "motivo": "Marca y envase reales del local sin identificar; no se inventan.",
+    "refs": []
+  },
+  "zumo-de-pina": {
+    "motivo": "Marca y envase reales del local sin identificar; no se inventan.",
+    "refs": []
+  },
+  "vino-blanco": {
+    "motivo": "El usuario indica que todavía no sabe la marca y variedad del vino blanco.",
+    "refs": []
+  }
+}
