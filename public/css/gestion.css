@@ -243,10 +243,12 @@ body.sel-dragging { user-select: none; -webkit-user-select: none; cursor: grabbi
 .bt-bars .bar-tag { font-size: 0.9375rem; color: var(--text); }
 .bt-bars .bar-tag.bar-1::before { background: var(--bar1); }
 .bt-bars .bar-tag.bar-2::before { background: var(--bar2); }
+.bt-bars .bar-tag.bar-3::before { background: var(--bar3); }
 .bt-barline { display: block; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .bt-barline i { display: block; height: 100%; border-radius: 4px; }
 .bt-bars .bar-1 .bt-barline i { background: var(--bar1); }
 .bt-bars .bar-2 .bt-barline i { background: var(--bar2); }
+.bt-bars .bar-3 .bt-barline i { background: var(--bar3); }
 .bt-bars b { font-size: 1.125rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .bt-empty { padding: 20px 16px; background: var(--surface-2); border-radius: var(--radius); font-size: 0.9375rem; }
 

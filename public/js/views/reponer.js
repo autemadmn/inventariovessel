@@ -1,6 +1,7 @@
-// Reponer: lista compacta de lo que falta y un único botón «Hecho».
-// Tocar una fila (opcional) permite indicar que se llevó menos, quitarla o
-// marcar el producto como agotado en almacén.
+// Reponer: lista compacta de lo que falta. Se marca lo que ya se ha llevado
+// (una a una o «Seleccionar todo») y «Hecho» registra solo lo marcado: lo demás
+// sigue pendiente para el siguiente viaje. El botón «…» de cada fila permite
+// indicar que se llevó menos, quitarla o marcar el producto como agotado.
 import { post, store } from '../api.js';
 import {
   state, subscribe, barName, loadLive, loadBootstrap, productById, stockFor, stockText, isOut,
@@ -15,6 +16,8 @@ import { apuntar } from './viaje.js';
 let filter = store.get('reponerFilter', 'all');
 // Ajustes locales de «esta vez se lleva menos»: { lineId: botellas }.
 const adjust = {};
+// Filas marcadas como llevadas en este viaje (ids de línea).
+const picked = new Set();
 
 export function renderReponer(root) {
   mount(root, html`<section class="reponer" id="reponer"></section>`);
@@ -32,6 +35,7 @@ function openLines() {
 }
 
 const toDeliver = (l) => Math.min(adjust[l.id] ?? l.qty_pending, l.qty_pending);
+const pickedLines = (lines) => lines.filter((l) => picked.has(l.id));
 
 /** Lo que queda en el almacén del local; nada si la botella no se ha contado. */
 function leftHtml(l) {
@@ -44,17 +48,22 @@ function leftHtml(l) {
 function rowHtml(l) {
   const n = toDeliver(l);
   const left = stockFor(l.product_id);
+  const on = picked.has(l.id);
   return html`
     <li>
-      <button type="button" class="row ${isOut(l) ? 'out' : ''} ${n < l.qty_pending ? 'adjusted' : ''}" data-line="${l.id}">
-        ${thumb(l, 'mini')}
-        <span class="row-text">
-          <b>${l.product_name}</b>
-          <small>${isOut(l) && !(left !== null && left <= 0) ? html`<span class="danger">Agotado en almacén · </span>` : ''}${faltan(qtyText(l.qty_pending, l))}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${qtyText(n, l)}</span>` : ''}</small>
-          ${leftHtml(l)}
-        </span>
-        <span class="row-qty">${qtyText(n, l)}</span>
-      </button>
+      <div class="row-line ${on ? 'picked' : ''}">
+        <button type="button" class="row ${isOut(l) ? 'out' : ''} ${n < l.qty_pending ? 'adjusted' : ''}" data-pick="${l.id}" aria-pressed="${String(on)}">
+          <span class="row-check" aria-hidden="true">${on ? raw(icon('check', { size: 16 })) : ''}</span>
+          ${thumb(l, 'mini')}
+          <span class="row-text">
+            <b>${l.product_name}</b>
+            <small>${isOut(l) && !(left !== null && left <= 0) ? html`<span class="danger">Agotado en almacén · </span>` : ''}${faltan(qtyText(l.qty_pending, l))}${n < l.qty_pending ? html` · <span class="warn-text">se llevan ${qtyText(n, l)}</span>` : ''}</small>
+            ${leftHtml(l)}
+          </span>
+          <span class="row-qty">${qtyText(n, l)}</span>
+        </button>
+        <button type="button" class="row-more" data-line="${l.id}" aria-label="Opciones de ${l.product_name}">${raw(icon('more', { size: 20 }))}</button>
+      </div>
       ${left !== null && left <= 0 ? html`
         <button type="button" class="row-trip" data-trip="${l.product_id}">
           ${raw(icon('truck', { size: 18 }))} Apuntar para el viaje</button>` : ''}
@@ -63,7 +72,10 @@ function rowHtml(l) {
 
 function view() {
   const lines = openLines();
-  const total = unitSummary(lines.map((l) => ({ p: l, qty: toDeliver(l) })));
+  for (const id of picked) if (!state.live.lines.some((l) => l.id === id && l.qty_pending > 0)) picked.delete(id);
+  const chosen = pickedLines(lines);
+  const all = chosen.length === lines.length;
+  const total = unitSummary(chosen.map((l) => ({ p: l, qty: toDeliver(l) })));
   const pendingTotal = unitSummary(lines.map((l) => ({ p: l, qty: l.qty_pending })));
   const tabs = [['all', 'Todas'], ...state.bars.map((b) => [String(b.id), b.name])];
   const count = (v) => state.live.lines.filter((l) => l.qty_pending > 0 && (v === 'all' || l.bar_id === Number(v))).length;
@@ -80,12 +92,16 @@ function view() {
     </div>
 
     ${lines.length ? html`
-      <p class="status-line"><strong>${faltan(pendingTotal)}</strong></p>
+      <div class="status-line pick-bar">
+        <strong>${faltan(pendingTotal)}</strong>
+        <button type="button" class="btn small ghost" data-pick-all="${all ? '0' : '1'}">${all ? 'Quitar selección' : 'Seleccionar todo'}</button>
+      </div>
+      <p class="muted small pick-hint">Marca lo que ya has llevado y pulsa «Hecho». Lo demás sigue pendiente.</p>
       ${groups.map((g) => html`
         ${g.bar ? html`<h2 class="group-title bar-${g.bar.id}">${g.bar.name}</h2>` : ''}
         <ul class="rows">${g.lines.map(rowHtml)}</ul>`)}
-      <button type="button" class="btn primary big done-btn" data-done>
-        Hecho${filter !== 'all' ? ` · ${barName(filter)}` : ''} (${total})
+      <button type="button" class="btn primary big done-btn" data-done ${chosen.length ? '' : 'disabled'}>
+        ${chosen.length ? `Hecho · ${total}` : 'Marca lo que has llevado'}
       </button>
       <button type="button" class="link small stock-link" data-stock-panel>Agotados en almacén</button>`
     : html`
@@ -109,6 +125,19 @@ async function onClick(e) {
       } finally {
         t.disabled = false;
       }
+    } else if (d.pick) {
+      const id = Number(d.pick);
+      if (picked.has(id)) picked.delete(id);
+      else picked.add(id);
+      buzz(8);
+      mount($('#reponer'), view());
+    } else if (d.pickAll) {
+      for (const l of openLines()) {
+        if (d.pickAll === '1') picked.add(l.id);
+        else picked.delete(l.id);
+      }
+      buzz(8);
+      mount($('#reponer'), view());
     } else if (d.line) {
       await rowMenu(state.live.lines.find((l) => l.id === Number(d.line)));
     } else if (d.done !== undefined) {
@@ -123,12 +152,13 @@ async function onClick(e) {
 }
 
 async function complete() {
-  const lines = openLines();
+  const lines = pickedLines(openLines());
   const items = lines.map((l) => ({ line_id: l.id, qty: toDeliver(l), delivered: l.qty_delivered })).filter((i) => i.qty > 0);
   const total = unitSummary(lines.map((l) => ({ p: l, qty: toDeliver(l) })).filter((x) => x.qty > 0));
   if (!items.length) return;
-  const where = filter === 'all' ? '' : ` de ${barName(filter)}`;
-  if (!await confirmDialog('¿Reposición hecha?', `Se registrarán ${total} como repuestas${where}.`, { ok: 'Sí, hecho' })) return;
+  const bars = [...new Set(lines.map((l) => l.bar_id))].map(barName).join(', ');
+  const rest = openLines().length > lines.length ? ' Lo que no has marcado sigue pendiente.' : '';
+  if (!await confirmDialog('¿Reposición hecha?', `Se registrarán ${total} como repuestas en ${bars}.${rest}`, { ok: 'Sí, hecho' })) return;
   let res;
   try {
     res = await post('/api/complete', { items, by: state.who });
@@ -140,7 +170,10 @@ async function complete() {
     return;
   }
   // Lo que quede pendiente vuelve a mostrarse completo la próxima vez.
-  for (const l of lines) delete adjust[l.id];
+  for (const l of lines) {
+    delete adjust[l.id];
+    picked.delete(l.id);
+  }
   buzz(30);
   toast(res.bottles ? `Hecho: ${total} repuestas` : 'Ya estaba hecho por otra persona');
   await loadLive();

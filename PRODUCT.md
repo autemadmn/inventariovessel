@@ -8,10 +8,10 @@ web
 
 ## Users
 
-- **Personal de barra** (dos barras de la discoteca Vessel): piden reposición desde el móvil durante la
+- **Personal de barra** (Barra 1, Barra 2 y Barra VIP de la discoteca Vessel): piden reposición desde el móvil durante la
   noche, con prisa, poca luz y ruido. Tocan botellas y envían; pocos segundos por pedido.
 - **Quien repone** (almacén ↔ barras): consulta la lista compartida de lo que falta, lo lleva todo y
-  confirma con «Hecho».
+  marca lo que ha llevado en cada viaje y lo confirma con «Hecho».
 - **Encargado**: con más calma y en almacén u oficina con luz normal, revisa informes, corrige
   errores, prevé necesidades y prepara la lista de compra.
 
@@ -19,13 +19,13 @@ El uso se reparte entre barra (luz baja, prisa) y almacén/oficina (luz normal).
 
 ## Product Purpose
 
-Organizar la reposición de botellas entre almacén y las dos barras, guardar lo realmente repuesto
+Organizar la reposición de botellas entre almacén y las tres barras, guardar lo realmente repuesto
 cada noche y usar ese historial para prever compras. Éxito: pedir y completar una reposición en
 segundos, sin escribir, y que el encargado compre con datos reales.
 
 ## Positioning
 
-Una herramienta interna hecha a la medida de dos barras y su almacén: catálogo propio con fotos de
+Una herramienta interna hecha a la medida de tres barras y su almacén: catálogo propio con fotos de
 las botellas de sus estanterías, noches de trabajo que cruzan la medianoche y previsión sencilla y
 explicable. No es un TPV ni un inventario genérico.
 
@@ -33,7 +33,8 @@ explicable. No es un TPV ni un inventario genérico.
 
 - Móviles del personal (principalmente) y alguna tablet; web publicada en Cloudflare, sin red local.
 - Noche de trabajo: lo anterior a las 12:00 cuenta para la noche anterior.
-- Flujo: Pedir (barra) → Reponer (lista compacta + «Hecho») → Gestión (encargado, con PIN).
+- Flujo: Pedir (barra) → Reponer (lista compacta, marcar lo llevado + «Hecho») → Gestión (encargado, con PIN).
+- La interfaz no se amplía con doble toque ni pellizco: en barra un zoom accidental cuesta tiempo.
 - Varias personas usan la app a la vez; la lista se actualiza sola cada pocos segundos.
 
 ## Capabilities and Constraints
@@ -43,7 +44,7 @@ explicable. No es un TPV ni un inventario genérico.
 - Agotado en almacén ≠ falta en barra.
 - Informes por producto/barra/noche/semana/mes; «consumo» solo si el nivel de las barras es el mismo.
 - Previsión por promedio por noche o por día de la semana; lista de compra editable en botellas/cajas.
-- Fuera de alcance: nevera, copas individuales, VIP, integración con Ágora.
+- Fuera de alcance: copas individuales, integración con Ágora.
 - Selección editable por el encargado (grupos y orden de «Pedir») y lista de personal para elegir
   quién usa el dispositivo (solo nombres, no cuentas).
 - Stack: HTML/CSS/JS sin compilación; Cloudflare Workers + Supabase (Postgres) mediante postgres.js;

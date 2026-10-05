@@ -18,7 +18,7 @@ memoria (script `tmp-capturas/logica/ejemplo.mjs`, que no se sube a GitHub).
 - **El viaje de una botella:**
   1. El proveedor la deja en Out Vessel («Ha llegado mercancía»).
   2. El Pedido la lleva a su punto principal en In Vessel.
-  3. Reponer la lleva del punto principal a la Barra 1 o la Barra 2.
+  3. Reponer la lleva del punto principal a la Barra 1, la Barra 2 o la Barra VIP.
   4. Se sirve en barra. La app no registra la venta.
 - Entre puntos del local se usa **«Mover a…»**. Las **roturas** se apuntan en el punto donde ocurren.
 - **Contar** un punto fija lo que hay de verdad. Desde ahí, la app vuelve a calcular.

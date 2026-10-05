@@ -45,11 +45,11 @@ export function renderPedir(root, rest = []) {
         <h1 class="sec-title">${sectionName(sectionId)}</h1>
       </div>
       ${barPick}
+      ${sectionId === 'chupiteria' ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : html`
       <div class="filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
           <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
-      </div>
-      ${sectionId === 'chupiteria' ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : ''}
+      </div>`}
       <div id="grid" class="grid"></div>
     </section>
     <div id="cartbar" class="cartbar"></div>` : html`
@@ -167,7 +167,7 @@ function drawGrid(sectionId) {
     return;
   }
   const q = norm(query.trim());
-  // En Chupitería, lo que está en la nevera se pide tocando la nevera; al buscar, todo vuelve a la lista.
+  // En Chupitería no hay buscador: lo que está en la nevera se pide tocándola.
   const inFridge = drawNevera($('#nevera'), all.flatMap((g) => g.products), { visible: !q });
   const shown = all
     .map(({ group, products }) => ({ group, products: products.filter((p) => matches(p, q) && !inFridge.has(p.id)) }))

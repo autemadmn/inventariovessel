@@ -415,6 +415,7 @@
 .kind-barra { --bar: var(--muted); }
 .map-barra-1 { --bar: var(--bar1); }
 .map-barra-2 { --bar: var(--bar2); }
+.map-barra-vip { --bar: var(--bar3); }
 .kind-barra .map-body { fill: color-mix(in srgb, var(--bar) 14%, var(--surface)); stroke: var(--bar); stroke-width: 2.5; }
 .map-point:hover .map-hit { fill: color-mix(in srgb, var(--text) 5%, transparent); }
 .map-point:hover.kind-almacen .map-body { fill: color-mix(in srgb, var(--accent) 24%, var(--surface)); }
