@@ -129,7 +129,9 @@ test('Nevera frontal: enlace puro por slug, selección completa, cantidad y dato
 });
 
 test('Chupitería: mismo plano aprobado y las mismas 37 piezas', () => {
-  assert.equal(createHash('sha256').update(chupiteria).digest('hex'), '3329c19f0f0be2c91761198bd4d4f4b8b58bf4c4148416058f1d0f0ccf531848');
+  // Sin depender de los saltos de línea de la copia (CRLF en Windows, LF en el repositorio).
+  const lf = chupiteria.toString('utf8').replace(/\r\n/g, '\n');
+  assert.equal(createHash('sha256').update(lf).digest('hex'), '4e92cf90dc99e061a3e20d5b9a488cb1562870163be9bf09c3c49681c32b8ef6');
   const layout = JSON.parse(chupiteria);
   assert.equal(layout.grupos.reduce((n, g) => n + g.piezas.length, 0), 37);
   const el = { innerHTML: '' };
