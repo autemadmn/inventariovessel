@@ -102,3 +102,41 @@ Generadas el 4 de octubre de 2026 con OpenAI ImageGen (`openai-imagegen`) a part
 Los enlaces directos a las imágenes se conservan en `manifest.json`. Los originales descargados, las candidatas, los prompts, los ajustes y las comparaciones están en `assets/portada/`. Procesado con `scripts/images/process.py`, rembg (`isnet-general-use`) y la opción específica `preserve_source_alpha` para conservar también el contorno transparente de ImageGen y eliminar restos de recorte. Esta opción no cambia el procesado de las selecciones anteriores.
 
 Formato final: PNG transparente de 512×683 px, botella de 642 px de alto (94 %), base en y=668 (borde exclusivo), menos de 150.000 bytes. Las 50 entradas e imágenes anteriores permanecen intactas. Para DIEX se usa el slug completo del contrato técnico, `diex-crema-de-fresas-con-tequila`, en vez del nombre abreviado `diex-crema-fresas-tequila`.
+
+<!-- vessel-cajas-local-2026-10-05 -->
+## Cajas de refrescos: fotos del local (2026-10-05)
+
+Origen declarado por el usuario: **foto propia del local**, carpeta `VESSEL/IMAGENES`. Se conservaron el diseño, los textos y la perspectiva de cada original, incluida la botella situada delante de la caja. No se generaron ni retocaron etiquetas con IA. Los seis originales ya incluían fondo transparente: se limpió su canal alfa (erosión de 1 px, umbral y eliminación de motas aisladas) y se usaron `place` y `encode` de `scripts/images/process.py` para la composición y compresión.
+
+| PNG / slug | Archivo original | Origen | Modelo |
+|---|---|---|---|
+| `pepsi.png` | `Caja pepsi normal.png` | foto propia del local | `foto-local` |
+| `pepsi-zero.png` | `caja pepsi zero.png` | foto propia del local | `foto-local` |
+| `7up.png` | `7-Up Caja.png` | foto propia del local | `foto-local` |
+| `schweppes-limon.png` | `Caja Shweppes Limón.png` | foto propia del local | `foto-local` |
+| `schweppes-naranja.png` | `Caja Swheppes Naranja.png` | foto propia del local | `foto-local` |
+| `schweppes-tonica.png` | `Caja Tónica.png` | foto propia del local | `foto-local` |
+
+`schweppes-tonica.png` y su entrada del manifiesto sustituyen la botella de la sección anterior por la caja de `Caja Tónica.png`; la referencia anterior se conserva como historial. Formato de las seis imágenes: 512×683 px, fondo transparente, anchura máxima de 460 px (89,84 %, inferior al límite del 94 %), base en y=668 (borde exclusivo) y menos de 150.000 bytes. Fecha de procesado: 2026-10-05; no se conoce la fecha de captura.
+
+Descartada `Caja de agua lanjaron.png`: muestra Lanjarón 33 cl, no Cabreiroá. No hay cajas para Schweppes Tónica Zero, Schweppes Fresa, Perrier, los zumos de naranja/melocotón/piña, Red Bull, Red Bull Sugarfree ni Agua Cabreiroá 33 cl.
+
+<!-- vessel-fireball-especiales-2026-10-05 -->
+## Fireball y cervezas especiales (2026-10-05)
+
+Cuatro representaciones publicadas, generadas con la herramienta integrada OpenAI ImageGen (`openai-imagegen`), usando las fotografías de producto de las fuentes siguientes como imágenes de entrada. No son fotografías oficiales. Se descargaron las referencias en `assets/catalogo/referencias/`; en la revisión final se comprobaron además las fotos locales `docs/catalogo/referencias/fireball.jpg` y `b-lemon.jpg`. Las fotografías web pertenecen a sus respectivos titulares; no se presume una licencia abierta.
+
+| Slug / PNG | Origen de la referencia | Estado y revisión |
+|---|---|---|
+| `fireball.png` | [Monforte, Fireball 70 cl](https://www.monforte.es/whisky/fireball-whisky-70cl) | Aprobada: 70 cl visible en etiqueta; tapón rojo, etiqueta amarilla y botella fieles. |
+| `1906-reserva-especial.png` | [Crusat, Reserva Especial, botella 33 cl](https://www.crusat.com/categoria-producto/style/helles-bock/) | Aprobada: LA MILNUEVE, vidrio ámbar, etiqueta crema y roja. |
+| `b-lemon` (sin PNG publicado) | [Distribuciones Marpin, B-Lemon Radler 33 cl](https://www.distribucionesmarpin.es/cerveza-b-lemon-radler-33cl-p-1023) | Descartada en la revisión final: el PNG incluía «2,2% VOL», que no se puede confirmar en la referencia de Marpin ni en la foto local. Se usa la silueta; el original se conserva en `assets/correcciones-backup/`. |
+| `desperados.png` | [Cervezas Cebados, Desperados Original 33 cl](https://cervezascebados.squarespace.com/shop/p/desperados) | Aprobada con confianza media por resolución de referencia; solo marca, ORIGINAL y gráficos seguros, microtexto ilegible omitido. |
+| `estrella-galicia-0-0.png` | [Estrella Galicia 0,0, web oficial](https://estrellagalicia00.es/) | Aprobada con confianza media: marca y 0,0 correctos, etiqueta azul; párrafo pequeño del cuello omitido. |
+| `estrella-galicia-sin-gluten` (sin PNG publicado) | [Crusat, Sin Gluten, botella 33 cl](https://www.crusat.com/producto/estrella-galicia-sin-gluten/) | Descartada: intento 1 alteró microletras del cuello; único reintento añadió SIN GLUTEN al aro del cuello, ausente en la referencia. Ninguna entrada añadida al manifest. |
+
+Los cuatro PNG publicados se procesaron con `scripts/images/process.py`, rembg (`isnet-general-use`) e imagequant: 512×683 px, fondo transparente, botella de 642 px de alto (94 %), base en y=668 (borde exclusivo), centrados y menos de 150.000 bytes. Revisados sobre blanco y oscuro. Los ajustes recuperan el RGB original en los interiores para evitar agujeros en etiquetas o vidrio. Se conservaron intactos los PNG y las entradas previas. Referencias directas en `manifest.json`; prompts, brutos, los dos intentos descartados y el informe completo en `assets/catalogo/`.
+
+### Comprobación final (2026-10-05)
+
+Medido el canal alfa con umbral >16: Fireball, 1906, Desperados y Estrella Galicia 0,0 tienen 642 px de alto y base exclusiva y=668; ya cumplían el formato y no se recolocaron. B.Lemon también cumplía la geometría, pero se descartó por su microtexto. Se retiró su entrada del manifiesto antes de publicar.

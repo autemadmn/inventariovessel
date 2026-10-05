@@ -1,0 +1,33 @@
+{
+  "referencia": "referencias/composicion.png",
+  "dimensiones": [
+    1086,
+    1448
+  ],
+  "recortes": {
+    "red-bull-estampado": [
+      580,
+      206,
+      685,
+      505
+    ],
+    "estrella-etiqueta": [
+      195,
+      1027,
+      352,
+      1226
+    ],
+    "estrella-cuello": [
+      232,
+      795,
+      312,
+      908
+    ]
+  },
+  "nuevos": {
+    "agua-cabreiroa-33-cl": "PET neutro sin marca ni etiqueta; agua pendiente de confirmar",
+    "red-bull-sugarfree": "Silueta neutra en la app; textura de maqueta descartada",
+    "heineken": "Siluetas neutras en la app; textura con marca incorrecta descartada"
+  },
+  "nota": "Arte de la composición proporcionada; ampliar no añade detalle fotográfico."
+}

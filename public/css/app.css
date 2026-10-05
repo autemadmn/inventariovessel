@@ -275,6 +275,11 @@ body[data-view="pedir"] .main { padding-bottom: 104px; }
   object-fit: contain; object-position: 50% 50%;
   filter: drop-shadow(0 2px 3px rgba(20, 20, 18, 0.22));
 }
+/* Las fotos de cajas aprovechan la base del lienzo; solo tarjetas y filas. */
+.card-main .thumb.case-photo, .row .thumb.case-photo { overflow: hidden; }
+.card-main .thumb.case-photo img, .row .thumb.case-photo img {
+  object-fit: cover; object-position: 50% 100%;
+}
 @media (prefers-color-scheme: dark) {
   /* Halo claro sutil: el vidrio oscuro no se pierde sobre la superficie oscura. */
   .thumb.float img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.28)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.65)); }
@@ -752,4 +757,36 @@ select.mini { width: auto; text-align: left; }
 .nev-flag:empty { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .nev-g, .nev-g.on, .nev-g:has(.nev-hit:active) { transform: none; }
+  .nev-p .nev-sel { transition: none; }
 }
+
+/* Nevera frontal: altura reservada para cabecera, barras y pedido; sin desplazamiento horizontal. */
+.nevera-frontal {
+  aspect-ratio: var(--nv-ar);
+  height: min(calc(100dvh - var(--top-h) - var(--nav-h) - 216px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), calc((100vw - 32px) / (var(--nv-ar))));
+  width: auto; max-width: 560px; margin-inline: auto;
+}
+.nevera-frontal .nev-tray { width: 100%; height: 100%; }
+.nevera-frontal .nev-zone.on .nev-hit {
+  box-shadow: 0 0 0 3px var(--accent), 0 0 12px 2px var(--accent);
+  border-radius: 10px;
+}
+.nevera-frontal .nev-placeholder { width: 100%; height: 100%; color: #88969d; opacity: 0.8; }
+.nev-zone { position: absolute; }
+.nev-zone.out .nev-img { filter: grayscale(1) brightness(0.8); }
+.nev-zone .nev-ctl .count {
+  top: 0; right: 0; max-width: calc(100% - 34px);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nev-zone .nev-ctl .card-minus { top: 0; left: 0; }
+.nevera-frontal .nev-caption {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 3px 0; border-radius: 4px; background: rgba(17,18,20,0.9);
+  color: #fff; line-height: 1.2; text-align: center;
+}
+.nevera-frontal .nev-name { display: block; font-size: 13px; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.nevera-frontal .nev-caption .nev-flag {
+  position: static; display: block; transform: none; padding: 1px 0 0; background: none;
+  font-size: 11px; white-space: normal; overflow-wrap: normal;
+}
+.nevera-frontal .nev-caption .nev-flag:empty { display: none; }
