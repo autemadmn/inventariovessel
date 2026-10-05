@@ -105,7 +105,7 @@ export function silhouette(p, size = '') {
 export function thumb(x, size = '') {
   const img = x.image ?? imageFor(x.slug);
   if (img) {
-    const casePhoto = ['pepsi', 'pepsi-zero', '7up', 'schweppes-limon', 'schweppes-naranja', 'schweppes-tonica'].includes(x.slug);
+    const casePhoto = manifest[x.slug]?.forma === 'caja';
     return html`<span class="thumb float ${casePhoto ? 'case-photo' : ''} ${size}" data-cat="${x.category}"><img src="${img}" alt="" loading="lazy" decoding="async" width="512" height="683"></span>`;
   }
   if (x.photo) {
