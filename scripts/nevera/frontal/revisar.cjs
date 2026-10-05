@@ -86,8 +86,8 @@ const captures = path.join(__dirname, '_build/capturas');
       }
       assert.ok((await zone('heineken').locator('.nev-hit').boundingBox()).height >= 56);
       for (const slug of ['heineken', 'red-bull-sugarfree']) {
-        assert.equal(await zone(slug).locator('.nev-placeholder').count(), 1);
-        assert.equal(await zone(slug).locator('img').count(), 0);
+        assert.equal(await zone(slug).locator('.nev-placeholder').count(), 0);
+        assert.equal(await zone(slug).locator('img').count(), 2);
       }
       const selected = zone('heineken').locator('.nev-hit');
       assert.notEqual(await selected.evaluate((el) => getComputedStyle(el).boxShadow), 'none');
@@ -131,7 +131,7 @@ const captures = path.join(__dirname, '_build/capturas');
     const fallback = await browser.newContext();
     await fallback.addInitScript(() => localStorage.setItem('whoAsked', 'true'));
     const other = await fallback.newPage();
-    await other.route('**/img/nevera/frontal/nevera.v2.json', (r) => r.abort());
+    await other.route('**/img/nevera/frontal/nevera.v3.json', (r) => r.abort());
     await other.goto(`${url}/#/pedir/nevera`);
     await other.locator('.grid .card').first().waitFor();
     assert.equal(await other.locator('.grid .card').count(), 5);

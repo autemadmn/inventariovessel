@@ -8,7 +8,7 @@ import { openPglite } from '../server/db-pglite.js';
 import { zonasDelPlano, zonaHtml, renderNevera } from '../public/js/views/nevera.js';
 
 const DIR = join(import.meta.dirname, '../public/img/nevera/frontal');
-const plano = JSON.parse(readFileSync(join(DIR, 'nevera.v2.json'), 'utf8'));
+const plano = JSON.parse(readFileSync(join(DIR, 'nevera.v3.json'), 'utf8'));
 const chupiteria = readFileSync(join(DIR, '../nevera.v2.json'));
 
 function webpSize(file) {
@@ -30,7 +30,7 @@ function webpSize(file) {
 }
 
 test('Nevera frontal: plano, dimensiones, recursos versionados y límites de peso', () => {
-  assert.equal(plano.version, 2);
+  assert.equal(plano.version, 3);
   assert.equal(plano.seccion, 'nevera');
   assert.equal(plano.marcar, 'producto');
   assert.equal(plano.base, 'img/nevera/frontal/');
@@ -77,13 +77,17 @@ test('Nevera frontal: zonas de toque amplias, dentro del plano y sin solapamient
   assert.ok(plano.zonas.find((z) => z.slug === 'heineken').hit.h / plano.fondo.w * 227 >= 56);
 });
 
-test('Nevera frontal: Heineken y Sugarfree usan siluetas sin imágenes descartadas', () => {
-  for (const slug of ['heineken', 'red-bull-sugarfree']) {
+test('Nevera frontal: Heineken, Sugarfree y Lanjarón tienen imagen y máscara v3', () => {
+  for (const slug of ['heineken', 'red-bull-sugarfree', 'agua-cabreiroa-33-cl']) {
     const zona = plano.zonas.find((z) => z.slug === slug);
     const s = String(zonaHtml({ id: 1, slug, name: slug }, [zona], plano, { n: 1 }));
-    assert.match(s, /class="nev-placeholder"/);
+    assert.match(zona.imagen, /grupo\.v3\.webp$/);
+    assert.match(zona.seleccion, /seleccion\.v3\.webp$/);
+    assert.equal(zona.silueta, undefined);
+    assert.match(s, /<img class="nev-img"/);
+    assert.match(s, /<img class="nev-sel"/);
     assert.match(s, /aria-pressed="true"/);
-    assert.doesNotMatch(s, /<img|undefined|Heinekeri/);
+    assert.doesNotMatch(s, /nev-placeholder|undefined|Heinekeri/);
   }
 });
 

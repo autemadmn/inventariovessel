@@ -111,14 +111,14 @@ def water():
         (34,123),(34,136),(33,143),(31,151),(28,161),(23,171),(18,180),(15.5,183),(15.5,194)]
     lathe('transparent hollow ribbed PET',profile,pet,.7)
     lathe('mineral water',[(18,2),(28,4),(32,10),(32.3,142),(30,151),(25,162),(21,170)],liquid)
-    cap=material('neutral bottle closure','#d7e3ed',0,.23)
+    cap=material('Lanjarón red closure','#d81629',0,.23)
     cylinder('red screw closure',17,18,191,cap)
     for i in range(88):
         a=i*math.tau/88
         box('fine closure rib',(17*math.cos(a),17*math.sin(a),191),(.55,.55,14),cap,.15)
     torus('red tamper band',16.7,.9,181.3,cap)
     torus('PET neck support ring',16.3,.9,178,pet)
-    # Neutral PET without a brand until the actual water is confirmed.
+    label('lanjaron-etiqueta',34.25,66,57,110)
     for i in range(5):
         a=i*math.tau/5
         bpy.ops.mesh.primitive_uv_sphere_add(segments=48,ring_count=24,radius=1,location=(19*math.cos(a),19*math.sin(a),7))

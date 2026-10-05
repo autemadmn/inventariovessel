@@ -11,7 +11,11 @@ def save(im, path, limit):
         data=io.BytesIO()
         im.save(data,'WEBP',quality=quality,method=6,exact=True)
         if len(data.getvalue()) <= limit:
-            path.write_bytes(data.getvalue())
+            encoded=data.getvalue()
+            if path.exists():
+                if path.read_bytes()!=encoded:
+                    raise RuntimeError(f'{path.name} ya está publicado: subir versión en config.py antes de regenerar')
+            else:path.write_bytes(encoded)
             return
     raise RuntimeError(f'{path.name} exceeds budget')
 
@@ -26,7 +30,7 @@ def process():
             continue
         file=f'{ident}-grupo.v{version}.webp';selection=f'{ident}-seleccion.v{version}.webp'
         # Heineken v1 is copied unchanged from the reference delivery.
-        if version != 1:
+        if not (OUTPUT/file).exists() or not (OUTPUT/selection).exists():
             image=Image.new('RGBA',(rect['w'],rect['h']))
             silhouette=Image.new('L',image.size)
             w,h=group['size']
@@ -47,10 +51,14 @@ def process():
             save(image,OUTPUT/file,80_000)
             save(overlay,OUTPUT/selection,30_000)
         zones.append(dict(slug=ident,rect=rect,hit=group['hit']|dict(round=False),imagen=file,seleccion=selection))
-    manifest=dict(version=2,seccion='nevera',base='img/nevera/frontal/',
+    manifest=dict(version=PLAN_VERSION,seccion='nevera',base='img/nevera/frontal/',
         fondo=dict(imagen='bandeja.v1.webp',w=WIDTH,h=HEIGHT),marcar='producto',zonas=zones,
         seleccion=dict(rellenoBlanco=.34,contornoPx=6))
-    (OUTPUT/'nevera.v2.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    layout_file=OUTPUT/f'nevera.v{PLAN_VERSION}.json'
+    encoded_layout=json.dumps(manifest,ensure_ascii=False,indent=2)+'\n'
+    if layout_file.exists() and layout_file.read_text(encoding='utf-8')!=encoded_layout:
+        raise RuntimeError('Plano publicado: aumentar PLAN_VERSION antes de exportar cambios')
+    if not layout_file.exists():layout_file.write_text(encoded_layout,encoding='utf-8')
     files=['bandeja.v1.webp']+[f for z in zones if 'imagen' in z for f in (z['imagen'],z['seleccion'])]
     total=sum((OUTPUT/f).stat().st_size for f in files)
     assert total<=1_500_000

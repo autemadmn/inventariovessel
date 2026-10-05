@@ -25,9 +25,41 @@
     ]
   },
   "nuevos": {
-    "agua-cabreiroa-33-cl": "PET neutro sin marca ni etiqueta; agua pendiente de confirmar",
-    "red-bull-sugarfree": "Silueta neutra en la app; textura de maqueta descartada",
-    "heineken": "Siluetas neutras en la app; textura con marca incorrecta descartada"
+    "heineken": {
+      "referencia": "referencias/heineken-tapa-foto.png",
+      "url": "https://crowncaps.info/caps/345831",
+      "recorte": [
+        7,
+        15,
+        205,
+        213
+      ],
+      "tratamiento": "Foto real de chapa Original: recorte circular, sin recrear texto; Cycles con geometría original"
+    },
+    "red-bull-sugarfree": {
+      "referencia": "referencias/red-bull-sugarfree-oficial.png",
+      "url": "https://www.redbull.com/es-es/energydrink/products/red-bull-sugarfree",
+      "imagen": "https://www.redbull.com/energydrink/v1/resources/storyblok/images/f/287059/528x1348/17eee82bc5/es_sf_250ml_ac_sugarfree_country_rgb_packrq-3237_cold_closed_front_com_full.png",
+      "recorte": [
+        11,
+        35,
+        515,
+        1285
+      ],
+      "tratamiento": "Diseño oficial español 250 ml, sin redibujar letras"
+    },
+    "agua-cabreiroa-33-cl": {
+      "referencia": "referencias/lanjaron-etiqueta-foto.png",
+      "origen": "Foto aportada: Caja de agua lanjaron.png",
+      "recorteOriginal": [
+        433,
+        587,
+        669,
+        785
+      ],
+      "marcaConfirmada": "Lanjarón 33 cl",
+      "tratamiento": "Etiqueta fotográfica y tapón rojo; slug y pasos del catálogo conservados"
+    }
   },
-  "nota": "Arte de la composición proporcionada; ampliar no añade detalle fotográfico."
+  "nota": "Las fuentes conservan los píxeles de los diseños. No se añade texto no visible. Microtexto limitado por resolución."
 }
