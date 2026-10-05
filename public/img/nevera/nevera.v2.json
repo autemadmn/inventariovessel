@@ -1,0 +1,414 @@
+{
+ "version": 2,
+ "fondo": {
+  "img": "bandeja.v2.webp",
+  "w": 1080,
+  "h": 1500
+ },
+ "grupos": [
+  {
+   "id": "botellas-1",
+   "slug": "buen-amigo-oro",
+   "corto": "Buen Amigo",
+   "tipo": "botellas",
+   "piezas": [
+    {
+     "x": 4.4444,
+     "y": 31.4,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "buen-amigo-pieza-1.v2.webp",
+     "sel": "buen-amigo-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 4.4444,
+     "y": 52.7333,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "buen-amigo-pieza-2.v2.webp",
+     "sel": "buen-amigo-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 4.4444,
+     "y": 74.0667,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "buen-amigo-pieza-3.v2.webp",
+     "sel": "buen-amigo-pieza-3-seleccion.v2.webp"
+    }
+   ],
+   "x": 4.4444,
+   "y": 31.4,
+   "w": 21.6667,
+   "h": 63.0667
+  },
+  {
+   "id": "botellas-2",
+   "slug": "fireball",
+   "corto": "Fireball",
+   "tipo": "botellas",
+   "piezas": [
+    {
+     "x": 27.5926,
+     "y": 31.4,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "fireball-pieza-1.v2.webp",
+     "sel": "fireball-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 27.5926,
+     "y": 52.7333,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "fireball-pieza-2.v2.webp",
+     "sel": "fireball-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 27.5926,
+     "y": 74.0667,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "fireball-pieza-3.v2.webp",
+     "sel": "fireball-pieza-3-seleccion.v2.webp"
+    }
+   ],
+   "x": 27.5926,
+   "y": 31.4,
+   "w": 21.6667,
+   "h": 63.0667
+  },
+  {
+   "id": "botellas-3",
+   "slug": "jagermeister",
+   "corto": "Jäger",
+   "tipo": "botellas",
+   "piezas": [
+    {
+     "x": 50.7407,
+     "y": 31.4,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "jagermeister-pieza-1.v2.webp",
+     "sel": "jagermeister-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 50.7407,
+     "y": 52.7333,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "jagermeister-pieza-2.v2.webp",
+     "sel": "jagermeister-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 50.7407,
+     "y": 74.0667,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "jagermeister-pieza-3.v2.webp",
+     "sel": "jagermeister-pieza-3-seleccion.v2.webp"
+    }
+   ],
+   "x": 50.7407,
+   "y": 31.4,
+   "w": 21.6667,
+   "h": 63.0667
+  },
+  {
+   "id": "botellas-4",
+   "slug": "diex-crema-de-fresas-con-tequila",
+   "corto": "DIEX",
+   "tipo": "botellas",
+   "piezas": [
+    {
+     "x": 73.8889,
+     "y": 31.4,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "rosa-por-confirmar-pieza-1.v2.webp",
+     "sel": "rosa-por-confirmar-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 73.8889,
+     "y": 52.7333,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "rosa-por-confirmar-pieza-2.v2.webp",
+     "sel": "rosa-por-confirmar-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 73.8889,
+     "y": 74.0667,
+     "w": 21.6667,
+     "h": 20.4,
+     "img": "rosa-por-confirmar-pieza-3.v2.webp",
+     "sel": "rosa-por-confirmar-pieza-3-seleccion.v2.webp"
+    }
+   ],
+   "x": 73.8889,
+   "y": 31.4,
+   "w": 21.6667,
+   "h": 63.0667
+  },
+  {
+   "id": "chapas-1",
+   "slug": "b-lemon",
+   "corto": "B.Lemon",
+   "tipo": "chapas",
+   "piezas": [
+    {
+     "x": 7.963,
+     "y": 6.2667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "b-amarilla-por-confirmar-pieza-1.v2.webp",
+     "sel": "b-amarilla-por-confirmar-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 3.9815,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "b-amarilla-por-confirmar-pieza-2.v2.webp",
+     "sel": "b-amarilla-por-confirmar-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 11.9444,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "b-amarilla-por-confirmar-pieza-3.v2.webp",
+     "sel": "b-amarilla-por-confirmar-pieza-3-seleccion.v2.webp"
+    },
+    {
+     "x": 3.9815,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "b-amarilla-por-confirmar-pieza-4.v2.webp",
+     "sel": "b-amarilla-por-confirmar-pieza-4-seleccion.v2.webp"
+    },
+    {
+     "x": 11.9444,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "b-amarilla-por-confirmar-pieza-5.v2.webp",
+     "sel": "b-amarilla-por-confirmar-pieza-5-seleccion.v2.webp"
+    }
+   ],
+   "x": 3.9815,
+   "y": 6.2667,
+   "w": 18.7037,
+   "h": 18.9333
+  },
+  {
+   "id": "chapas-2",
+   "slug": "estrella-galicia-sin-gluten",
+   "corto": "Sin gluten",
+   "tipo": "chapas",
+   "piezas": [
+    {
+     "x": 26.2963,
+     "y": 6.2667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-especial-pieza-1.v2.webp",
+     "sel": "estrella-galicia-especial-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 22.3148,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-especial-pieza-2.v2.webp",
+     "sel": "estrella-galicia-especial-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 30.2778,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-especial-pieza-3.v2.webp",
+     "sel": "estrella-galicia-especial-pieza-3-seleccion.v2.webp"
+    },
+    {
+     "x": 22.3148,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-especial-pieza-4.v2.webp",
+     "sel": "estrella-galicia-especial-pieza-4-seleccion.v2.webp"
+    },
+    {
+     "x": 30.2778,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-especial-pieza-5.v2.webp",
+     "sel": "estrella-galicia-especial-pieza-5-seleccion.v2.webp"
+    }
+   ],
+   "x": 22.3148,
+   "y": 6.2667,
+   "w": 18.7037,
+   "h": 18.9333
+  },
+  {
+   "id": "chapas-3",
+   "slug": "estrella-galicia-0-0",
+   "corto": "0,0",
+   "tipo": "chapas",
+   "piezas": [
+    {
+     "x": 44.6296,
+     "y": 6.2667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-00-pieza-1.v2.webp",
+     "sel": "estrella-galicia-00-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 40.6481,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-00-pieza-2.v2.webp",
+     "sel": "estrella-galicia-00-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 48.6111,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-00-pieza-3.v2.webp",
+     "sel": "estrella-galicia-00-pieza-3-seleccion.v2.webp"
+    },
+    {
+     "x": 40.6481,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-00-pieza-4.v2.webp",
+     "sel": "estrella-galicia-00-pieza-4-seleccion.v2.webp"
+    },
+    {
+     "x": 48.6111,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-00-pieza-5.v2.webp",
+     "sel": "estrella-galicia-00-pieza-5-seleccion.v2.webp"
+    }
+   ],
+   "x": 40.6481,
+   "y": 6.2667,
+   "w": 18.7037,
+   "h": 18.9333
+  },
+  {
+   "id": "chapas-4",
+   "slug": "1906-reserva-especial",
+   "corto": "1906",
+   "tipo": "chapas",
+   "piezas": [
+    {
+     "x": 62.963,
+     "y": 6.2667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-1906-pieza-1.v2.webp",
+     "sel": "estrella-galicia-1906-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 58.9815,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-1906-pieza-2.v2.webp",
+     "sel": "estrella-galicia-1906-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 66.9444,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-1906-pieza-3.v2.webp",
+     "sel": "estrella-galicia-1906-pieza-3-seleccion.v2.webp"
+    },
+    {
+     "x": 58.9815,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-1906-pieza-4.v2.webp",
+     "sel": "estrella-galicia-1906-pieza-4-seleccion.v2.webp"
+    },
+    {
+     "x": 66.9444,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "estrella-galicia-1906-pieza-5.v2.webp",
+     "sel": "estrella-galicia-1906-pieza-5-seleccion.v2.webp"
+    }
+   ],
+   "x": 58.9815,
+   "y": 6.2667,
+   "w": 18.7037,
+   "h": 18.9333
+  },
+  {
+   "id": "chapas-5",
+   "slug": "desperados",
+   "corto": "Desperados",
+   "tipo": "chapas",
+   "piezas": [
+    {
+     "x": 81.2963,
+     "y": 6.2667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "desperados-pieza-1.v2.webp",
+     "sel": "desperados-pieza-1-seleccion.v2.webp"
+    },
+    {
+     "x": 77.3148,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "desperados-pieza-2.v2.webp",
+     "sel": "desperados-pieza-2-seleccion.v2.webp"
+    },
+    {
+     "x": 85.2778,
+     "y": 11.8667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "desperados-pieza-3.v2.webp",
+     "sel": "desperados-pieza-3-seleccion.v2.webp"
+    },
+    {
+     "x": 77.3148,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "desperados-pieza-4.v2.webp",
+     "sel": "desperados-pieza-4-seleccion.v2.webp"
+    },
+    {
+     "x": 85.2778,
+     "y": 17.4667,
+     "w": 10.7407,
+     "h": 7.7333,
+     "img": "desperados-pieza-5.v2.webp",
+     "sel": "desperados-pieza-5-seleccion.v2.webp"
+    }
+   ],
+   "x": 77.3148,
+   "y": 6.2667,
+   "w": 18.7037,
+   "h": 18.9333
+  }
+ ]
+}

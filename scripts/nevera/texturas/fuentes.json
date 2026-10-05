@@ -1,0 +1,108 @@
+{
+  "texturas": {
+    "estrella-galicia-1906": {
+      "archivo": "1906.png",
+      "recorte": [
+        25,
+        30,
+        181,
+        186
+      ],
+      "exposicion": 1.12,
+      "nota": "primer plano 1906"
+    },
+    "b-amarilla-por-confirmar": {
+      "archivo": "b-radler.png",
+      "recorte": [
+        222,
+        104,
+        1002,
+        884
+      ],
+      "exposicion": 1,
+      "nota": "primer plano B RADLER"
+    },
+    "estrella-galicia-especial": {
+      "archivo": "estrella-dorada.png",
+      "recorte": [
+        23,
+        22,
+        209,
+        208
+      ],
+      "exposicion": 1.08,
+      "nota": "Estrella Galicia SIN GLUTEN, disco dorado"
+    },
+    "estrella-galicia-00": {
+      "archivo": "estrella-00.png",
+      "recorte": [
+        330,
+        300,
+        2740,
+        2710
+      ],
+      "exposicion": 1,
+      "nota": "Estrella Galicia 0,0: metal plateado y franja azul"
+    },
+    "desperados": {
+      "archivo": "desperados-dorada.png",
+      "recorte": [
+        138,
+        78,
+        1100,
+        1040
+      ],
+      "exposicion": 1.12,
+      "nota": "Chapa dorada con agave rojo, asignada a Desperados por corrección explícita del usuario"
+    },
+    "buen-amigo": {
+      "archivo": "composicion.png",
+      "recorte": [
+        106,
+        740,
+        206,
+        840
+      ],
+      "exposicion": 1,
+      "nota": "tapón Buen amigo de la referencia general"
+    },
+    "fireball": {
+      "archivo": "composicion.png",
+      "recorte": [
+        316,
+        746,
+        414,
+        844
+      ],
+      "exposicion": 1,
+      "nota": "tapón Fireball y dragón de la referencia general"
+    },
+    "jagermeister": {
+      "archivo": "jagermeister.png",
+      "recorte": [
+        55,
+        37,
+        175,
+        151
+      ],
+      "exposicion": 1.08,
+      "nota": "tapón real Jägermeister con banda naranja"
+    },
+    "rosa-por-confirmar": {
+      "archivo": "composicion.png",
+      "recorte": [
+        746,
+        747,
+        824,
+        825
+      ],
+      "exposicion": 1,
+      "nota": "tapón blanco sin marca de la referencia general"
+    }
+  },
+  "rosaHombro": "composicion.png: [697,701,873,885]",
+  "noAsignadas": [
+    "desperados.png"
+  ],
+  "nota": "La referencia verde de Desperados fue sustituida por la dorada con agave rojo por indicación del usuario. La chapa-agave es una copia de esa referencia."
+}

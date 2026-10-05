@@ -537,7 +537,7 @@ test('catalog_rev: sube con catálogo, selección, personal y barras; no con la 
   const { db, id } = await setup(t);
   const rev = () => svc.catalogRev(db);
   const r0 = await rev();
-  assert.equal(r0, 4, 'la semilla la deja en 1; 0007, 0008 y 0009 la suben una vez cada una');
+  assert.equal(r0, 5, 'la semilla la deja en 1; 0007, 0008, 0009 y 0010 la suben una vez cada una');
   assert.equal((await svc.bootstrap(db, { managerRequired: false })).catalog_rev, r0);
   assert.equal((await svc.liveState(db, { now: NIGHT })).catalog_rev, r0);
 

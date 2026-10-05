@@ -8,6 +8,7 @@ import {
   raw, $, html, mount, norm, thumb, toast, buzz, dialog,
 } from '../ui.js';
 import { icon } from '../icons.js';
+import { loadNevera, drawNevera, patchNevera } from './nevera.js';
 
 let query = '';
 let lastSection = null;
@@ -48,6 +49,7 @@ export function renderPedir(root, rest = []) {
         <label class="search">${raw(icon('search', { size: 18 }))}
           <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
       </div>
+      ${sectionId === 'chupiteria' ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : ''}
       <div id="grid" class="grid"></div>
     </section>
     <div id="cartbar" class="cartbar"></div>` : html`
@@ -65,6 +67,7 @@ export function renderPedir(root, rest = []) {
   };
 
   root.addEventListener('click', onClick);
+  if (sectionId === 'chupiteria') loadNevera(() => drawGrid(sectionId));
   $('#search')?.addEventListener('input', (e) => {
     query = e.target.value;
     drawGrid(sectionId);
@@ -111,6 +114,7 @@ export function renderPedir(root, rest = []) {
     saveCarts();
     buzz(delta > 0 ? 12 : 6);
     drawCard(pid);
+    patchNevera($('#nevera'), pid);
     drawCartBar();
   }
 }
@@ -163,9 +167,15 @@ function drawGrid(sectionId) {
     return;
   }
   const q = norm(query.trim());
+  // En Chupitería, lo que está en la nevera se pide tocando la nevera; al buscar, todo vuelve a la lista.
+  const inFridge = drawNevera($('#nevera'), all.flatMap((g) => g.products), { visible: !q });
   const shown = all
-    .map(({ group, products }) => ({ group, products: products.filter((p) => matches(p, q)) }))
+    .map(({ group, products }) => ({ group, products: products.filter((p) => matches(p, q) && !inFridge.has(p.id)) }))
     .filter((g) => g.products.length);
+  if (!shown.length && inFridge.size) {
+    mount(el, '');
+    return;
+  }
   if (!shown.length) {
     mount(el, html`<p class="empty">No hay productos que coincidan con «${query}».</p>`);
     return;

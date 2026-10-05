@@ -31,15 +31,11 @@ const PRODUCTS = [
   ['Fireball', 'fireball', 'licor', 'botella', null, 'Chupitos', 'chupiteria'],
   ['Buen Amigo Oro', 'buen-amigo-oro', 'licor', 'botella', null, 'Chupitos', 'chupiteria'],
   ['DIEX Crema de Fresas con Tequila', 'diex-crema-de-fresas-con-tequila', 'licor', 'botella', null, 'Chupitos', 'chupiteria'],
-  ['Karlova Blue', 'karlova-blue', 'licor', 'botella', null, 'Chupitos', 'chupiteria'],
-  ['Karlova Red', 'karlova-red', 'licor', 'botella', null, 'Chupitos', 'chupiteria'],
-  ['Cassaya', 'cassaya', 'licor', 'botella', null, 'Chupitos', 'chupiteria'],
   ['Desperados', 'desperados', 'cerveza', 'botella', 24, 'Cervezas especiales', 'neveras-especial'],
   ['1906 Reserva Especial', '1906-reserva-especial', 'cerveza', 'botella', 24, 'Cervezas especiales', 'neveras-especial'],
   ['B.Lemon', 'b-lemon', 'cerveza', 'botella', 24, 'Cervezas especiales', 'chupiteria'],
   ['Estrella Galicia 0,0', 'estrella-galicia-0-0', 'cerveza', 'botella', 24, 'Cervezas especiales', 'chupiteria'],
   ['Estrella Galicia sin gluten', 'estrella-galicia-sin-gluten', 'cerveza', 'botella', 24, 'Cervezas especiales', 'neveras-especial'],
-  ['Vino blanco', 'vino-blanco', 'vino', 'botella', null, 'Cervezas especiales', 'nevera-vino'],
   ['Pepsi', 'pepsi', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
   ['Pepsi Zero', 'pepsi-zero', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
   ['7Up', '7up', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
@@ -55,6 +51,11 @@ const PRODUCTS = [
   ['Hielo', 'hielo', 'otros', 'bolsa', null, 'Otros', null],
   ['Stella Artois', 'stella-artois', 'cerveza', 'botella', 24, 'Otros', 'chupiteria'],
   ['Tyris Original', 'tyris-original', 'cerveza', 'botella', 24, 'Otros', 'chupiteria'],
+  // 0010: lo que no está en la nevera de Chupitería pasa al final de «Otros».
+  ['Karlova Blue', 'karlova-blue', 'licor', 'botella', null, 'Otros', 'chupiteria'],
+  ['Karlova Red', 'karlova-red', 'licor', 'botella', null, 'Otros', 'chupiteria'],
+  ['Cassaya', 'cassaya', 'licor', 'botella', null, 'Otros', 'chupiteria'],
+  ['Vino blanco', 'vino-blanco', 'vino', 'botella', null, 'Otros', 'nevera-vino'],
 ];
 
 async function setup(t, { before0009 = false } = {}) {
@@ -91,7 +92,7 @@ test('0009: ocho grupos por sección y los 39 productos del contrato, en su orde
     const got = await groupSlugs(db, name);
     assert.deepEqual(name === 'Habituales' || name === 'Premium' ? got.slice(-expected.length) : got, expected);
   }
-  assert.equal(await svc.catalogRev(db), 4);
+  assert.equal(await svc.catalogRev(db), 5);
 });
 
 test('slugify: los 39 nombres nuevos producen los slugs del contrato', () => {
