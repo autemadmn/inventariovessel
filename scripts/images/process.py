@@ -153,7 +153,7 @@ def cutout(entry, session, refresh):
         # con reflejos o sombras. Interseca ambas máscaras sin ampliar el objeto.
         with Image.open(source) as original:
             source_alpha = np.array(original.convert("RGBA").getchannel("A"))
-        source_alpha[source_alpha <= adjustments["alpha_floor"]] = 0
+        source_alpha[source_alpha <= adjustments.get("source_alpha_floor", adjustments["alpha_floor"])] = 0
         source_alpha[source_alpha >= 250] = 255
         values = np.minimum(values, source_alpha)
     # Conserva únicamente el componente de la botella; elimina motas aisladas.
@@ -184,6 +184,8 @@ def place(image, baseline, adjustments):
     alpha = np.array(image.getchannel("A"))
     alpha[alpha <= adjustments["alpha_floor"]] = 0
     image.putalpha(Image.fromarray(alpha))
+    image = image.crop(alpha_bbox(image))
+    width, height = image.size
     x, y = (CANVAS[0] - width) // 2, baseline - height
     if y < 0 or baseline > CANVAS[1]:
         raise ValueError("La alineación medida cortaría la botella")
@@ -192,7 +194,7 @@ def place(image, baseline, adjustments):
     return canvas, {"scaled_size": [width, height], "position": [x, y]}
 
 
-def encode(image):
+def encode(image, max_colors=256):
     def png_bytes(candidate):
         buffer = io.BytesIO()
         candidate.save(buffer, format="PNG", optimize=True, compress_level=9)
@@ -203,7 +205,7 @@ def encode(image):
         # libimagequant conserva alfa tRNS y suaviza los degradados del vidrio.
         # El octree de Pillow produjo bandas visibles en estas candidatas.
         palette = imagequant.quantize_pil_image(
-            image, max_colors=256, dithering_level=0.8,
+            image, max_colors=max_colors, dithering_level=0.8,
             min_quality=0, max_quality=100)
         # La media de un grupo casi opaco puede quedar en 254: conserva
         # los interiores opacos y el fondo exactamente transparente.
@@ -220,6 +222,8 @@ def encode(image):
         indices[np.array(image.getchannel("A")) == 0] = transparent[0]
         palette.frombytes(indices.tobytes())
         encoded = png_bytes(palette)
+    if len(encoded) > LIMIT and max_colors > 64:
+        return encode(image, max_colors // 2)
     if len(encoded) > LIMIT:
         raise ValueError(f"PNG de {len(encoded)} bytes; supera el límite")
     decoded = Image.open(io.BytesIO(encoded)).convert("RGBA")

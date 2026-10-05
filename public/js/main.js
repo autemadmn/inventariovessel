@@ -8,6 +8,15 @@ import { renderAlmacen, flushCounts } from './views/almacen.js';
 import { renderViajes } from './views/viajes.js';
 
 const main = $('#main');
+
+// Safari ignora user-scalable=no: se bloquean aquí el pellizco y sus gestos.
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+}
+document.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault();
+}, { passive: false });
+
 let current = null; // { name, cleanup }
 let navigationId = 0;
 

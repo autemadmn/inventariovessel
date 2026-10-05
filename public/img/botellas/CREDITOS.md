@@ -102,3 +102,82 @@ Generadas el 4 de octubre de 2026 con OpenAI ImageGen (`openai-imagegen`) a part
 Los enlaces directos a las imágenes se conservan en `manifest.json`. Los originales descargados, las candidatas, los prompts, los ajustes y las comparaciones están en `assets/portada/`. Procesado con `scripts/images/process.py`, rembg (`isnet-general-use`) y la opción específica `preserve_source_alpha` para conservar también el contorno transparente de ImageGen y eliminar restos de recorte. Esta opción no cambia el procesado de las selecciones anteriores.
 
 Formato final: PNG transparente de 512×683 px, botella de 642 px de alto (94 %), base en y=668 (borde exclusivo), menos de 150.000 bytes. Las 50 entradas e imágenes anteriores permanecen intactas. Para DIEX se usa el slug completo del contrato técnico, `diex-crema-de-fresas-con-tequila`, en vez del nombre abreviado `diex-crema-fresas-tequila`.
+
+<!-- vessel-cajas-local-2026-10-05 -->
+## Cajas de refrescos: fotos del local (2026-10-05)
+
+Origen declarado por el usuario: **foto propia del local**, carpeta `VESSEL/IMAGENES`. Se conservaron el diseño, los textos y la perspectiva de cada original, incluida la botella situada delante de la caja. No se generaron ni retocaron etiquetas con IA. Los seis originales ya incluían fondo transparente: se limpió su canal alfa (erosión de 1 px, umbral y eliminación de motas aisladas) y se usaron `place` y `encode` de `scripts/images/process.py` para la composición y compresión.
+
+| PNG / slug | Archivo original | Origen | Modelo |
+|---|---|---|---|
+| `pepsi.png` | `Caja pepsi normal.png` | foto propia del local | `foto-local` |
+| `pepsi-zero.png` | `caja pepsi zero.png` | foto propia del local | `foto-local` |
+| `7up.png` | `7-Up Caja.png` | foto propia del local | `foto-local` |
+| `schweppes-limon.png` | `Caja Shweppes Limón.png` | foto propia del local | `foto-local` |
+| `schweppes-naranja.png` | `Caja Swheppes Naranja.png` | foto propia del local | `foto-local` |
+| `schweppes-tonica.png` | `Caja Tónica.png` | foto propia del local | `foto-local` |
+
+`schweppes-tonica.png` y su entrada del manifiesto sustituyen la botella de la sección anterior por la caja de `Caja Tónica.png`; la referencia anterior se conserva como historial. Formato de las seis imágenes: 512×683 px, fondo transparente, anchura máxima de 460 px (89,84 %, inferior al límite del 94 %), base en y=668 (borde exclusivo) y menos de 150.000 bytes. Fecha de procesado: 2026-10-05; no se conoce la fecha de captura.
+
+Descartada `Caja de agua lanjaron.png`: muestra Lanjarón 33 cl, no Cabreiroá. No hay cajas para Schweppes Tónica Zero, Schweppes Fresa, Perrier, los zumos de naranja/melocotón/piña, Red Bull, Red Bull Sugarfree ni Agua Cabreiroá 33 cl.
+
+<!-- vessel-fireball-especiales-2026-10-05 -->
+## Fireball y cervezas especiales (2026-10-05)
+
+Cuatro representaciones publicadas, generadas con la herramienta integrada OpenAI ImageGen (`openai-imagegen`), usando las fotografías de producto de las fuentes siguientes como imágenes de entrada. No son fotografías oficiales. Se descargaron las referencias en `assets/catalogo/referencias/`; en la revisión final se comprobaron además las fotos locales `docs/catalogo/referencias/fireball.jpg` y `b-lemon.jpg`. Las fotografías web pertenecen a sus respectivos titulares; no se presume una licencia abierta.
+
+| Slug / PNG | Origen de la referencia | Estado y revisión |
+|---|---|---|
+| `fireball.png` | [Monforte, Fireball 70 cl](https://www.monforte.es/whisky/fireball-whisky-70cl) | Aprobada: 70 cl visible en etiqueta; tapón rojo, etiqueta amarilla y botella fieles. |
+| `1906-reserva-especial.png` | [Crusat, Reserva Especial, botella 33 cl](https://www.crusat.com/categoria-producto/style/helles-bock/) | Aprobada: LA MILNUEVE, vidrio ámbar, etiqueta crema y roja. |
+| `b-lemon` (sin PNG publicado) | [Distribuciones Marpin, B-Lemon Radler 33 cl](https://www.distribucionesmarpin.es/cerveza-b-lemon-radler-33cl-p-1023) | Descartada en la revisión final: el PNG incluía «2,2% VOL», que no se puede confirmar en la referencia de Marpin ni en la foto local. Se usa la silueta; el original se conserva en `assets/correcciones-backup/`. |
+| `desperados.png` | [Cervezas Cebados, Desperados Original 33 cl](https://cervezascebados.squarespace.com/shop/p/desperados) | Aprobada con confianza media por resolución de referencia; solo marca, ORIGINAL y gráficos seguros, microtexto ilegible omitido. |
+| `estrella-galicia-0-0.png` | [Estrella Galicia 0,0, web oficial](https://estrellagalicia00.es/) | Aprobada con confianza media: marca y 0,0 correctos, etiqueta azul; párrafo pequeño del cuello omitido. |
+| `estrella-galicia-sin-gluten` (sin PNG publicado) | [Crusat, Sin Gluten, botella 33 cl](https://www.crusat.com/producto/estrella-galicia-sin-gluten/) | Descartada: intento 1 alteró microletras del cuello; único reintento añadió SIN GLUTEN al aro del cuello, ausente en la referencia. Ninguna entrada añadida al manifest. |
+
+Los cuatro PNG publicados se procesaron con `scripts/images/process.py`, rembg (`isnet-general-use`) e imagequant: 512×683 px, fondo transparente, botella de 642 px de alto (94 %), base en y=668 (borde exclusivo), centrados y menos de 150.000 bytes. Revisados sobre blanco y oscuro. Los ajustes recuperan el RGB original en los interiores para evitar agujeros en etiquetas o vidrio. Se conservaron intactos los PNG y las entradas previas. Referencias directas en `manifest.json`; prompts, brutos, los dos intentos descartados y el informe completo en `assets/catalogo/`.
+
+### Comprobación final (2026-10-05)
+
+Medido el canal alfa con umbral >16: Fireball, 1906, Desperados y Estrella Galicia 0,0 tienen 642 px de alto y base exclusiva y=668; ya cumplían el formato y no se recolocaron. B.Lemon también cumplía la geometría, pero se descartó por su microtexto. Se retiró su entrada del manifiesto antes de publicar.
+
+## Cierre del catálogo y revisión (2026-10-05)
+
+16 PNG nuevos, 79 entradas en total. Los 63 PNG anteriores se conservan byte a byte.
+Ocho recortes usan fotografías originales oficiales o de tienda, una caja usa la foto aportada de Lanjarón, y siete imágenes se generan con ImageGen integrado. Para conservar los dos valores de `model` pedidos, los recortes tienen `model: foto-local`; **esto identifica el procesamiento local de una fotografía, no significa que todas las tomara el usuario**. `origen`, `nota` y `refs` distinguen foto oficial, tienda y foto aportada. No se atribuye una licencia abierta a fotografías web.
+
+Las referencias prevalecen sobre las candidatas generadas. Karlova Blue se publica mediante recorte de la foto original: la primera candidata omitió la etiqueta inferior y el reintento alteró una graduación. También se usan originales en Larios, Talisker, Cîroc, Johnnie Walker, Heineken, Stella y Estrella sin gluten para conservar exactamente sus letras. B.Lemon se contrasta con la foto local y omite la graduación no verificable; Tyris conserva TYRIS/ORIGINAL y deja el microtexto no legible. Buen Amigo se descarta por diseño incompleto, y Cassaya no se reconstruye con una etiqueta oculta.
+
+Los nuevos archivos tienen alfa, 512×683, base visible y=668, botellas de 642 px de alto y menos de 150.000 bytes; cajas de hasta 460 px de ancho. La bolsa de hielo usa la compresión de respaldo de 128 colores de `process.py`. Heineken intersecta el recorte con el alfa de la fuente (umbral 128) para quitar su halo de marketing.
+
+Lanjarón 33 cl es la marca confirmada. El slug histórico `agua-cabreiroa-33-cl`, el nombre almacenado y el paso de 35 unidades se conservan: el administrador debe **renombrar el producto existente** a Agua Lanjarón 33 cl en Gestión → Catálogo y confirmar las unidades reales por caja. No crear otro producto ni una migración. La fotografía aportada no demuestra que el pack contenga 35 botellas.
+
+| Producto / slug | Imagen / motivo de silueta | Origen |
+|---|---|---|
+| `larios-150-aniversario` | Foto original recortada | https://www.enbotella.com/es/gin-larios-150-aniversario |
+| `talisker-10` | Foto original recortada | https://www.malts.com/en-gb/products/talisker-10-year-old |
+| `ciroc-summer-colada` | Foto original recortada | https://www.thebottleclub.com/products/ciroc-summer-colada |
+| `johnnie-walker-black-label-12` | Foto original recortada | https://www.enbotella.com/en/whisky-johnnie-walker-black-12-years |
+| `heineken` | Foto original recortada | https://www.heineken.com/ng/en/our-products/heineken-original |
+| `stella-artois` | Foto original recortada | https://www.crusat.com/producto/stella-artois/ |
+| `estrella-galicia-sin-gluten` | Foto original recortada | https://www.crusat.com/producto/estrella-galicia-sin-gluten/ |
+| `karlova-blue` | Foto original recortada | https://teichenne.com/producto/karlova-blue-vodka/ |
+| `aperol` | ImageGen integrado, referencia real; confianza media | https://www.aperol.com/en-gb/our-products/aperol/ |
+| `karlova-red` | ImageGen integrado, referencia real; confianza media | docs/catalogo/referencias/karlova-red.jpg; https://teichenne.com/producto/karlova-red-vodka/ |
+| `b-lemon` | ImageGen integrado, referencia real; confianza media | docs/catalogo/referencias/b-lemon.jpg; https://www.distribucionesmarpin.es/cerveza-b-lemon-radler-33cl-p-1023 |
+| `hielo` | ImageGen integrado, referencia real; confianza media | Genérico autorizado: bolsa de hielo sin texto ni marca |
+| `tyris-original` | ImageGen integrado, referencia real; confianza media | docs/catalogo/referencias/tyris-original.jpg |
+| `red-bull` | ImageGen integrado, referencia real; confianza media | https://www.plazastore.nl/catalogus/red-bull-energy-drink-original-250ml |
+| `red-bull-sugarfree` | ImageGen integrado, referencia real; confianza media | https://www.hancocks.co.nz/pdf/95352.pdf |
+| `agua-cabreiroa-33-cl` | Foto original recortada | Caja de agua lanjaron.png |
+| `buen-amigo-oro` | Silueta: La foto local muestra solo cuello y parte de la etiqueta. Las fotografías completas encontradas corresponden a envases con otra tipografía o tapón; la candidata generada añadió una franja no verificable y se descartó. | docs/catalogo/referencias/buen-amigo-oro.jpg; https://www.comprar-bebidas.com/tequila-buen-amigo-gold; https://mexcor.com/wp-content/uploads/2026/03/MBG-California-Portfolio-2026-03-09.pdf |
+| `cassaya` | Silueta: La fotografía local es parcial, oblicua y con la etiqueta tapada; no permite confirmar todas las letras ni una botella completa de esa misma variedad. No se reconstruye una marca o etiqueta sin evidencia. | docs/catalogo/referencias/cassaya.jpg |
+| `schweppes-tonica-zero` | Silueta: Localizados botellines de 20 cl y fichas de cajas de 24, pero ninguna fotografía fiable del pack o caja exacta. No se inventa una caja a partir de una botella. | https://hydradrinks.es/es/mixers/150-schweppes-tonica-zero-botella-24x20cl.html |
+| `schweppes-fresa` | Silueta: No hay caja en las referencias aportadas ni fotografía verificada del producto y pack exactos. No se sustituye por Hibiscus o Pimienta Rosa. | Sin marca o referencia confirmada |
+| `perrier` | Silueta: La referencia de distribuidor confirma 20 cl y caja de 24, pero solo muestra una botella; falta una fotografía verificable de ese pack. | https://disterri.com/es/categoria-producto/agua/agua-con-gas-no-recuperable/perrier-agua-con-gas-no-recuperable/ |
+| `zumo-de-naranja` | Silueta: Marca y envase reales del local sin identificar; no se inventan. | Sin marca o referencia confirmada |
+| `zumo-de-melocoton` | Silueta: Marca y envase reales del local sin identificar; no se inventan. | Sin marca o referencia confirmada |
+| `zumo-de-pina` | Silueta: Marca y envase reales del local sin identificar; no se inventan. | Sin marca o referencia confirmada |
+| `vino-blanco` | Silueta: El usuario indica que todavía no sabe la marca y variedad del vino blanco. | Sin marca o referencia confirmada |
+
+Fuentes descargadas y candidatas en `assets/final/referencias/` y `assets/final/bruto/`. Prompts y selección en `assets/final/generados.json`, procesamiento en `assets/final/procesado/informe.json`. Comparaciones en `tmp-capturas/final/comparacion-referencias.png`; cuadrículas en `imagenes-nuevas.png` y `catalogo-completo.png`. Nueve siluetas justificadas en `docs/catalogo/imagenes-pendientes.json`; el test contrasta todos los productos activos de PGlite.

@@ -42,9 +42,6 @@ const PRODUCTS = [
   ['Schweppes Limón', 'schweppes-limon', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
   ['Schweppes Naranja', 'schweppes-naranja', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
   ['Schweppes Tónica', 'schweppes-tonica', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
-  ['Schweppes Tónica Zero', 'schweppes-tonica-zero', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
-  ['Schweppes Fresa', 'schweppes-fresa', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
-  ['Perrier', 'perrier', 'refresco', 'caja', 24, 'Refrescos', 'alm-cerveza'],
   ['Zumo de naranja', 'zumo-de-naranja', 'refresco', 'caja', 24, 'Zumos', 'alm-cerveza'],
   ['Zumo de melocotón', 'zumo-de-melocoton', 'refresco', 'caja', 24, 'Zumos', 'alm-cerveza'],
   ['Zumo de piña', 'zumo-de-pina', 'refresco', 'caja', 24, 'Zumos', 'alm-cerveza'],
@@ -56,6 +53,10 @@ const PRODUCTS = [
   ['Karlova Red', 'karlova-red', 'licor', 'botella', null, 'Otros', 'chupiteria'],
   ['Cassaya', 'cassaya', 'licor', 'botella', null, 'Otros', 'chupiteria'],
   ['Vino blanco', 'vino-blanco', 'vino', 'botella', null, 'Otros', 'nevera-vino'],
+  // 0011: Schweppes Fresa, Schweppes Tónica Zero y Perrier pasan al final de «Otros».
+  ['Schweppes Fresa', 'schweppes-fresa', 'refresco', 'caja', 24, 'Otros', 'alm-cerveza'],
+  ['Schweppes Tónica Zero', 'schweppes-tonica-zero', 'refresco', 'caja', 24, 'Otros', 'alm-cerveza'],
+  ['Perrier', 'perrier', 'refresco', 'caja', 24, 'Otros', 'alm-cerveza'],
 ];
 
 async function setup(t, { before0009 = false } = {}) {
@@ -92,7 +93,7 @@ test('0009: ocho grupos por sección y los 39 productos del contrato, en su orde
     const got = await groupSlugs(db, name);
     assert.deepEqual(name === 'Habituales' || name === 'Premium' ? got.slice(-expected.length) : got, expected);
   }
-  assert.equal(await svc.catalogRev(db), 5);
+  assert.equal(await svc.catalogRev(db), 6);
 });
 
 test('slugify: los 39 nombres nuevos producen los slugs del contrato', () => {

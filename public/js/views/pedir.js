@@ -8,7 +8,10 @@ import {
   raw, $, html, mount, norm, thumb, toast, buzz, dialog,
 } from '../ui.js';
 import { icon } from '../icons.js';
-import { loadNevera, drawNevera, patchNevera } from './nevera.js';
+import { loadNevera, drawNevera, patchNevera, planoCargado, zonasDelPlano, zonaHtml } from './nevera.js';
+
+const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v4.json' };
+const planoActual = () => planoCargado(PLANOS[lastSection]);
 
 let query = '';
 let lastSection = null;
@@ -45,11 +48,11 @@ export function renderPedir(root, rest = []) {
         <h1 class="sec-title">${sectionName(sectionId)}</h1>
       </div>
       ${barPick}
+      ${PLANOS[sectionId] ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : html`
       <div class="filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
           <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
-      </div>
-      ${sectionId === 'chupiteria' ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : ''}
+      </div>`}
       <div id="grid" class="grid"></div>
     </section>
     <div id="cartbar" class="cartbar"></div>` : html`
@@ -67,7 +70,10 @@ export function renderPedir(root, rest = []) {
   };
 
   root.addEventListener('click', onClick);
-  if (sectionId === 'chupiteria') loadNevera(() => drawGrid(sectionId));
+  let active = true;
+  if (PLANOS[sectionId]) loadNevera(PLANOS[sectionId], () => {
+    if (active) drawGrid(sectionId);
+  });
   $('#search')?.addEventListener('input', (e) => {
     query = e.target.value;
     drawGrid(sectionId);
@@ -75,6 +81,7 @@ export function renderPedir(root, rest = []) {
   draw();
   const unsub = subscribe(draw);
   return () => {
+    active = false;
     unsub();
     root.removeEventListener('click', onClick);
   };
@@ -114,7 +121,7 @@ export function renderPedir(root, rest = []) {
     saveCarts();
     buzz(delta > 0 ? 12 : 6);
     drawCard(pid);
-    patchNevera($('#nevera'), pid);
+    patchNevera($('#nevera'), pid, { products: state.products, plano: planoActual(), estado: estadoZona });
     drawCartBar();
   }
 }
@@ -134,6 +141,14 @@ function matches(p, q) {
 }
 
 const orderWhat = (p) => p.order_unit === 'caja' && orderStep(p) > 1 ? 'una caja' : p.order_unit === 'bolsa' ? 'una bolsa' : 'una botella';
+
+function estadoZona(p) {
+  const n = state.bar ? cart()[p.id] || 0 : 0;
+  const pend = state.bar ? pendingFor(p.id, state.bar) : 0;
+  const step = orderStep(p);
+  return { n, pend, out: isOut(p), shown: n % step === 0 ? n / step : qtyText(n, p),
+    qty: qtyText(n, p), pending: qtyText(pend, p), what: orderWhat(p) };
+}
 
 function cardHtml(p) {
   const n = state.bar ? cart()[p.id] || 0 : 0;
@@ -162,13 +177,14 @@ function drawGrid(sectionId) {
   const el = $('#grid');
   if (!el) return;
   const all = sectionGroups(sectionId);
+  const q = PLANOS[sectionId] ? '' : norm(query.trim());
+  const inFridge = drawNevera($('#nevera'), all.flatMap((g) => g.products), {
+    visible: !q, plano: planoCargado(PLANOS[sectionId]), estado: estadoZona,
+  });
   if (!all.length) {
     mount(el, html`<p class="empty">No hay productos en esta sección. El encargado puede añadirlos en Gestión → Selección.</p>`);
     return;
   }
-  const q = norm(query.trim());
-  // En Chupitería, lo que está en la nevera se pide tocando la nevera; al buscar, todo vuelve a la lista.
-  const inFridge = drawNevera($('#nevera'), all.flatMap((g) => g.products), { visible: !q });
   const shown = all
     .map(({ group, products }) => ({ group, products: products.filter((p) => matches(p, q) && !inFridge.has(p.id)) }))
     .filter((g) => g.products.length);
@@ -183,15 +199,32 @@ function drawGrid(sectionId) {
   // Con búsqueda se sigue el mismo orden, pero sin cabeceras de grupo.
   mount(el, q
     ? html`${shown.flatMap((g) => g.products).map(cardHtml)}`
-    : html`${shown.map((g) => html`${all.length === 1 && norm(g.group.name) === norm(sectionName(sectionId)) ? '' : html`<h2 class="grid-title">${g.group.name}</h2>`}${g.products.map(cardHtml)}`)}`);
+    : sectionId === 'nevera' && planoCargado(PLANOS.nevera)
+      ? html`<h2 class="grid-title">Más de la nevera</h2>${shown.flatMap((g) => g.products).map(cardHtml)}`
+      : html`${shown.map((g) => html`${all.length === 1 && norm(g.group.name) === norm(sectionName(sectionId)) ? '' : html`<h2 class="grid-title">${g.group.name}</h2>`}${g.products.map(cardHtml)}`)}`);
 }
 
 function drawCard(pid) {
   const old = document.querySelector(`[data-card="${pid}"]`);
   if (!old) return;
   const tpl = document.createElement('template');
-  tpl.innerHTML = String(cardHtml(productById(pid))).trim();
-  old.replaceWith(tpl.content.firstElementChild);
+  const p = productById(pid);
+  const plano = planoActual();
+  const zonas = old.classList.contains('nev-zone') ? zonasDelPlano(plano, [p]).map((x) => x.zona) : [];
+  tpl.innerHTML = String(zonas.length ? zonaHtml(p, zonas, plano, estadoZona(p)) : cardHtml(p)).trim();
+  const next = tpl.content.firstElementChild;
+  const wasSelected = old.classList.contains('on');
+  old.replaceWith(next);
+  // La zona se repinta, pero la máscara conserva su opacidad inicial para
+  // que el cambio siga fundiéndose. CSS elimina el fundido con reduced-motion.
+  if (zonas.length && wasSelected !== next.classList.contains('on')) {
+    const mask = next.querySelector('.nev-sel');
+    if (mask) {
+      mask.style.opacity = wasSelected ? '1' : '0';
+      getComputedStyle(mask).opacity;
+      mask.style.removeProperty('opacity');
+    }
+  }
 }
 
 const sectionOf = (p) => groupById(p.group_id)?.section ?? 'alcohol';

@@ -1,6 +1,6 @@
 # Reposición de barras
 
-Web app sencilla para gestionar la reposición de botellas de alcohol en las dos barras de la discoteca:
+Web app sencilla para gestionar la reposición de botellas de alcohol en las tres barras de la discoteca:
 preparar listas de reposición en segundos, registrar lo que se entrega cada noche y consultar ese historial
 en Informes.
 
@@ -20,9 +20,10 @@ No son cuentas: el nombre solo sirve para que el registro diga quién pidió y q
 Salen las botellas de la **selección**, agrupadas y en el orden que decide el encargado (al principio,
 «Habituales» en el orden de la estantería y luego «Resto»).
 
-1. Elegir la barra (el dispositivo la recuerda).
+1. Elegir la barra: Barra 1, Barra 2 o Barra VIP (el dispositivo la recuerda).
 2. Tocar las botellas: cada toque suma una. Se ajusta con «−» en la tarjeta o con «+ / −» al revisar.
-3. Buscar por nombre (sin tildes: «ciroc», «hendricks») o filtrar por categoría.
+3. Buscar por nombre (sin tildes: «ciroc», «hendricks») o filtrar por categoría. En Chupitería no hay
+   buscador: todo está en la nevera y se pide tocándola.
 4. «Enviar» muestra la lista, por ejemplo:
    ```
    Barceló Añejo: 3 botellas
@@ -33,9 +34,10 @@ Salen las botellas de la **selección**, agrupadas y en el orden que decide el e
 
 ### Reponer (quien repone)
 - Lista compacta de lo que falta, separada por barra: foto, nombre, «Faltan N» y la cantidad (x4).
-- Se repone todo y al terminar se pulsa **«Hecho»**: queda registrado como repuesto de una vez.
-  En las pestañas Barra 1 / Barra 2, «Hecho» completa solo esa barra.
-- Opcional: tocar una fila para indicar que esta vez se lleva menos (lo que no se lleve sigue
+- Se reponen por partes: se marca cada fila que ya se ha llevado (o «Seleccionar todo») y **«Hecho»**
+  registra como repuesto solo lo marcado. Lo que no se marca sigue pendiente para el siguiente viaje.
+  Las pestañas Todas / Barra 1 / Barra 2 / Barra VIP filtran la lista.
+- Opcional: el botón «…» de una fila permite indicar que esta vez se lleva menos (lo que no se lleve sigue
   pendiente), quitarla de la lista o marcar el producto como **agotado en almacén**. Así se cumple
   que solo se registra lo realmente repuesto: si se piden 4 y se llevan 3, se registran 3 y queda 1.
 - Si dos personas pulsan «Hecho» a la vez, solo cuenta una vez; lo que se pida mientras tanto sigue
@@ -111,7 +113,7 @@ Solo botellas de las estanterías de las fotos (la nevera queda fuera). Es provi
 
 ## Fuera de esta versión
 
-Registro de copas individuales, VIP en Pedir/Reponer, ventas e integración con Ágora.
+Registro de copas individuales, ventas e integración con Ágora.
 
 ## Publicarla en Cloudflare (recomendado)
 
@@ -230,6 +232,15 @@ sobre las tablas de la otra app.
    sin cambiar los productos ni los puntos de In Vessel.
 4. Si se olvida este paso, la app muestra **«Faltan las migraciones de Supabase.»**.
 
+## Actualizar Supabase: Barra VIP y refrescos en «Otros»
+
+1. En el proyecto de Supabase, **SQL Editor → New query**.
+2. Pega `SET search_path TO vessel_reposicion;` y, debajo, todo el contenido de
+   [supabase/migrations/0011_vip_y_otros.sql](supabase/migrations/0011_vip_y_otros.sql).
+3. Pulsa **Run**. Añade la Barra VIP (enlazada con su punto de In Vessel) y pasa Schweppes Fresa,
+   Schweppes Tónica Zero y Perrier a «Otros». Se puede repetir sin duplicar nada.
+4. Sin este paso la app sigue funcionando, pero sin Barra VIP y con esos refrescos en «Refrescos».
+
 ## Probarla en local
 
 Requisitos: **Node.js 22.16 o superior**.
@@ -295,3 +306,15 @@ public/         interfaz (HTML, CSS y JavaScript sin compilación)
 test/           pruebas (node --test)
 wrangler.jsonc  configuración de Cloudflare
 ```
+
+## Imágenes y revisión final del catálogo
+
+El catálogo dispone de 79 PNG transparentes y nueve siluetas justificadas en [docs/catalogo/imagenes-pendientes.json](docs/catalogo/imagenes-pendientes.json). El manifiesto indica `forma: caja`; se usa en tarjetas, filas, carrito y Catálogo sin listas de productos en el código.
+
+Nevera muestra Lanjarón, cuatro latas de Red Bull normal, cinco chapas Heineken y cuatro Estrella Galicia, sin nombres superpuestos. Sugarfree permanece en las tarjetas del catálogo. Chupitería conserva su plano aprobado y mejora las zonas de toque: al menos 44 px en 360×640, sin mover las piezas ni solapar los botones. El carrito de móviles estrechos dispone las cantidades bajo el nombre para evitar columnas ilegibles.
+
+**Agua:** en Gestión → Catálogo renombrar el producto existente Agua Cabreiroá 33 cl a Agua Lanjarón 33 cl, conservando su id/slug e historial, y confirmar las unidades reales del pack. La foto no confirma 35 botellas; el paso existente se conserva hasta que se compruebe. No hace falta migración nueva.
+
+El informe y las capturas locales se generan en `tmp-capturas/final/` con `scripts/images/revisar-final.cjs`; ver instrucciones de [scripts/nevera/frontal/README.md](scripts/nevera/frontal/README.md). La migración pendiente `0011_vip_y_otros.sql` se ejecutó y verificó en Supabase el 6 de octubre de 2026: Barra VIP, su punto y los tres productos en Otros.
+
+El plano activo también lleva versión: `nevera.v4.json`. El frontal v2 y el plano de Chupitería se conservan byte a byte. Para una exportación futura, aumentar también `PLAN_VERSION` en config.py y actualizar la referencia de Pedir.
