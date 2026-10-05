@@ -24,6 +24,9 @@ const inGroup = (gid) => state.products
 const outOfSelection = () => state.products.filter((p) => p.group_id === null || p.group_id === undefined);
 const prod = (id) => state.products.find((p) => p.id === Number(id));
 const groupOf = (gid) => state.groups.find((g) => g.id === Number(gid));
+const sectionOf = (g) => g.section ?? 'alcohol';
+const sectionList = () => (state.sections.length ? state.sections : [{ id: 'alcohol', name: 'Alcohol' }]);
+const sectionName = (id) => sectionList().find((x) => x.id === id)?.name ?? id;
 
 /** Foto fija de la selección: Map grupo → ids en orden. */
 function layoutOf() {
@@ -87,7 +90,7 @@ export async function renderSeleccion(root) {
   // (así no se pierde el foco del buscador ni parpadea tras cada guardado).
   let drawn = '';
   const signature = () => JSON.stringify([
-    state.groups.map((g) => [g.id, g.name, g.sort]),
+    state.groups.map((g) => [g.id, g.name, g.sort, g.section]),
     state.products.map((p) => [p.id, p.name, p.status, p.out_of_stock, p.group_id, p.group_order, p.slug, p.photo]),
   ]);
 
@@ -153,14 +156,20 @@ export async function renderSeleccion(root) {
   function draw() {
     drawn = signature();
     const groups = sortedGroups();
+    const sectionHtml = (sec) => {
+      const mine = groups.filter((g) => sectionOf(g) === sec.id);
+      return html`
+        <h2 class="sel-section">${sec.name}<small>${mine.length ? '' : 'Sin grupos'}</small></h2>
+        ${mine.map((g, i) => groupHtml(g, i, mine.length))}`;
+    };
     mount(root, html`
       <div class="sel">
-        <p class="muted small sel-help">Lo que está en un grupo sale en «Pedir», en este orden.
+        <p class="muted small sel-help">Lo que está en un grupo sale en «Pedir», dentro de la sección del grupo y en este orden.
           Arrastra desde el asa ${raw(icon('grip-vertical', { size: 14 }))} o usa el menú ${raw(icon('more', { size: 14 }))} de cada botella.</p>
         <div class="toolbar">
           <button type="button" class="btn primary" data-newgroup>${raw(icon('folder-plus', { size: 18 }))} Nuevo grupo</button>
         </div>
-        ${groups.length ? groups.map((g, i) => groupHtml(g, i, groups.length))
+        ${groups.length ? sectionList().map(sectionHtml)
     : html`<p class="empty">No hay grupos. Crea uno para empezar a elegir botellas.</p>`}
         <section class="sel-group sel-out" data-gid="">
           <header class="sel-head"><h3>Fuera de la selección</h3><span class="sel-count" id="out-count">${outOfSelection().length}</span></header>
@@ -219,6 +228,22 @@ export async function renderSeleccion(root) {
       });
     }
     loadBootstrap().catch(() => {});
+  }
+
+  async function setSection(g, section, { undoable = true } = {}) {
+    const before = sectionOf(g);
+    try {
+      await mput(`/api/groups/${g.id}`, { section, by: state.who });
+    } catch (err) {
+      toast(err.message, 'error');
+      return;
+    }
+    if (undoable) {
+      toast(`${g.name}: ahora en ${sectionName(section)}`, 'ok', {
+        action: { label: 'Deshacer', onClick: async () => { await setSection({ id: g.id, name: g.name, section }, before, { undoable: false }); toast('Deshecho', 'info'); } },
+      });
+    }
+    await loadBootstrap().catch(() => {});
   }
 
   async function renameGroup(g, name, { undoable = true } = {}) {
@@ -310,6 +335,7 @@ export async function renderSeleccion(root) {
     const g = groupOf(gid);
     const act = await sheet(g.name, html`<div class="sheet-list">
       ${sheetBtn('rename', 'Renombrar', 'pencil')}
+      ${sheetBtn('section', `Cambiar sección (ahora: ${sectionName(sectionOf(g))})`, 'arrow-left-right')}
       ${sheetBtn('delete', 'Borrar grupo', 'trash', { danger: true })}</div>`);
     if (act === 'rename') {
       hold();
@@ -318,6 +344,10 @@ export async function renderSeleccion(root) {
       release();
       const name = data?.name.trim();
       if (name && name !== g.name) await renameGroup(g, name);
+    } else if (act === 'section') {
+      const sec = await sheet(`Sección de «${g.name}»`, html`<div class="sheet-list">
+        ${sectionList().map((x) => sheetBtn(`sec:${x.id}`, x.name, 'folder-plus', { disabled: x.id === sectionOf(g) }))}</div>`);
+      if (sec?.startsWith('sec:')) await setSection(g, sec.slice(4));
     } else if (act === 'delete') {
       await deleteGroup(g);
     }
@@ -356,7 +386,9 @@ export async function renderSeleccion(root) {
   async function newGroup() {
     hold();
     const data = await formDialog('Nuevo grupo', html`
-      <label class="field"><span>Nombre</span><input name="name" required maxlength="40" autofocus placeholder="Por ejemplo: Novedades"></label>`, { ok: 'Crear grupo' });
+      <label class="field"><span>Nombre</span><input name="name" required maxlength="40" autofocus placeholder="Por ejemplo: Novedades"></label>
+      <label class="field"><span>Sección</span><select name="section">
+        ${sectionList().map((x) => html`<option value="${x.id}">${x.name}</option>`)}</select></label>`, { ok: 'Crear grupo' });
     release();
     const name = data?.name.trim();
     if (!name) return;
@@ -365,7 +397,7 @@ export async function renderSeleccion(root) {
       return;
     }
     try {
-      await mpost('/api/groups', { name, by: state.who });
+      await mpost('/api/groups', { name, section: data.section, by: state.who });
       toast('Grupo creado');
       await loadBootstrap();
     } catch (err) {
@@ -382,13 +414,17 @@ export async function renderSeleccion(root) {
     try {
       if (d.newgroup !== undefined) await newGroup();
       else if (d.gup || d.gdown) {
-        const ids = sortedGroups().map((g) => g.id);
+        // Solo se mueve dentro de su sección: se reordenan los huecos que ocupa en la lista global.
         const gid = Number(d.gup || d.gdown);
-        const k = ids.indexOf(gid);
+        const sec = sectionOf(groupOf(gid));
+        const ids = sortedGroups().map((g) => g.id);
+        const slots = ids.filter((id) => sectionOf(groupOf(id)) === sec);
+        const k = slots.indexOf(gid);
         const j = d.gup ? k - 1 : k + 1;
-        if (j < 0 || j >= ids.length) return;
-        [ids[k], ids[j]] = [ids[j], ids[k]];
-        await saveGroupOrder(ids);
+        if (j < 0 || j >= slots.length) return;
+        [slots[k], slots[j]] = [slots[j], slots[k]];
+        let n = 0;
+        await saveGroupOrder(ids.map((id) => (sectionOf(groupOf(id)) === sec ? slots[n++] : id)));
       } else if (d.gmenu) await groupMenu(Number(d.gmenu));
       else if (d.pmenu) await productMenu(Number(d.pmenu), Number(t.closest('.sel-list').dataset.gid));
       else if (d.add) {

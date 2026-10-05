@@ -41,7 +41,7 @@ async function navigate() {
 }
 
 function renderHeader() {
-  const pending = state.live.lines.reduce((a, l) => a + l.qty_pending, 0);
+  const pending = state.live.lines.filter((l) => l.qty_pending > 0).length;
   const badge = $('#pending-badge');
   badge.textContent = pending;
   badge.hidden = !pending;

@@ -1,8 +1,10 @@
 // Importa la copia JSON que exporta la app (/api/backup) en una base Postgres
-// ya migrada (0001 a 0006). Sirve para copias antiguas (SQLite/D1, con
+// con las migraciones aplicadas. Sirve para copias antiguas (SQLite/D1, con
 // `habitual`, sin slugs, grupos ni personal) y para copias nuevas.
 // Sustituye todos los datos; los códigos de acceso de la base no se tocan.
-import { CATEGORIES, INITIAL_GROUPS, INITIAL_STAFF, INITIAL_STORES, defaultMainKey, slugify } from './catalog.js';
+import { CATEGORIES, INITIAL_STAFF, INITIAL_STORES, defaultMainKey, slugify } from './catalog.js';
+
+const LEGACY_GROUPS = ['Habituales', 'Premium'];
 
 const DROP_SETTINGS = new Set(['schema_version', 'habitual_init', 'seeded', 'staff_code', 'manager_pin']);
 
@@ -100,7 +102,7 @@ export async function importBackup(db, data, { force = false, now = new Date() }
     });
 
     const groups = legacy
-      ? INITIAL_GROUPS.map((name, i) => ({ id: i + 1, name, sort: (i + 1) * 10, created_at: ts }))
+      ? LEGACY_GROUPS.map((name, i) => ({ id: i + 1, name, sort: (i + 1) * 10, section: 'alcohol', created_at: ts }))
       : src.product_groups;
     const staff = Array.isArray(src.staff) ? src.staff
       : INITIAL_STAFF.map((name, i) => ({ id: i + 1, name, active: 1, sort: (i + 1) * 10, created_at: ts }));

@@ -5,7 +5,7 @@ import { icon } from '../icons.js';
 import { countFields, bindCountFields, countedQty, enqueue, queuedCounts, flushCounts, onStockChange } from './almacen.js';
 
 export const SHELF_CATEGORIES = [
-  ['ginebra','Ginebras'], ['ron','Rones'], ['vodka','Vodkas'], ['whisky','Whiskies'], ['tequila','Tequila'],
+  ['ginebra','Ginebras'], ['ron','Rones'], ['vodka','Vodkas'], ['whisky','Whiskies'], ['tequila','Tequila'], ['licor','Licores'],
   ['cerveza','Cervezas'], ['refresco','Refrescos'], ['vino','Vinos'], ['otros','Otros'],
 ];
 export const shelfCategory = (p) => SHELF_CATEGORIES.some(([id]) => id === p.category) ? p.category : 'otros';

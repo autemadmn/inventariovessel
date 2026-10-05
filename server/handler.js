@@ -153,7 +153,7 @@ export function createHandler({ getDb, env = {}, log = console }) {
     ['PUT', '/api/staff/:id', 'manager', ({ db, id, body }) => svc.updateStaff(db, id, body, { by: body.by })],
     ['POST', '/api/groups', 'manager', ({ db, body }) => svc.createGroup(db, body, { by: body.by })],
     ['PUT', '/api/groups/order', 'manager', ({ db, body }) => svc.orderGroups(db, body, { by: body.by })],
-    ['PUT', '/api/groups/:id', 'manager', ({ db, id, body }) => svc.renameGroup(db, id, body, { by: body.by })],
+    ['PUT', '/api/groups/:id', 'manager', ({ db, id, body }) => svc.updateGroup(db, id, body, { by: body.by })],
     ['DELETE', '/api/groups/:id', 'manager', ({ db, id, url }) => svc.deleteGroup(db, id, {
       move_to: url.searchParams.get('move_to') ?? undefined, by: url.searchParams.get('by'),
     })],

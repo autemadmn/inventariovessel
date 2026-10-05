@@ -51,7 +51,7 @@ export async function renderCatalogo(root) {
                 ${!p.active ? html`<span class="tag">Oculto</span>` : ''}
                 ${p.status === 'pendiente' ? html`<span class="tag warn">Por confirmar</span>` : ''}
                 <small class="muted block">${[p.group_id ? groupName(p.group_id) : 'Fuera de la selección',
-    p.per_case ? `${p.per_case} por caja` : ''].filter(Boolean).join(' · ')}</small>
+    p.order_unit === 'caja' && p.per_case ? `Caja de ${p.per_case}` : p.order_unit === 'bolsa' ? 'Bolsa' : p.per_case ? `${p.per_case} por caja` : ''].filter(Boolean).join(' · ')}</small>
               </div>
               <div class="btns">
                 <label class="btn small ghost cat-photo" title="${p.photo ? 'Cambiar foto' : 'Añadir foto'}">${raw(icon('camera', { size: 18 }))}<span class="sr-only">${p.photo ? 'Cambiar foto' : 'Añadir foto'}</span>
@@ -183,6 +183,9 @@ async function editProduct(p) {
     <label class="field"><span>Punto principal</span><select name="main_store_id">${inVesselPoints().filter((s) => ['almacen','nevera'].includes(s.point_type)).map((s) => html`<option value="${s.id}" ${s.id === (p?.main_store_id ?? oldDefault) ? 'selected' : ''}>${s.name}</option>`)}</select>
       <small class="muted">Reponer saca de aquí y el viaje deja aquí la mercancía.</small></label>
     <label class="field"><span>Botellas por caja</span><input name="per_case" type="number" min="1" max="10000" inputmode="numeric" value="${p?.per_case ?? ''}" placeholder="Por ejemplo, 6"></label>
+    <label class="field"><span>Unidad de pedido</span><select name="order_unit">
+      ${[['botella', 'Botella'], ['caja', 'Caja'], ['bolsa', 'Bolsa']].map(([v, l]) => html`<option value="${v}" ${(p?.order_unit ?? 'botella') === v ? 'selected' : ''}>${l}</option>`)}</select>
+      <small class="muted">Con «Caja», un toque en Pedir añade una caja entera.</small></label>
     ${!isNew ? html`<label class="check"><input type="checkbox" name="out_of_stock" ${p.out_of_stock ? 'checked' : ''}> Agotado</label>` : ''}
     <label class="check"><input type="checkbox" name="active" ${!p || p.active ? 'checked' : ''}>
       <span>Activo<small class="muted block">Si lo desmarcas, deja de salir en Pedir y en Selección. Sigue en el histórico.</small></span></label>
@@ -201,6 +204,16 @@ async function editProduct(p) {
       const main = dlg.querySelector('[name="main_store_id"]');
       group.addEventListener('change', () => { groupChanged = true; });
       main.addEventListener('change', () => { mainChanged = true; });
+      // Una caja necesita saber cuántas unidades trae.
+      const unit = dlg.querySelector('[name="order_unit"]');
+      const perCase = dlg.querySelector('[name="per_case"]');
+      const syncUnit = () => {
+        perCase.required = unit.value === 'caja';
+        perCase.setCustomValidity(perCase.required && !perCase.value ? 'Indica cuántas unidades trae la caja.' : '');
+      };
+      unit.addEventListener('change', syncUnit);
+      perCase.addEventListener('input', syncUnit);
+      syncUnit();
       dlg.querySelector('[name="category"]').addEventListener('change', (e) => {
         if (isNew && !groupChanged) group.value = ['cerveza','refresco','vino'].includes(e.target.value) ? '' : String(defaultGroupId() ?? '');
         if (!mainChanged && (isNew || (p.main_store_id ?? oldDefault) === oldDefault)) main.value = String(defaultMain(e.target.value));
@@ -237,6 +250,7 @@ async function editProduct(p) {
     note: data.note,
     capacity_ml: data.capacity_ml === '' ? null : Number(data.capacity_ml),
     per_case: data.per_case === '' ? null : Number(data.per_case),
+    order_unit: data.order_unit,
     active: data.active === 'on',
     by: state.who,
   };

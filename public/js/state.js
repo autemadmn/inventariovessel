@@ -8,6 +8,7 @@ export const state = {
   categories: [],
   products: [],
   groups: [],
+  sections: [],
   staff: [],
   catalogRev: 0,
   settings: {},
@@ -67,6 +68,49 @@ export function selection() {
     .filter((g) => g.products.length);
 }
 
+/** Los grupos (con productos) de una sección, en su orden. Sin sección guardada, alcohol. */
+export const sectionGroups = (sectionId) => selection().filter((g) => (g.group.section ?? 'alcohol') === sectionId);
+
+/** Unidades que suma un toque: una caja entera en los productos por caja; si no, 1. */
+export const orderStep = (p) => (p?.order_unit === 'caja' && p.per_case > 0 ? p.per_case : 1);
+
+/**
+ * Cantidad (en unidades) como se pide: «2 cajas», «1 caja + 3», «5 unidades»,
+ * «3 bolsas», «4 botellas». `p` es un producto o una línea de la lista.
+ */
+export function qtyText(n, p) {
+  if (p?.order_unit === 'bolsa') return plural(n, 'bolsa', 'bolsas');
+  if (p?.order_unit === 'caja' && p.per_case > 0) {
+    const full = Math.floor(n / p.per_case);
+    const loose = n % p.per_case;
+    if (!full) return plural(n, 'unidad', 'unidades');
+    return loose ? `${plural(full, 'caja', 'cajas')} + ${fmt(loose)}` : plural(full, 'caja', 'cajas');
+  }
+  return plural(n, 'botella', 'botellas');
+}
+
+/** «2 cajas · 5 botellas · 1 bolsa» para [{ p, qty }], sin mezclar unidades. */
+export function unitSummary(lines) {
+  const t = { caja: 0, botella: 0, bolsa: 0, unidad: 0 };
+  for (const { p, qty } of lines) {
+    if (p?.order_unit === 'bolsa') t.bolsa += qty;
+    else if (p?.order_unit === 'caja' && p.per_case > 0) {
+      t.caja += Math.floor(qty / p.per_case);
+      t.unidad += qty % p.per_case;
+    } else t.botella += qty;
+  }
+  return [
+    t.caja && plural(t.caja, 'caja', 'cajas'),
+    t.botella && plural(t.botella, 'botella', 'botellas'),
+    t.unidad && plural(t.unidad, 'unidad', 'unidades'),
+    t.bolsa && plural(t.bolsa, 'bolsa', 'bolsas'),
+  ].filter(Boolean).join(' · ') || '0';
+}
+
+/** Verbo en singular o plural según la cantidad: «Falta 1 botella», «Quedan 2 cajas · 1 bolsa». */
+export const withVerb = (one, many, text) => `${/^1 [^+·]*$/.test(text) ? one : many} ${text}`;
+export const faltan = (text) => withVerb('Falta', 'Faltan', text);
+
 /** Imágenes de catálogo: una sola vez; si falla, la app sigue sin ellas. */
 export async function loadManifest() {
   try {
@@ -81,7 +125,7 @@ export async function loadBootstrap() {
   const b = await get('/api/bootstrap');
   Object.assign(state, {
     bars: b.bars, categories: b.categories, products: b.products,
-    groups: b.groups || [], staff: b.staff || [], stores: b.stores || [], catalogRev: b.catalog_rev ?? 0,
+    groups: b.groups || [], sections: b.sections || [], staff: b.staff || [], stores: b.stores || [], catalogRev: b.catalog_rev ?? 0,
     settings: b.settings, date: b.date, managerRequired: b.managerRequired,
   });
   for (const p of state.products) p.image = imageFor(p.slug);

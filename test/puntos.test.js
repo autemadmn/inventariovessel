@@ -33,14 +33,14 @@ const is400 = (message) => (e) => e.status === 400 && (!message || e.message ===
 test('0005: nueve puntos, RLS, sin productos nuevos y repetición sin pisar nombres', async (t) => {
   const db = await setup(t);
   const before = (await db.all('SELECT id, name FROM products ORDER BY id'));
-  assert.equal(before.length, 51);
+  assert.equal(before.length, 90);
   await applyMigrations(db);
   const stores = await db.all('SELECT * FROM stores ORDER BY sort, id');
   assert.equal(stores.length, 10);
   assert.deepEqual(stores.filter((s) => s.in_vessel).map((s) => s.map_key), POINT_KEYS);
   assert.equal(new Set(stores.map((s) => s.id)).size, 10);
   assert.deepEqual([stores[0].id, stores[0].name, stores[0].map_key], [1, 'Almacén alcohol', 'alm-alcohol']);
-  assert.ok((await db.all('SELECT main_store_id FROM products')).every((p) => p.main_store_id === 1));
+  assert.ok((await db.all('SELECT main_store_id FROM products WHERE id <= 51')).every((p) => p.main_store_id === 1));
   const rls = await db.all(`SELECT relname, relrowsecurity FROM pg_class
     WHERE relnamespace = current_schema()::regnamespace AND relname IN ('stores', 'products', 'deliveries')`);
   assert.equal(rls.length, 3);
@@ -56,7 +56,7 @@ test('0005: nueve puntos, RLS, sin productos nuevos y repetición sin pisar nomb
 test('0005 conserva recuentos, roturas y reposiciones de In Vessel; detecta esquema antiguo', async (t) => {
   const db = await setup(t, { migrate: false });
   const files = migrationFiles();
-  for (const f of files.filter((f) => !f.endsWith('0005_puntos.sql'))) await db.exec(readFileSync(f, 'utf8'));
+  for (const f of files.filter((f) => !f.endsWith('0005_puntos.sql') && !f.endsWith('0009_pedir_secciones.sql'))) await db.exec(readFileSync(f, 'utf8'));
   await assert.rejects(checkSchema(db), (e) => e.status === 503 && e.message === 'Faltan las migraciones de Supabase.');
   const id = await product(db);
   await db.run(`INSERT INTO stock_counts (store_id, product_id, qty, counted_at) VALUES (1, ?, 30, ?)`, id, at(0).toISOString());
@@ -68,6 +68,7 @@ test('0005 conserva recuentos, roturas y reposiciones de In Vessel; detecta esqu
   const oldCounts = await db.all('SELECT * FROM stock_counts');
   const oldMoves = await db.all('SELECT * FROM stock_moves');
   await db.exec(readFileSync(files.find((f) => f.endsWith('0005_puntos.sql')), 'utf8'));
+  await db.exec(readFileSync(files.find((f) => f.endsWith('0009_pedir_secciones.sql')), 'utf8'));
   assert.deepEqual(await db.all('SELECT * FROM stock_counts'), oldCounts.map(c=>({...c,event_order:0})));
   assert.deepEqual(await db.all('SELECT * FROM stock_moves'), oldMoves.map(m=>({...m,event_order:0,client_key:null})));
   assert.equal((await db.get('SELECT from_store_id FROM deliveries')).from_store_id, 1);
@@ -98,7 +99,7 @@ test('copias antiguas recuperan puntos y nombres de barras; las nuevas conservan
   assert.equal((await imported.get('SELECT name FROM stores WHERE id = 1')).name, 'Almacén alcohol');
   assert.equal((await imported.get('SELECT name FROM stores WHERE id = 2')).name, 'Fuera');
   assert.equal((await imported.get('SELECT name FROM stores WHERE id = 8')).name, 'Barra grande');
-  assert.ok((await imported.all('SELECT main_store_id FROM products')).every((p) => p.main_store_id === 1));
+  assert.ok((await imported.all('SELECT main_store_id FROM products WHERE id <= 51')).every((p) => p.main_store_id === 1));
   assert.equal((await imported.get('SELECT from_store_id FROM deliveries')).from_store_id, 1);
   assert.equal(await stock(imported, id, 'in'), 30);
   await checkSchema(imported);
@@ -331,7 +332,7 @@ test('estantería a ciegas, noche con corte Madrid y consulta del stock del punt
   assert.equal(consult.products.find((p) => p.product_id === id).controlled, true);
   const nextNight = await alm.punto(db, 8, {}, { now: at(1440) });
   assert.equal(nextNight.products.find((p) => p.product_id === id).result, null);
-  for (const pointId of [3, 4, 5, 6, 7]) assert.deepEqual((await alm.punto(db, pointId, {}, { now: at(0) })).products, []);
+  for (const pointId of [3, 4, 5, 6, 7]) assert.ok((await alm.punto(db, pointId, {}, { now: at(0) })).products.every((p) => p.product_id > 51));
   const initial = await svc.bootstrap(db, {});
   const selectedIds = initial.products.filter((p) => p.group_id !== null).map((p) => p.id).sort((a, b) => a - b);
   for (const bar of [8, 9, 10]) assert.deepEqual((await alm.punto(db, bar, {}, { now: at(0) })).products.map((p) => p.product_id).sort((a, b) => a - b), selectedIds);
@@ -350,12 +351,12 @@ test('membresía de punto: principal, selección, recuentos y movimientos no anu
   assert.equal((await alm.punto(db, 10, {}, { now: at(2) })).products.some((p) => p.product_id === outside.id), true);
   await alm.addTransfer(db, { product_id: id, from_store_id: 1, to_store_id: 5, qty: 2 }, { now: at(3) });
   const shelf = await alm.punto(db, 5, { modo: 'consultar' }, { now: at(4) });
-  assert.equal(shelf.products.length, 1);
-  assert.equal(shelf.products[0].stock, 2);
-  assert.equal(shelf.products[0].last_count_at, null);
+  const movedProduct = shelf.products.find((p) => p.product_id === id);
+  assert.equal(movedProduct.stock, 2);
+  assert.equal(movedProduct.last_count_at, null);
   const move = await db.get('SELECT id FROM stock_moves');
   await control.voidMove(db, move.id, { reason: 'Fallo' });
-  assert.deepEqual((await alm.punto(db, 5, {}, { now: at(4) })).products, []);
+  assert.ok(!(await alm.punto(db, 5, {}, { now: at(4) })).products.some((p) => p.product_id === id));
   const main = await alm.punto(db, 1, {}, { now: at(4) });
   assert.equal(new Set(main.products.map((p) => p.product_id)).size, main.products.length);
 });
@@ -369,8 +370,8 @@ test('mapa sin contar; neveras con consumo se mantienen normales', async (t) => 
   await count(db, id, 3, 10);
   await count(db, id, 3, 4, 1);
   const consult = await alm.punto(db, 3, { modo: 'consultar' }, { now: at(2) });
-  assert.equal(consult.products[0].result.kind, 'consumo');
-  assert.equal(consult.products[0].result.consumption, 6);
+  assert.equal(consult.products.find((p) => p.product_id === id).result.kind, 'consumo');
+  assert.equal(consult.products.find((p) => p.product_id === id).result.consumption, 6);
   map = await alm.points(db);
   assert.equal(map.points.find((p) => p.id === 3).status, 'normal');
   assert.equal((await control.descuadres(db, { period: 'todo' })).items.length, 0);

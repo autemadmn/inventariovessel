@@ -35,6 +35,11 @@ export async function checkSchema(db) {
     WHERE table_schema = current_schema() AND table_name IN (${REQUIRED_TABLES.map(() => '?').join(', ')})`,
   ...REQUIRED_TABLES);
   if (n !== REQUIRED_TABLES.length) throw missing;
+  const columns = await db.get(`SELECT count(*)::int AS n FROM information_schema.columns
+    WHERE table_schema = current_schema() AND
+      ((table_name = 'product_groups' AND column_name = 'section') OR
+       (table_name = 'products' AND column_name = 'order_unit'))`);
+  if (columns.n !== 2) throw missing;
   if (!await db.get("SELECT 1 AS ok FROM settings WHERE key = 'seeded'")) throw missing;
   if (!await db.get(`SELECT 1 AS ok FROM information_schema.columns
     WHERE table_schema = current_schema() AND table_name = 'stores' AND column_name = 'map_key'`)) throw missing;

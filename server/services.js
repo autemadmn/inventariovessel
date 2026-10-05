@@ -15,7 +15,7 @@
 //
 // Dentro de db.tx(async (t) => …) se usa SOLO `t`: usar `db` bloquearía.
 
-import { CATEGORIES, defaultMainKey, slugify } from './catalog.js';
+import { CATEGORIES, SECTIONS, ORDER_UNITS, defaultMainKey, slugify } from './catalog.js';
 import { DEFAULT_SETTINGS } from './schema.js';
 import { HttpError } from './errors.js';
 import {
@@ -201,6 +201,10 @@ function productFields(input, existing = {}) {
     out.status = input.status;
   }
   if (input.note !== undefined) out.note = clean(input.note, 400);
+  if (input.order_unit !== undefined) {
+    if (!ORDER_UNITS.some((u) => u.id === input.order_unit)) throw bad('Unidad no válida.');
+    out.order_unit = input.order_unit;
+  }
   for (const k of ['capacity_ml', 'per_case']) {
     if (input[k] === undefined) continue;
     out[k] = input[k] === null || input[k] === '' ? null : posInt(input[k], k === 'capacity_ml' ? 'Capacidad' : 'Botellas por caja');
@@ -215,6 +219,9 @@ function productFields(input, existing = {}) {
   const status = out.status ?? existing.status;
   if (out.active === 1 && UNSELECTABLE.includes(status)) {
     throw bad('Identifica el producto antes de activarlo.');
+  }
+  if ((out.order_unit ?? existing.order_unit) === 'caja' && (out.per_case !== undefined ? out.per_case : existing.per_case) == null) {
+    throw bad('Indica cuántas unidades trae la caja.');
   }
   return out;
 }
@@ -258,7 +265,7 @@ async function uniqueSlug(t, name, exceptId = null) {
 }
 
 export async function createProduct(db, input, { by, now } = {}) {
-  const f = productFields({ status: 'pendiente', category: 'otros', active: true, ...input });
+  const f = productFields({ status: 'pendiente', category: 'otros', active: true, order_unit: 'botella', ...input });
   if (!f.name) throw bad('El nombre es obligatorio.');
   const groupId = groupInput(input.group_id) ?? null;
   const t0 = nowIso(now);
@@ -273,10 +280,10 @@ export async function createProduct(db, input, { by, now } = {}) {
     const slug = await uniqueSlug(t, f.name);
     const order = groupId === null ? null : await nextGroupOrder(t, groupId);
     const { lastId } = await t.run(`INSERT INTO products
-      (name, slug, category, status, note, capacity_ml, per_case, active, sort, group_id, group_order, created_at, updated_at, main_store_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      (name, slug, category, status, note, capacity_ml, per_case, active, sort, group_id, group_order, created_at, updated_at, main_store_id, order_unit)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     f.name, slug, f.category, f.status, f.note ?? null, f.capacity_ml ?? null, f.per_case ?? null,
-    f.active ?? 1, f.sort ?? m + 10, groupId, order, t0, t0, f.main_store_id);
+    f.active ?? 1, f.sort ?? m + 10, groupId, order, t0, t0, f.main_store_id, f.order_unit ?? 'botella');
     const p = await getProduct(t, lastId);
     await audit(t, { actor: by, entity: 'producto', entityId: p.id, action: 'crear', after: p, now });
     await bumpCatalog(t);
@@ -414,41 +421,53 @@ function validName(v) {
 const sameName = (a, b) => a.toLocaleLowerCase('es') === b.toLocaleLowerCase('es');
 
 export function listGroups(db) {
-  return db.all('SELECT id, name, sort FROM product_groups ORDER BY sort, id');
+  return db.all('SELECT id, name, sort, section FROM product_groups ORDER BY sort, id');
 }
 
 async function getGroup(t, id, { lock = false } = {}) {
-  const g = await t.get(`SELECT id, name, sort FROM product_groups WHERE id = ?${lock ? ' FOR UPDATE' : ''}`, id);
+  const g = await t.get(`SELECT id, name, sort, section FROM product_groups WHERE id = ?${lock ? ' FOR UPDATE' : ''}`, id);
   if (!g) throw notFound('Grupo');
   return g;
 }
 
-export async function createGroup(db, { name }, { by, now } = {}) {
+function validSection(section) {
+  if (!SECTIONS.some((s) => s.id === section)) throw bad('Sección no válida.');
+  return section;
+}
+
+export async function createGroup(db, { name, section = 'alcohol' }, { by, now } = {}) {
   const n = validName(name);
+  validSection(section);
   return db.tx(async (t) => {
     const all = await t.all('SELECT name, sort FROM product_groups');
     if (all.some((g) => sameName(g.name, n))) throw new HttpError(409, 'Ya existe un grupo con ese nombre.');
     const sort = Math.max(0, ...all.map((g) => g.sort)) + 10;
-    const { lastId } = await t.run('INSERT INTO product_groups (name, sort, created_at) VALUES (?, ?, ?) RETURNING id', n, sort, nowIso(now));
-    await audit(t, { actor: by, entity: 'seleccion', entityId: lastId, action: 'crear grupo', after: { name: n }, now });
+    const { lastId } = await t.run('INSERT INTO product_groups (name, sort, section, created_at) VALUES (?, ?, ?, ?) RETURNING id', n, sort, section, nowIso(now));
+    await audit(t, { actor: by, entity: 'seleccion', entityId: lastId, action: 'crear grupo', after: { name: n, section }, now });
     await bumpCatalog(t);
     return getGroup(t, lastId);
   });
 }
 
-export async function renameGroup(db, id, { name }, { by, now } = {}) {
-  const n = validName(name);
+export async function updateGroup(db, id, { name, section }, { by, now } = {}) {
+  if (name === undefined && section === undefined) throw bad('Indica un nombre o una sección.');
+  const n = name === undefined ? undefined : validName(name);
+  if (section !== undefined) validSection(section);
   return db.tx(async (t) => {
     const before = await getGroup(t, id, { lock: true });
     const others = await t.all('SELECT name FROM product_groups WHERE id <> ?', id);
-    if (others.some((g) => sameName(g.name, n))) throw new HttpError(409, 'Ya existe un grupo con ese nombre.');
-    if (before.name === n) return before;
-    await t.run('UPDATE product_groups SET name = ? WHERE id = ?', n, id);
-    await audit(t, { actor: by, entity: 'seleccion', entityId: id, action: 'renombrar grupo', before: { name: before.name }, after: { name: n }, now });
+    if (n !== undefined && others.some((g) => sameName(g.name, n))) throw new HttpError(409, 'Ya existe un grupo con ese nombre.');
+    const after = { name: n ?? before.name, section: section ?? before.section };
+    if (before.name === after.name && before.section === after.section) return before;
+    await t.run('UPDATE product_groups SET name = ?, section = ? WHERE id = ?', after.name, after.section, id);
+    if (before.name !== after.name) await audit(t, { actor: by, entity: 'seleccion', entityId: id, action: 'renombrar grupo', before: { name: before.name }, after: { name: after.name }, now });
+    if (before.section !== after.section) await audit(t, { actor: by, entity: 'seleccion', entityId: id, action: 'cambiar sección', before: { name: before.name, section: before.section }, after, now });
     await bumpCatalog(t);
     return getGroup(t, id);
   });
 }
+
+export const renameGroup = updateGroup;
 
 /** Comprueba que `ids` son exactamente los de `current`, sin repetir. */
 function sameIds(ids, current) {
@@ -466,7 +485,7 @@ export async function orderGroups(db, { ids }, { by, now } = {}) {
     const names = Object.fromEntries(groups.map((g) => [g.id, g.name]));
     await audit(t, { actor: by, entity: 'seleccion', action: 'ordenar grupos', after: { orden: ids.map((x) => names[x]) }, now });
     await bumpCatalog(t);
-    return t.all('SELECT id, name, sort FROM product_groups ORDER BY sort, id');
+    return listGroups(t);
   });
 }
 
@@ -661,7 +680,7 @@ export async function bootstrap(db, { managerRequired }) {
     listBars(db), listProducts(db), listGroups(db), listStaff(db), publicSettings(db), currentDate(db),
     db.all('SELECT * FROM stores ORDER BY sort, id'),
   ]);
-  return { bars, categories: CATEGORIES, products, settings, date, managerRequired, groups, staff, stores, catalog_rev: rev };
+  return { bars, categories: CATEGORIES, sections: SECTIONS, order_units: ORDER_UNITS, products, settings, date, managerRequired, groups, staff, stores, catalog_rev: rev };
 }
 
 // ---------------------------------------------------------------- noches
@@ -708,7 +727,7 @@ const DELIVERED = 'COALESCE((SELECT SUM(qty) FROM deliveries d WHERE d.line_id =
 const PENDING = `(l.qty_requested - l.qty_cancelled - ${DELIVERED})`;
 
 const LINE_SELECT = `
-  SELECT l.*, p.name AS product_name, p.slug, p.photo, p.category, p.out_of_stock, p.status AS product_status,
+  SELECT l.*, p.name AS product_name, p.slug, p.photo, p.category, p.out_of_stock, p.status AS product_status, p.per_case, p.order_unit,
     ${DELIVERED} AS qty_delivered
   FROM request_lines l JOIN products p ON p.id = l.product_id`;
 
@@ -946,7 +965,7 @@ export async function liveState(db, { now } = {}) {
   if (!session) return { date, session: null, lines: [], recent: [], settings, outOfStock: out, stock, trip, almacen_rev, catalog_rev, server_time: current.toISOString() };
   const lines = (await db.all(`${LINE_SELECT} WHERE l.session_id = ? ORDER BY l.created_at, l.id`, session.id)).map(withPending);
   const t = current.getTime();
-  const recent = (await db.all(`SELECT d.*, p.name AS product_name, p.slug FROM deliveries d
+  const recent = (await db.all(`SELECT d.*, p.name AS product_name, p.slug, p.per_case, p.order_unit FROM deliveries d
     JOIN products p ON p.id = d.product_id
     WHERE d.session_id = ? ORDER BY d.delivered_at DESC, d.id DESC LIMIT 30`, session.id))
     .map((d) => ({
