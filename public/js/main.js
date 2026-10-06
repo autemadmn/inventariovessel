@@ -1,6 +1,6 @@
 import { auth, get, post, setAuthErrorHandler, ApiError, store } from './api.js';
 import { state, loadBootstrap, loadLive, loadManifest, setWho, subscribe } from './state.js';
-import { $, html, raw, mount, dialog, formDialog, dateLabel, silhouette } from './ui.js';
+import { $, html, raw, mount, dialog, formDialog, dateLabel, silhouette, scrollTop } from './ui.js';
 import { renderPedir } from './views/pedir.js';
 import { renderReponer } from './views/reponer.js';
 import { renderGestion } from './views/gestion.js';
@@ -9,13 +9,14 @@ import { renderViajes } from './views/viajes.js';
 
 const main = $('#main');
 
-// Safari ignora user-scalable=no: se bloquean aquí el pellizco y sus gestos.
+// Webapp instalada en la pantalla de inicio: el contenido se desplaza dentro de #main.
+if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) document.documentElement.classList.add('standalone');
+
+// Safari ignora user-scalable=no: se bloquea aquí el pellizco. Sin escuchar touchmove, para que
+// el desplazamiento siga siendo fluido y la barra inferior no se quede a media pantalla.
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
   document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
 }
-document.addEventListener('touchmove', (e) => {
-  if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault();
-}, { passive: false });
 
 let current = null; // { name, cleanup }
 let navigationId = 0;
@@ -46,7 +47,7 @@ async function navigate() {
   for (const a of document.querySelectorAll('.nav a')) a.classList.toggle('active', a.dataset.route === name);
   document.body.dataset.view = name;
   current = { name, cleanup: await ROUTES[name](main, rest) };
-  window.scrollTo(0, 0);
+  scrollTop();
 }
 
 function renderHeader() {

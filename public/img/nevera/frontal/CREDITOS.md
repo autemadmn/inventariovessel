@@ -15,4 +15,4 @@ Máscaras de emisión de la misma geometría: blanco 34 % y contorno exterior 6 
 
 El catálogo conserva su slug y nombre históricos de Cabreiroá y 35 unidades por caja. En Gestión → Catálogo debe renombrarse el mismo producto a Agua Lanjarón 33 cl y confirmarse el número de unidades, sin duplicarlo ni cambiar el historial.
 
-El plano activo también lleva versión: `nevera.v4.json`. El frontal v2 y el plano de Chupitería se conservan byte a byte. Para una exportación futura, aumentar también `PLAN_VERSION` en config.py y actualizar la referencia de Pedir.
+El plano activo también lleva versión: `nevera.v5.json` (dos Red Bull y dos Sugarfree, como en v3). El frontal v2 y el plano de Chupitería se conservan byte a byte. Para una exportación futura, aumentar también `PLAN_VERSION` en config.py y actualizar la referencia de Pedir.

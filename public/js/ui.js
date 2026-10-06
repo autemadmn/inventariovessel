@@ -146,6 +146,12 @@ document.addEventListener('click', (e) => {
   onClick?.();
 });
 
+/** Vuelve arriba: la página o, en la webapp instalada, el contenido (ver html.standalone en app.css). */
+export function scrollTop() {
+  window.scrollTo(0, 0);
+  document.getElementById('main')?.scrollTo(0, 0);
+}
+
 export function buzz(ms = 12) {
   try { navigator.vibrate?.(ms); } catch { /* sin vibración */ }
 }

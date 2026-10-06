@@ -10,7 +10,16 @@ import {
 import { icon } from '../icons.js';
 import { loadNevera, drawNevera, patchNevera, planoCargado, zonasDelPlano, zonaHtml } from './nevera.js';
 
-const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v4.json' };
+const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v5.json' };
+// Solo Alcohol tiene buscador: en las demás secciones todo cabe a la vista.
+const hasSearch = (id) => id === 'alcohol';
+
+// Alcohol se ve como una estantería: pestañas por categoría y baldas de cuatro botellas.
+const RACK_CATS = [['ginebra', 'Ginebras'], ['ron', 'Rones'], ['vodka', 'Vodkas'], ['whisky', 'Whiskies'],
+  ['tequila', 'Tequila'], ['licor', 'Licores'], ['otros', 'Otros']];
+const PER_SHELF = 4;
+const rackCatOf = (p) => (RACK_CATS.some(([id]) => id === p.category) ? p.category : 'otros');
+let rackCat = null;
 const planoActual = () => planoCargado(PLANOS[lastSection]);
 
 let query = '';
@@ -48,12 +57,13 @@ export function renderPedir(root, rest = []) {
         <h1 class="sec-title">${sectionName(sectionId)}</h1>
       </div>
       ${barPick}
-      ${PLANOS[sectionId] ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : html`
+      ${PLANOS[sectionId] ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : ''}
+      ${hasSearch(sectionId) ? html`
       <div class="filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
           <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
-      </div>`}
-      <div id="grid" class="grid"></div>
+      </div>` : ''}
+      <div id="grid" class="${sectionId === 'alcohol' ? 'rack-wrap' : `grid sec-${sectionId}`}"></div>
     </section>
     <div id="cartbar" class="cartbar"></div>` : html`
     <section class="pedir">
@@ -87,9 +97,13 @@ export function renderPedir(root, rest = []) {
   };
 
   function onClick(e) {
-    const t = e.target.closest('[data-bar],[data-add],[data-minus],[data-open-cart],[data-back],[data-sec]');
+    const t = e.target.closest('[data-bar],[data-add],[data-minus],[data-open-cart],[data-back],[data-sec],[data-rack]');
     if (!t) return;
-    if (t.dataset.sec) {
+    if (t.dataset.rack) {
+      rackCat = t.dataset.rack;
+      buzz(8);
+      drawGrid(sectionId);
+    } else if (t.dataset.sec) {
       fromCover = true;
       buzz();
     } else if (t.dataset.back !== undefined) {
@@ -155,7 +169,8 @@ function cardHtml(p) {
   const pend = state.bar ? pendingFor(p.id, state.bar) : 0;
   const out = isOut(p);
   const step = orderStep(p);
-  const unit = p.order_unit === 'caja' && step > 1 ? `Caja de ${step}` : p.order_unit === 'bolsa' ? 'Bolsa' : p.per_case > 1 ? 'Botella' : '';
+  // «Caja de 24» se sobreentiende: solo se avisa cuando no se pide por caja.
+  const unit = p.order_unit === 'caja' ? '' : p.order_unit === 'bolsa' ? 'Bolsa' : p.per_case > 1 ? 'Botella' : '';
   const what = orderWhat(p);
   const shown = n % step === 0 ? n / step : qtyText(n, p);
   return html`
@@ -177,7 +192,7 @@ function drawGrid(sectionId) {
   const el = $('#grid');
   if (!el) return;
   const all = sectionGroups(sectionId);
-  const q = PLANOS[sectionId] ? '' : norm(query.trim());
+  const q = hasSearch(sectionId) ? norm(query.trim()) : '';
   const inFridge = drawNevera($('#nevera'), all.flatMap((g) => g.products), {
     visible: !q, plano: planoCargado(PLANOS[sectionId]), estado: estadoZona,
   });
@@ -196,12 +211,30 @@ function drawGrid(sectionId) {
     mount(el, html`<p class="empty">No hay productos que coincidan con «${query}».</p>`);
     return;
   }
+  if (sectionId === 'alcohol') {
+    mount(el, rackHtml(shown.flatMap((g) => g.products), Boolean(q)));
+    return;
+  }
   // Con búsqueda se sigue el mismo orden, pero sin cabeceras de grupo.
   mount(el, q
     ? html`${shown.flatMap((g) => g.products).map(cardHtml)}`
     : sectionId === 'nevera' && planoCargado(PLANOS.nevera)
       ? html`<h2 class="grid-title">Más de la nevera</h2>${shown.flatMap((g) => g.products).map(cardHtml)}`
       : html`${shown.map((g) => html`${all.length === 1 && norm(g.group.name) === norm(sectionName(sectionId)) ? '' : html`<h2 class="grid-title">${g.group.name}</h2>`}${g.products.map(cardHtml)}`)}`);
+}
+
+/** Estantería de Alcohol. Dentro de cada categoría se respeta el orden de la selección; al buscar, salen todas. */
+function rackHtml(products, searching) {
+  const cats = RACK_CATS.filter(([id]) => products.some((p) => rackCatOf(p) === id));
+  if (!cats.some(([id]) => id === rackCat)) rackCat = cats[0]?.[0] ?? null;
+  const list = searching ? products : products.filter((p) => rackCatOf(p) === rackCat);
+  const shelves = [];
+  for (let i = 0; i < list.length; i += PER_SHELF) shelves.push(list.slice(i, i + PER_SHELF));
+  return html`
+    ${searching ? '' : html`<div class="rack-tabs" role="tablist" aria-label="Categorías">
+      ${cats.map(([id, name]) => html`<button type="button" role="tab" aria-selected="${String(id === rackCat)}" data-rack="${id}">${name}</button>`)}
+    </div>`}
+    <div class="rack">${shelves.map((row) => html`<div class="rack-shelf">${row.map(cardHtml)}</div>`)}</div>`;
 }
 
 function drawCard(pid) {

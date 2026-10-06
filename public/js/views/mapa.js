@@ -80,9 +80,7 @@ export function renderMapa(root) {
       if (seq !== request || !el.isConnected) return;
       mount(el.querySelector('#map-body'), html`
         <div class="map-card">${mapSvg(r.points)}${LEGEND}</div>
-        <p class="map-note">La posición de la barra VIP es aproximada.</p>
-        <h2 class="section-title">Puntos</h2><ul class="point-list">${r.points.map((p) => html`<li><a href="#/almacen/in/${p.key}">
-          <span><b>${p.name}</b><small>${POINT_TYPE_LABEL[p.type]} · <span class="${p.status === 'descuadre' ? 'tag warn' : ''}">${status(p)}</span></small></span>${raw(icon('right'))}</a></li>`)}</ul>`);
+        <p class="map-note">La posición de la barra VIP es aproximada.</p>`);
     } catch (err) {
       if (seq === request && el.isConnected) mount(el.querySelector('#map-body'), html`<p class="empty">No se ha podido cargar el mapa. ${err.message}</p>`);
     }
