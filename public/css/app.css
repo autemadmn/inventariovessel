@@ -87,7 +87,7 @@
 * { box-sizing: border-box; }
 /* La interfaz no se amplía: sin zoom por doble toque ni por pellizco (las reglas propias mandan). */
 :where(*) { touch-action: pan-x pan-y; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; overscroll-behavior-y: none; }
 body {
   margin: 0;
   background: var(--bg);
@@ -634,6 +634,11 @@ select.mini { width: auto; text-align: left; }
 @media (max-width: 359px) {
   .pedir .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* Refrescos: pocas cajas y sin buscador, así que van en dos columnas grandes. */
+.pedir .grid.sec-refrescos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 560px; margin-inline: auto; }
+.grid.sec-refrescos .card-main { padding: 6px 6px 10px; gap: 6px; }
+.grid.sec-refrescos .card-main .thumb { aspect-ratio: 4 / 3; }
+.grid.sec-refrescos .card-name { padding: 0 4px; font-size: 0.9375rem; font-weight: 600; }
 @media (max-width: 600px) {
   .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .card-main { padding: 3px 3px 6px; gap: 5px; }
@@ -719,9 +724,13 @@ select.mini { width: auto; text-align: left; }
 
 /* ---------------------------------------------------------------- Chupitería: nevera vista desde arriba */
 .nevera-wrap { margin: 4px 0 12px; }
+/* En el móvil las neveras aprovechan casi todo el ancho: el margen lateral baja a 8 px. */
+@media (max-width: 600px) {
+  .nevera-wrap { margin-inline: -8px; }
+}
 /* La nevera entera cabe en pantalla sin desplazar: su ancho sale del alto que queda entre la
    cabecera de la sección y la barra del carrito (unos 350 px en total). */
-.nevera { max-width: max(220px, min(560px, calc((100dvh - 350px - env(safe-area-inset-bottom)) * 0.72))); margin: 0 auto; }
+.nevera { max-width: max(220px, min(560px, calc((100dvh - 290px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 0.72))); margin: 0 auto; }
 .pedir.no-bar .nevera { opacity: 0.5; }
 .nev-tray {
   position: relative; isolation: isolate; overflow: hidden;
@@ -772,7 +781,7 @@ select.mini { width: auto; text-align: left; }
 /* Nevera frontal: altura reservada para cabecera, barras y pedido; sin desplazamiento horizontal. */
 .nevera-frontal {
   aspect-ratio: var(--nv-ar);
-  height: min(calc(100dvh - var(--top-h) - var(--nav-h) - 216px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), calc((100vw - 32px) / (var(--nv-ar))));
+  height: min(calc(100dvh - var(--top-h) - var(--nav-h) - 170px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), calc((100vw - 16px) / (var(--nv-ar))));
   width: auto; max-width: 560px; margin-inline: auto;
 }
 .nevera-frontal .nev-tray { width: 100%; height: 100%; }

@@ -10,7 +10,9 @@ import {
 import { icon } from '../icons.js';
 import { loadNevera, drawNevera, patchNevera, planoCargado, zonasDelPlano, zonaHtml } from './nevera.js';
 
-const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v4.json' };
+const PLANOS = { chupiteria: 'img/nevera/nevera.v2.json', nevera: 'img/nevera/frontal/nevera.v5.json' };
+// Solo Alcohol tiene buscador: en las demás secciones todo cabe a la vista.
+const hasSearch = (id) => id === 'alcohol';
 const planoActual = () => planoCargado(PLANOS[lastSection]);
 
 let query = '';
@@ -48,12 +50,13 @@ export function renderPedir(root, rest = []) {
         <h1 class="sec-title">${sectionName(sectionId)}</h1>
       </div>
       ${barPick}
-      ${PLANOS[sectionId] ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : html`
+      ${PLANOS[sectionId] ? html`<div id="nevera" class="nevera-wrap" hidden></div>` : ''}
+      ${hasSearch(sectionId) ? html`
       <div class="filters">
         <label class="search">${raw(icon('search', { size: 18 }))}
           <input type="search" id="search" placeholder="Buscar botella" value="${query}" autocomplete="off" enterkeyhint="search" aria-label="Buscar botella"></label>
-      </div>`}
-      <div id="grid" class="grid"></div>
+      </div>` : ''}
+      <div id="grid" class="grid sec-${sectionId}"></div>
     </section>
     <div id="cartbar" class="cartbar"></div>` : html`
     <section class="pedir">
@@ -155,7 +158,8 @@ function cardHtml(p) {
   const pend = state.bar ? pendingFor(p.id, state.bar) : 0;
   const out = isOut(p);
   const step = orderStep(p);
-  const unit = p.order_unit === 'caja' && step > 1 ? `Caja de ${step}` : p.order_unit === 'bolsa' ? 'Bolsa' : p.per_case > 1 ? 'Botella' : '';
+  // «Caja de 24» se sobreentiende: solo se avisa cuando no se pide por caja.
+  const unit = p.order_unit === 'caja' ? '' : p.order_unit === 'bolsa' ? 'Bolsa' : p.per_case > 1 ? 'Botella' : '';
   const what = orderWhat(p);
   const shown = n % step === 0 ? n / step : qtyText(n, p);
   return html`
@@ -177,7 +181,7 @@ function drawGrid(sectionId) {
   const el = $('#grid');
   if (!el) return;
   const all = sectionGroups(sectionId);
-  const q = PLANOS[sectionId] ? '' : norm(query.trim());
+  const q = hasSearch(sectionId) ? norm(query.trim()) : '';
   const inFridge = drawNevera($('#nevera'), all.flatMap((g) => g.products), {
     visible: !q, plano: planoCargado(PLANOS[sectionId]), estado: estadoZona,
   });

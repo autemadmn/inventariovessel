@@ -12,7 +12,8 @@ const NIGHT = new Date('2026-09-26T21:00:00Z');
 const GROUPS = [
   ['Habituales', 'alcohol'], ['Premium', 'alcohol'], ['Nevera', 'nevera'],
   ['Chupitos', 'chupiteria'], ['Cervezas especiales', 'chupiteria'],
-  ['Refrescos', 'refrescos'], ['Zumos', 'refrescos'], ['Otros', 'otros'],
+  // 0012: «Zumos» pasa a la sección Otros, después del grupo «Otros».
+  ['Refrescos', 'refrescos'], ['Otros', 'otros'], ['Zumos', 'otros'],
 ];
 // Tabla del contrato: nombre, slug, categoría, unidad, unidades por caja, grupo, punto.
 const PRODUCTS = [
@@ -93,7 +94,7 @@ test('0009: ocho grupos por sección y los 39 productos del contrato, en su orde
     const got = await groupSlugs(db, name);
     assert.deepEqual(name === 'Habituales' || name === 'Premium' ? got.slice(-expected.length) : got, expected);
   }
-  assert.equal(await svc.catalogRev(db), 6);
+  assert.equal(await svc.catalogRev(db), 7);
 });
 
 test('slugify: los 39 nombres nuevos producen los slugs del contrato', () => {

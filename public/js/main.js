@@ -9,13 +9,11 @@ import { renderViajes } from './views/viajes.js';
 
 const main = $('#main');
 
-// Safari ignora user-scalable=no: se bloquean aquí el pellizco y sus gestos.
+// Safari ignora user-scalable=no: se bloquea aquí el pellizco. Sin escuchar touchmove, para que
+// el desplazamiento siga siendo fluido y la barra inferior no se quede a media pantalla.
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
   document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
 }
-document.addEventListener('touchmove', (e) => {
-  if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault();
-}, { passive: false });
 
 let current = null; // { name, cleanup }
 let navigationId = 0;

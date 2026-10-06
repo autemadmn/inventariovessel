@@ -397,7 +397,7 @@ test('lista de compra guardada con propuesta calculada y cantidad final editable
 test('grupos: crear, validar, renombrar, ordenar y borrar moviendo sus botellas', async (t) => {
   const { db } = await setup(t);
   const g = await svc.createGroup(db, { name: '  Novedades ' }, { by: 'Encargado' });
-  assert.deepEqual({ ...g }, { id: g.id, name: 'Novedades', sort: 90, section: 'alcohol' });
+  assert.deepEqual({ ...g }, { id: g.id, name: 'Novedades', sort: 100, section: 'alcohol' });
   await assert.rejects(svc.createGroup(db, { name: 'NOVEDADES' }), { status: 409, message: 'Ya existe un grupo con ese nombre.' });
   await assert.rejects(svc.createGroup(db, { name: '   ' }), { status: 400, message: 'El nombre debe tener entre 1 y 40 caracteres.' });
   await assert.rejects(svc.createGroup(db, { name: 'x'.repeat(41) }), { status: 400 });
@@ -410,7 +410,7 @@ test('grupos: crear, validar, renombrar, ordenar y borrar moviendo sus botellas'
   const [usual, rest] = groups;
   await assert.rejects(svc.orderGroups(db, { ids: [g.id, usual.id] }), { status: 400, message: 'La lista no coincide: recarga e inténtalo de nuevo.' });
   const ordered = await svc.orderGroups(db, { ids: [g.id, ...groups.filter((x) => x.id !== g.id).map((x) => x.id)] });
-  assert.deepEqual(ordered.map((x) => [x.name, x.sort]), [['Nuevas', 10], ['Habituales', 20], ['Premium', 30], ['Nevera', 40], ['Chupitos', 50], ['Cervezas especiales', 60], ['Refrescos', 70], ['Zumos', 80], ['Otros', 90]]);
+  assert.deepEqual(ordered.map((x) => [x.name, x.sort]), [['Nuevas', 10], ['Habituales', 20], ['Premium', 30], ['Nevera', 40], ['Chupitos', 50], ['Cervezas especiales', 60], ['Refrescos', 70], ['Otros', 80], ['Zumos', 90]]);
 
   // Borrar Habituales moviendo sus productos al final de Nuevas (vacío), en su orden.
   await assert.rejects(svc.deleteGroup(db, usual.id, {}), { status: 400, message: 'Indica a dónde van las botellas del grupo.' });
@@ -537,7 +537,7 @@ test('catalog_rev: sube con catálogo, selección, personal y barras; no con la 
   const { db, id } = await setup(t);
   const rev = () => svc.catalogRev(db);
   const r0 = await rev();
-  assert.equal(r0, 6, 'la semilla la deja en 1; 0007, 0008, 0009, 0010 y 0011 la suben una vez cada una');
+  assert.equal(r0, 7, 'la semilla la deja en 1; 0007, 0008, 0009, 0010, 0011 y 0012 la suben una vez cada una');
   assert.equal((await svc.bootstrap(db, { managerRequired: false })).catalog_rev, r0);
   assert.equal((await svc.liveState(db, { now: NIGHT })).catalog_rev, r0);
 
@@ -661,7 +661,7 @@ test('API: código de acceso para el personal, PIN para el encargado, fotos y co
   }
 
   const boot = await (await call('/api/bootstrap', { headers: staffH })).json();
-  assert.deepEqual(boot.groups.map((g) => g.name), ['Habituales', 'Premium', 'Nevera', 'Chupitos', 'Cervezas especiales', 'Refrescos', 'Zumos', 'Otros']);
+  assert.deepEqual(boot.groups.map((g) => g.name), ['Habituales', 'Premium', 'Nevera', 'Chupitos', 'Cervezas especiales', 'Refrescos', 'Otros', 'Zumos']);
   assert.deepEqual(boot.staff.map((s) => s.name), ['Carlos', 'Sergio', 'Alejandro']);
   assert.equal(typeof boot.catalog_rev, 'number');
   assert.ok(boot.products.every((p) => !('habitual' in p) && 'group_id' in p && 'slug' in p));

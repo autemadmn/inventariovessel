@@ -8,7 +8,7 @@ import { openPglite } from '../server/db-pglite.js';
 import { zonasDelPlano, zonaHtml, renderNevera } from '../public/js/views/nevera.js';
 
 const DIR = join(import.meta.dirname, '../public/img/nevera/frontal');
-const plano = JSON.parse(readFileSync(join(DIR, 'nevera.v4.json'), 'utf8'));
+const plano = JSON.parse(readFileSync(join(DIR, 'nevera.v5.json'), 'utf8'));
 const chupiteria = readFileSync(join(DIR, '../nevera.v2.json'));
 
 function webpSize(file) {
@@ -30,14 +30,14 @@ function webpSize(file) {
 }
 
 test('Nevera frontal: plano, dimensiones, recursos versionados y límites de peso', () => {
-  assert.equal(plano.version, 4);
+  assert.equal(plano.version, 5);
   assert.equal(plano.seccion, 'nevera');
   assert.equal(plano.marcar, 'producto');
   assert.equal(plano.base, 'img/nevera/frontal/');
   assert.deepEqual(webpSize(plano.fondo.imagen), [plano.fondo.w, plano.fondo.h]);
   assert.equal(plano.fondo.w / plano.fondo.h, 1080 / 1440);
-  assert.equal(plano.zonas.length, 4);
-  assert.equal(new Set(plano.zonas.map((z) => z.slug)).size, 4);
+  assert.equal(plano.zonas.length, 5);
+  assert.equal(new Set(plano.zonas.map((z) => z.slug)).size, 5);
   const files = [[plano.fondo.imagen, 150_000]];
   for (const z of plano.zonas) {
     if (!z.imagen) {
@@ -91,7 +91,7 @@ test('Nevera frontal: Heineken y Lanjarón conservan imagen y máscara v3', () =
   }
 });
 
-test('Nevera frontal: cuatro productos existentes en Nevera con los pasos acordados', async (t) => {
+test('Nevera frontal: cinco productos existentes en Nevera con los pasos acordados', async (t) => {
   const db = await openPglite();
   t.after(() => db.end());
   for (const z of plano.zonas) {
@@ -114,9 +114,10 @@ test('Nevera frontal: enlace puro por slug, selección completa, cantidad y dato
   const empty = String(zonaHtml(p, [result[0].zona], plano));
   assert.match(empty, /aria-pressed="false"/);
   assert.doesNotMatch(empty, /class="count"|nev-name|nev-caption/);
-  assert.equal(plano.zonas.some(z => z.slug === 'red-bull-sugarfree'), false);
-  assert.equal(result[0].zona.hit.w, 579);
-  assert.match(result[0].zona.imagen, /grupo\.v4\.webp$/);
+  // Dos Red Bull y dos Sugarfree, cada uno con su zona.
+  assert.match(plano.zonas.find((z) => z.slug === 'red-bull-sugarfree').imagen, /grupo\.v3\.webp$/);
+  assert.equal(result[0].zona.hit.w, 290);
+  assert.match(result[0].zona.imagen, /grupo\.v2\.webp$/);
   const s = String(zonaHtml(p, [result[0].zona], plano, {
     n: 48, shown: 2, pend: 24, out: true, qty: '2 cajas', pending: '1 caja', what: 'una caja',
   }));
