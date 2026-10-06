@@ -7,7 +7,7 @@ import {
   state, subscribe, selection, productById, groupById, localStore, storeById, loadLive, caseParts, stockText, countTime, inVesselPoints, pointByKey, outStore, barName,
 } from '../state.js';
 import {
-  raw, $, html, mount, norm, thumb, toast, buzz, fmt, plural, dateLabel, dateTimeLabel, dialog, confirmDialog, formDialog,
+  raw, $, html, mount, norm, thumb, toast, buzz, fmt, plural, dateLabel, dateTimeLabel, dialog, confirmDialog, formDialog, scrollTop,
 } from '../ui.js';
 import { icon } from '../icons.js';
 import { apuntar } from './viaje.js';
@@ -772,7 +772,7 @@ function renderContar(root, key) {
       store.set(SESSION, { ids, pos: 0, saved: 0, store_id: pickStore });
       buzz();
       draw();
-      window.scrollTo(0, 0);
+      scrollTop();
     } else if (d.skip !== undefined) {
       advance(false);
     } else if (d.end !== undefined) {
@@ -812,7 +812,7 @@ function renderContar(root, key) {
       return;
     }
     draw();
-    window.scrollTo(0, 0);
+    scrollTop();
     refreshPending();
   }
 

@@ -44,6 +44,8 @@
   --bar1: #0f7f79;
   --bar2: #7454d4;
   --bar3: #a3620a;
+  --rack: #6656c8;
+  --rack-dark: #43378f;
   --shadow-1: 0 1px 2px rgba(20, 20, 18, 0.06), 0 1px 1px rgba(20, 20, 18, 0.04);
   --shadow-2: 0 8px 24px rgba(20, 20, 18, 0.12), 0 2px 6px rgba(20, 20, 18, 0.06);
   --radius: 12px;
@@ -181,6 +183,18 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
 
 .main { max-width: 1120px; margin: 0 auto; padding: 16px 16px 32px; }
 body[data-view="pedir"] .main { padding-bottom: 104px; }
+
+/* Webapp instalada en la pantalla de inicio: en iOS, al desplazar la página entera la barra
+   inferior fija se quedaba a media pantalla. Aquí solo se desplaza el contenido (#main). */
+html.standalone, html.standalone body { height: 100%; overflow: hidden; }
+html.standalone body { display: flex; flex-direction: column; padding-bottom: 0; }
+html.standalone .top, html.standalone .offline { flex: none; }
+html.standalone .main {
+  flex: 1; min-height: 0; width: 100%; overflow-y: auto; overscroll-behavior: contain;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 32px);
+}
+html.standalone body[data-view="pedir"] .main { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 104px); }
+html.standalone .filters { top: 0; }
 
 /* ---------------------------------------------------------------- botones y controles */
 .btn {
@@ -720,6 +734,43 @@ select.mini { width: auto; text-align: left; }
 @media (min-width: 700px) and (min-height: 860px) {
   .sec-grid .sec-btn { min-height: 220px; }
   .sec-pics { height: 136px; }
+}
+
+/* ---------------------------------------------------------------- Alcohol: estantería */
+.rack-tabs {
+  display: flex; gap: 8px; margin: 0 -16px 14px; padding: 0 16px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.rack-tabs::-webkit-scrollbar { display: none; }
+.rack-tabs button {
+  flex: none; min-height: 44px; padding: 0 20px; border: 1px solid var(--line-strong); border-radius: 999px;
+  background: transparent; color: var(--text); font-size: 0.9375rem; font-weight: 500; touch-action: manipulation;
+}
+.rack-tabs button[aria-selected="true"] { border-color: var(--rack); background: var(--rack); color: #fff; font-weight: 600; }
+/* Postes con agujeros a los lados y una balda bajo cada fila de cuatro botellas. */
+.rack { position: relative; padding: 0 14px; }
+.rack::before, .rack::after {
+  content: ""; position: absolute; top: -6px; bottom: -6px; width: 12px; border-radius: 3px;
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.55) 1.6px, transparent 2.2px) center 4px / 12px 14px repeat-y,
+    linear-gradient(90deg, var(--rack-dark), var(--rack) 50%, var(--rack-dark));
+}
+.rack::before { left: 0; }
+.rack::after { right: 0; }
+.rack-shelf {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+  padding: 10px 6px; border-bottom: 10px solid var(--rack);
+  background: color-mix(in srgb, var(--rack) 6%, var(--bg));
+  box-shadow: inset 0 -6px 10px -8px rgba(0, 0, 0, 0.5);
+}
+.rack-shelf:first-child { border-top: 10px solid var(--rack); }
+.rack .card-main { align-items: center; padding: 6px 4px 8px; text-align: center; }
+.rack .card-name { padding: 0 2px; text-align: center; }
+.rack .card-main .tag { align-self: center; }
+.pedir.no-bar .rack { opacity: 0.5; }
+@media (min-width: 700px) {
+  .rack-wrap { max-width: 760px; margin-inline: auto; }
+  .rack-shelf { gap: 12px; padding: 14px 10px; }
 }
 
 /* ---------------------------------------------------------------- Chupitería: nevera vista desde arriba */
