@@ -22,7 +22,7 @@ Salen las botellas de la **selección**, agrupadas y en el orden que decide el e
 
 1. Elegir la barra: Barra 1, Barra 2 o Barra VIP (el dispositivo la recuerda).
 2. Tocar las botellas: cada toque suma una. Se ajusta con «−» en la tarjeta o con «+ / −» al revisar.
-3. Alcohol se ve como una estantería: pestañas por categoría (Ginebras, Rones, Vodkas…) y baldas de cuatro
+3. Alcohol se ve como una estantería: una pestaña por grupo de la selección (Habituales y Premium) y baldas de cuatro
    botellas, en el orden de la selección, con buscador por nombre (sin tildes: «ciroc», «hendricks»). Las
    demás secciones no tienen buscador: todo cabe a la vista, y Nevera y Chupitería se piden tocando la nevera.
 4. «Enviar» muestra la lista, por ejemplo:
