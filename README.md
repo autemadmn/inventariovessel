@@ -241,6 +241,8 @@ sobre las tablas de la otra app.
 3. Pulsa **Run**. El grupo «Zumos» pasa de Refrescos a Otros. Se puede repetir sin duplicar nada.
 4. Sin este paso la app funciona igual, pero los zumos siguen en Refrescos.
 
+Ejecutada y verificada en Supabase el **6 de octubre de 2026**.
+
 ## Actualizar Supabase: Barra VIP y refrescos en «Otros»
 
 1. En el proyecto de Supabase, **SQL Editor → New query**.
