@@ -5,6 +5,7 @@ import { renderPedir } from './views/pedir.js';
 import { renderReponer } from './views/reponer.js';
 import { renderGestion } from './views/gestion.js';
 import { renderAlmacen, flushCounts } from './views/almacen.js';
+import { pollDelay } from './poll.js';
 import { renderViajes } from './views/viajes.js';
 
 const main = $('#main');
@@ -166,11 +167,14 @@ async function refreshAll() {
   }
 }
 
-// La lista se comparte entre dispositivos consultando al servidor cada pocos
-// segundos mientras la app está a la vista (y al volver a ella).
-const LIVE_EVERY = 4000;
-const CATALOG_EVERY = 60000;
+// La lista se comparte entre dispositivos consultando al servidor mientras la
+// app está a la vista. El ritmo se adapta para no gastar peticiones de más
+// (Cloudflare cuenta cada consulta): rápido en Reponer y mientras alguien usa
+// la app; lento en pantallas que nadie toca. Al volver a tocar, consulta al
+// momento. Con la app en segundo plano no consulta nada.
+const CATALOG_EVERY = 10 * 60000; // los cambios de catálogo ya llegan por /api/live
 let lastCatalog = 0;
+let lastActivity = Date.now();
 
 async function poll() {
   if (document.visibilityState !== 'visible' || reauthing) return;
@@ -188,11 +192,32 @@ async function poll() {
   }
 }
 
-function connect() {
-  clearInterval(pollTimer);
-  lastCatalog = Date.now();
-  pollTimer = setInterval(poll, LIVE_EVERY);
+function schedule() {
+  clearTimeout(pollTimer);
+  const view = current?.name ?? route().name;
+  pollTimer = setTimeout(async () => {
+    await poll();
+    schedule();
+  }, pollDelay(view, Date.now() - lastActivity));
 }
+
+function connect() {
+  lastCatalog = Date.now();
+  lastActivity = Date.now();
+  schedule();
+}
+
+// Tocar la pantalla tras un rato quieta consulta enseguida y vuelve al ritmo rápido.
+for (const type of ['pointerdown', 'keydown']) {
+  window.addEventListener(type, () => {
+    const wasIdle = Date.now() - lastActivity > 2 * 60000;
+    lastActivity = Date.now();
+    if (wasIdle && document.visibilityState === 'visible' && !reauthing) {
+      poll().finally(schedule);
+    }
+  }, { passive: true, capture: true });
+}
+window.addEventListener('hashchange', () => { lastActivity = Date.now(); schedule(); });
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshAll();
@@ -238,7 +263,7 @@ setAuthErrorHandler(async (err, manager) => {
   if (reauthing) return;
   reauthing = true;
   auth.code = '';
-  clearInterval(pollTimer);
+  clearTimeout(pollTimer);
   await login(err.message);
   reauthing = false;
   await start();
